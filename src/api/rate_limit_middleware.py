@@ -109,9 +109,8 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                 db.refresh(quota)
 
             # Check rate limit
-            if os.getenv("DISABLE_RATE_LIMITING") == "true":
-                pass  # Skip rate limiting
-            else:
+            rate_details = {}
+            if os.getenv("DISABLE_RATE_LIMITING") != "true":
                 rate_limiter = get_rate_limiter()
                 allowed, rate_details = rate_limiter.is_allowed(
                     user_id,
