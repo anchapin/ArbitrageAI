@@ -410,31 +410,41 @@ class WebSocketManager:
         )
     
     async def send_task_completed(
-        self, 
-        task_id: str, 
+        self,
+        task_id: str,
         result_url: str,
         message: str = "Task completed successfully"
     ):
         """Send task completion notification."""
-        await self.send_task_update(
+        data = TaskUpdateData(
             task_id=task_id,
-            status=TaskStatus.COMPLETED,
+            status=TaskStatus.COMPLETED.value,
             message=message,
             result_url=result_url
         )
-    
+        await self._broadcast_to_subscribers(
+            self.task_subscriptions.get(task_id, set()),
+            WebSocketMessageType.TASK_COMPLETED,
+            asdict(data)
+        )
+
     async def send_task_error(
-        self, 
-        task_id: str, 
+        self,
+        task_id: str,
         error_message: str,
         error_details: Optional[str] = None
     ):
         """Send task error notification."""
-        await self.send_task_update(
+        data = TaskUpdateData(
             task_id=task_id,
-            status=TaskStatus.FAILED,
+            status=TaskStatus.FAILED.value,
             message=error_message,
             error_details=error_details
+        )
+        await self._broadcast_to_subscribers(
+            self.task_subscriptions.get(task_id, set()),
+            WebSocketMessageType.TASK_ERROR,
+            asdict(data)
         )
     
     async def send_bid_update(
