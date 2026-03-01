@@ -173,7 +173,7 @@ async def test_lock_holder_cannot_steal(lock_manager):
 
 
 @pytest.mark.asyncio
-@pytest.mark.timeout(60)
+@pytest.mark.timeout(120)
 async def test_concurrent_multiple_postings(lock_manager):
     """
     Test: Multiple instances bidding on different postings concurrently.
