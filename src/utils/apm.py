@@ -550,6 +550,7 @@ def add_trace_context_to_headers(
 # Convenience functions for specific use cases
 
 
+@contextmanager
 def measure_execution(name: str, attributes: Optional[Dict[str, Any]] = None):
     """
     Context manager to measure execution time and create a span.
