@@ -17,15 +17,19 @@ DATABASE_URL = os.getenv(
 # Create engine based on database type
 if DATABASE_URL.startswith("sqlite"):
     # For in-memory databases, we need to use StaticPool to share the same database across connections
-    connect_args = {"check_same_thread": False}
     if DATABASE_URL == "sqlite:///:memory:":
-        connect_args["poolclass"] = StaticPool
-
-    engine = create_engine(
-        DATABASE_URL,
-        connect_args=connect_args,
-        echo=False,
-    )
+        engine = create_engine(
+            DATABASE_URL,
+            connect_args={"check_same_thread": False},
+            poolclass=StaticPool,
+            echo=False,
+        )
+    else:
+        engine = create_engine(
+            DATABASE_URL,
+            connect_args={"check_same_thread": False},
+            echo=False,
+        )
     # Convert to async URL for SQLite
     # Handle in-memory databases differently from file-based databases
     if DATABASE_URL == "sqlite:///:memory:":
