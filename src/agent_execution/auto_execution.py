@@ -117,7 +117,7 @@ class AutoExecutionPipeline:
         self._execution_count = 0
         self._success_count = 0
         self._total_revenue_cents = 0
-        self._tracer = get_tracer()
+        self._tracer = get_tracer(__name__)
 
     async def initialize(self) -> None:
         """Initialize the auto-execution pipeline."""
@@ -264,11 +264,10 @@ class AutoExecutionPipeline:
         description = opportunity.get("description", "")
         budget_cents = opportunity.get("budget_cents", 0)
         marketplace = opportunity.get("marketplace", "unknown")
-        
+
         # Calculate confidence score
         confidence_score = self.confidence_tracker.calculate_confidence_score(
             threshold=self.min_confidence_threshold,
-            domain=opportunity.get("domain", "general"),
         )
         
         # Adjust based on self-adjusting algorithm
@@ -523,7 +522,7 @@ class AutoExecutionPipeline:
         for attempt in range(self.retry_attempts):
             try:
                 # Route and execute task
-                result = await self.task_router.route_task(
+                result = await self.task_router.route(
                     domain=domain,
                     user_request=task_data.get("title", ""),
                     csv_data=task_data.get("data", ""),

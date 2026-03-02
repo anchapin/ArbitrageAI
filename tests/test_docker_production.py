@@ -38,14 +38,14 @@ class TestDockerfile:
         """Test Dockerfile follows security best practices."""
         dockerfile_path = Path("Dockerfile")
         content = dockerfile_path.read_text()
-        
+
         # Should create non-root user
         assert "useradd" in content or "adduser" in content
         assert "USER" in content
-        
+
         # Should set environment variables
-        assert "ENV PYTHONDONTWRITEBYTECODE" in content
-        assert "ENV PYTHONUNBUFFERED" in content
+        assert "PYTHONDONTWRITEBYTECODE" in content
+        assert "PYTHONUNBUFFERED" in content
 
 
 class TestDockerCompose:

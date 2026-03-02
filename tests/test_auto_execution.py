@@ -231,11 +231,14 @@ class TestAutoExecutionPipeline:
         mock_db = MagicMock()
         mock_bid = MagicMock()
         mock_bid.id = "bid_123"
+        mock_bid.confidence_score = 0.75  # Set a real value, not MagicMock
         mock_db.add = MagicMock()
         mock_db.commit = MagicMock()
         mock_db.refresh = MagicMock()
         
-        with patch('src.agent_execution.auto_execution.Bid') as mock_bid_class:
+        # Mock the Bid class and confidence_tracker.record_bid
+        with patch('src.agent_execution.auto_execution.Bid') as mock_bid_class, \
+             patch.object(pipeline.confidence_tracker, 'record_bid') as mock_record:
             mock_bid_class.return_value = mock_bid
             
             result = await pipeline._place_bid(
@@ -270,16 +273,16 @@ class TestAutoExecutionPipeline:
     async def test_execute_with_retries_success(self, pipeline):
         """Test task execution with retries - success on first try."""
         task_data = {"title": "Test"}
-        
-        with patch.object(pipeline.task_router, 'route_task', AsyncMock()) as mock_route:
+
+        with patch.object(pipeline.task_router, 'route', AsyncMock()) as mock_route:
             mock_route.return_value = "Task result"
-            
+
             result = await pipeline._execute_with_retries(
                 task_data=task_data,
                 task_id="task_123",
                 domain="general",
             )
-            
+
             assert result["success"] is True
             assert result["output"] == "Task result"
             assert result["metadata"]["attempts"] == 1
@@ -288,16 +291,16 @@ class TestAutoExecutionPipeline:
     async def test_execute_with_retries_failure(self, pipeline):
         """Test task execution with retries - all fail."""
         task_data = {"title": "Test"}
-        
-        with patch.object(pipeline.task_router, 'route_task', AsyncMock()) as mock_route:
+
+        with patch.object(pipeline.task_router, 'route', AsyncMock()) as mock_route:
             mock_route.side_effect = Exception("Execution failed")
-            
+
             result = await pipeline._execute_with_retries(
                 task_data=task_data,
                 task_id="task_123",
                 domain="general",
             )
-            
+
             assert result["success"] is False
             assert "error" in result
             assert result["metadata"]["attempts"] == pipeline.retry_attempts
