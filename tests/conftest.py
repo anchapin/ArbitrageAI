@@ -205,11 +205,10 @@ def mock_openai_client(mock_openai_response):
 
 @pytest.fixture(scope="function")
 def setup_database_tables():
-    """Create all database tables for each test function.
+    """Create all database tables once per test function and clean up data after.
     
-    For in-memory databases, tables must be created per-test since each
-    connection gets a fresh database. For file-based databases, this
-    still works correctly and ensures test isolation.
+    For in-memory databases with StaticPool, we create tables once and then
+    just clean up data between tests. This is faster and avoids table recreation.
     """
     from src.api.models import Base
     from src.api.database import engine
@@ -218,13 +217,23 @@ def setup_database_tables():
     # This ensures all tables are created, including ScheduledTask, etc.
     from src.api import models  # noqa: F401
 
-    # Create all tables for this test
+    # Create all tables (idempotent - won't fail if already exist)
     Base.metadata.create_all(bind=engine)
 
     yield
 
-    # Drop all tables after test to ensure clean state
-    Base.metadata.drop_all(bind=engine)
+    # Clean up data after test (but keep tables for next test)
+    from src.api.database import SessionLocal
+    try:
+        with SessionLocal() as session:
+            for table in reversed(Base.metadata.sorted_tables):
+                try:
+                    session.execute(table.delete())
+                except Exception:
+                    pass  # Table might not exist yet
+            session.commit()
+    except Exception:
+        pass  # Ignore cleanup errors
 
 
 @pytest.fixture(scope="function", autouse=True)
