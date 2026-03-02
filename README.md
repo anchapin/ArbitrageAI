@@ -1,8 +1,26 @@
-# ArbitrageAI - Developer Setup Guide
+# ArbitrageAI
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Security: pip-audit](https://img.shields.io/badge/security-pip--audit-blue.svg)](https://github.com/pypa/pip-audit)
 [![Code style: ruff](https://img.shields.io/badge/code%20style-ruff-000000.svg)](https://github.com/astral-sh/ruff)
+
+> **ArbitrageAI** is an intelligent arbitrage trading platform powered by local LLMs and FastAPI.
+
+## 📚 Documentation
+
+| Document | Description |
+|----------|-------------|
+| [README](README.md) | Developer setup guide and quick start |
+| [CONTRIBUTING](CONTRIBUTING.md) | Contribution guidelines and development setup |
+| [CODE_OF_CONDUCT](CODE_OF_CONDUCT.md) | Community guidelines and standards |
+| [SECURITY](SECURITY.md) | Security policy and vulnerability reporting |
+| [CHANGELOG](CHANGELOG.md) | Version history and changes |
+| [SUPPORT](SUPPORT.md) | Support channels and help resources |
+| [LICENSE](LICENSE) | MIT License |
+
+---
+
+## Developer Setup Guide
 
 This guide covers how to set up and run the complete ArbitrageAI locally, including the Ollama local LLM instance, FastAPI backend, and Vite React frontend.
 
