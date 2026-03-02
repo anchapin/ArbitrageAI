@@ -210,6 +210,10 @@ def setup_database_tables():
     """
     from src.api.models import Base
     from src.api.database import engine
+    
+    # Import all models to ensure they're registered with Base.metadata
+    # This ensures all tables are created, including ScheduledTask, etc.
+    from src.api import models  # noqa: F401
 
     # Create all tables for this test
     Base.metadata.create_all(bind=engine)
