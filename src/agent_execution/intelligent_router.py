@@ -387,7 +387,8 @@ class TaskClassifier:
             )
 
             return min(distance / max_distance if max_distance > 0 else 0.0, 1.0)
-        except Exception:
+        except Exception as e:
+            logger.debug(f"Confidence calculation failed: {e}")
             return 0.0
 
 

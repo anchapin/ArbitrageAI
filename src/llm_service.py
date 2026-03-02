@@ -10,15 +10,20 @@ Features:
 - Configurable per-task model mappings
 """
 
-from openai import OpenAI
-from dotenv import load_dotenv
-import os
 import asyncio
+import logging
+import os
 import random
 import time
-from typing import Optional, Dict, Any
-from .llm_health_check import get_health_checker, CircuitBreakerError
+from typing import Any
+
+from dotenv import load_dotenv
+from openai import OpenAI
+
 from .config.config_manager import ConfigManager
+from .llm_health_check import CircuitBreakerError, get_health_checker
+
+logger = logging.getLogger(__name__)
 
 # Load environment variables from .env file
 # Create a .env file in your project root with the following variables:
@@ -58,11 +63,11 @@ class ModelConfig:
         self,
         cloud_model: str = DEFAULT_CLOUD_MODEL,
         local_model: str = DEFAULT_LOCAL_MODEL,
-        local_base_url: Optional[str] = None,
+        local_base_url: str | None = None,
         local_api_key: str = "not-needed",
         use_local_by_default: bool = False,
-        task_model_map: Optional[Dict[str, str]] = None,
-        task_use_local_map: Optional[Dict[str, bool]] = None,
+        task_model_map: dict[str, str] | None = None,
+        task_use_local_map: dict[str, bool] | None = None,
     ):
         """
         Initialize model configuration.
@@ -137,7 +142,7 @@ class ModelConfig:
         )
 
     def get_model_for_task(
-        self, task_type: str, prefer_local: Optional[bool] = None
+        self, task_type: str, prefer_local: bool | None = None
     ) -> tuple:
         """
         Get the appropriate model and configuration for a task type.
@@ -178,7 +183,7 @@ class ModelConfig:
 
 
 # Global default model config
-_default_model_config: Optional[ModelConfig] = None
+_default_model_config: ModelConfig | None = None
 
 
 def get_default_model_config() -> ModelConfig:
@@ -210,12 +215,12 @@ class LLMService:
 
     def __init__(
         self,
-        base_url: Optional[str] = None,
-        api_key: Optional[str] = None,
+        base_url: str | None = None,
+        api_key: str | None = None,
         model: str = "gpt-4o-mini",
         default_temperature: float = 0.7,
         default_max_tokens: int = 1000,
-        model_config: Optional[ModelConfig] = None,
+        model_config: ModelConfig | None = None,
         enable_fallback: bool = True,
         enable_circuit_breaker: bool = True,
     ):
@@ -336,12 +341,12 @@ class LLMService:
     def complete(
         self,
         prompt: str,
-        temperature: Optional[float] = None,
-        max_tokens: Optional[int] = None,
-        system_prompt: Optional[str] = None,
+        temperature: float | None = None,
+        max_tokens: int | None = None,
+        system_prompt: str | None = None,
         stealth_mode: bool = False,
         **kwargs,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Generate a completion from the LLM.
 
@@ -433,12 +438,12 @@ class LLMService:
     async def complete_async(
         self,
         prompt: str,
-        temperature: Optional[float] = None,
-        max_tokens: Optional[int] = None,
-        system_prompt: Optional[str] = None,
+        temperature: float | None = None,
+        max_tokens: int | None = None,
+        system_prompt: str | None = None,
         stealth_mode: bool = False,
         **kwargs,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Async version of complete() - uses asyncio.sleep instead of blocking.
 
@@ -471,9 +476,9 @@ class LLMService:
     def complete_streaming(
         self,
         prompt: str,
-        temperature: Optional[float] = None,
-        max_tokens: Optional[int] = None,
-        system_prompt: Optional[str] = None,
+        temperature: float | None = None,
+        max_tokens: int | None = None,
+        system_prompt: str | None = None,
         **kwargs,
     ):
         """
@@ -517,7 +522,7 @@ class LLMService:
         """Get the current model name."""
         return self.model
 
-    def get_config(self) -> Dict[str, str]:
+    def get_config(self) -> dict[str, str]:
         """Get current configuration (excluding sensitive API key)."""
         return {
             "base_url": self.base_url,
@@ -538,7 +543,7 @@ class LLMService:
 
     @classmethod
     def for_task(
-        cls, task_type: str, model_config: Optional[ModelConfig] = None, **kwargs
+        cls, task_type: str, model_config: ModelConfig | None = None, **kwargs
     ) -> "LLMService":
         """
         Create an LLMService instance configured for a specific task type.
@@ -595,7 +600,7 @@ class LLMService:
         return cls.for_task(TASK_TYPE_COMPLEX, **kwargs)
 
     @classmethod
-    def for_distilled_task(cls, model: Optional[str] = None, **kwargs) -> "LLMService":
+    def for_distilled_task(cls, model: str | None = None, **kwargs) -> "LLMService":
         """
         Create an LLMService for distilled tasks using fine-tuned local model.
 
@@ -627,7 +632,7 @@ class LLMService:
         )
 
     @classmethod
-    def with_local(cls, model: Optional[str] = None, **kwargs) -> "LLMService":
+    def with_local(cls, model: str | None = None, **kwargs) -> "LLMService":
         """
         Create an LLMService configured for local inference.
 
@@ -648,7 +653,7 @@ class LLMService:
         )
 
     @classmethod
-    def with_cloud(cls, model: Optional[str] = None, **kwargs) -> "LLMService":
+    def with_cloud(cls, model: str | None = None, **kwargs) -> "LLMService":
         """
         Create an LLMService configured for cloud inference.
 
@@ -676,7 +681,7 @@ class LLMService:
     def get_optimized_service(
         cls,
         potential_revenue_cents: int,
-        min_cloud_revenue: Optional[int] = None,
+        min_cloud_revenue: int | None = None,
         **kwargs,
     ) -> "LLMService":
         """
@@ -713,11 +718,11 @@ class LLMService:
     def complete_with_fallback(
         self,
         prompt: str,
-        temperature: Optional[float] = None,
-        max_tokens: Optional[int] = None,
-        system_prompt: Optional[str] = None,
+        temperature: float | None = None,
+        max_tokens: int | None = None,
+        system_prompt: str | None = None,
         **kwargs,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Generate a completion with automatic fallback to local model if cloud fails.
 
@@ -790,8 +795,8 @@ class LLMService:
 
         # Try fallback to local if enabled
         if self.enable_fallback and not self._is_local:
-            print(f"Cloud inference failed: {last_error}")
-            print("Attempting fallback to local model...")
+            logger.info(f"Cloud inference failed: {last_error}")
+            logger.info("Attempting fallback to local model...")
 
             # Create local service (with larger timeout for local)
             local_service = self.with_local(
@@ -835,9 +840,9 @@ if __name__ == "__main__":
     # BASE_URL=https://api.openai.com/v1
     # API_KEY=your-openai-api-key
 
-    print("=" * 60)
-    print("LLM Service - Usage Examples")
-    print("=" * 60)
+    logger.info("=" * 60)
+    logger.info("LLM Service - Usage Examples")
+    logger.info("=" * 60)
 
     # Example 2: Using local Ollama
     # For local Ollama, create a .env file with:
@@ -851,26 +856,26 @@ if __name__ == "__main__":
         model="llama3.2",  # or whatever model you have installed in Ollama
     )
 
-    print("\nConfiguration:")
-    print(llm.get_config())
+    logger.info("\nConfiguration:")
+    logger.info(llm.get_config())
 
-    print("\n" + "-" * 60)
-    print("To test the service:")
-    print("1. For cloud: Set BASE_URL and API_KEY in .env file")
-    print("2. For local: Run 'ollama serve' and ensure model is installed")
-    print("3. Uncomment the completion call below to test")
-    print("-" * 60)
+    logger.info("\n" + "-" * 60)
+    logger.info("To test the service:")
+    logger.info("1. For cloud: Set BASE_URL and API_KEY in .env file")
+    logger.info("2. For local: Run 'ollama serve' and ensure model is installed")
+    logger.info("3. Uncomment the completion call below to test")
+    logger.info("-" * 60)
 
     # Test the service (uncomment to test)
     # try:
     #     result = llm.complete("What is the capital of France?")
-    #     print(f"\nResponse: {result['content']}")
+    #     logger.info(f"\nResponse: {result['content']}")
     # except Exception as e:
-    #     print(f"\nError (make sure Ollama is running): {e}")
+    #     logger.error(f"\nError (make sure Ollama is running): {e}")
 
-    print("\nStreaming example:")
-    print("-" * 60)
-    print("""
+    logger.info("\nStreaming example:")
+    logger.info("-" * 60)
+    logger.info("""
 # For streaming responses:
 for chunk in llm.complete_streaming("Count to 5"):
     print(chunk, end="", flush=True)

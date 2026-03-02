@@ -17,10 +17,12 @@ Usage:
         print(result.logs)
 """
 
+from dataclasses import dataclass
+import logging
 import os
 import tempfile
-from typing import Optional, List
-from dataclasses import dataclass
+
+logger = logging.getLogger(__name__)
 
 # Docker SDK
 try:
@@ -76,9 +78,9 @@ class SandboxArtifact:
 class SandboxResult:
     """Represents the result of sandbox execution."""
 
-    logs: List[SandboxLog]
-    artifacts: List[SandboxArtifact]
-    error: Optional[str] = None
+    logs: list[SandboxLog]
+    artifacts: list[SandboxArtifact]
+    error: str | None = None
     timed_out: bool = False
 
     @property
@@ -172,13 +174,13 @@ class LocalDockerSandbox:
             client.images.get(self.image)
             return True
         except NotFound:
-            print(f"Image '{self.image}' not found locally.")
+            logger.warning(f"Image '{self.image}' not found locally.")
             return False
         except Exception as e:
-            print(f"Warning: Error checking for image: {e}")
+            logger.warning(f"Warning: Error checking for image: {e}")
             return False
 
-    def _extract_artifacts(self, host_dir: str) -> List[SandboxArtifact]:
+    def _extract_artifacts(self, host_dir: str) -> list[SandboxArtifact]:
         """
         Extract artifacts from the host directory.
 
@@ -234,15 +236,15 @@ class LocalDockerSandbox:
                                 name=filename, data=data, mime_type=mime_type
                             )
                         )
-                    except Exception:
-                        pass  # Skip files that can't be read
-        except Exception:
-            pass  # Silently ignore extraction errors
+                    except OSError as e:
+                        logger.debug(f"Failed to read artifact {filename}: {e}")
+        except OSError as e:
+            logger.debug(f"Artifact extraction error: {e}")
 
         return artifacts
 
     def run_code(
-        self, code: str, timeout: Optional[int] = None, output_format: str = "image"
+        self, code: str, timeout: int | None = None, output_format: str = "image"
     ) -> SandboxResult:
         """
         Execute Python code in the sandbox.
@@ -328,8 +330,8 @@ class LocalDockerSandbox:
                 # Cleanup container
                 try:
                     container.remove(force=True)
-                except Exception:
-                    pass
+                except (DockerException, NotFound) as e:
+                    logger.debug(f"Container cleanup warning: {e}")
 
                 # Check for errors
                 error = None
@@ -342,11 +344,11 @@ class LocalDockerSandbox:
 
             except DockerException as e:
                 return SandboxResult(
-                    logs=[], artifacts=[], error=f"Docker error: {str(e)}"
+                    logs=[], artifacts=[], error=f"Docker error: {e!s}"
                 )
             except Exception as e:
                 return SandboxResult(
-                    logs=[], artifacts=[], error=f"Execution error: {str(e)}"
+                    logs=[], artifacts=[], error=f"Execution error: {e!s}"
                 )
 
     # =========================================================================
@@ -398,7 +400,7 @@ class LocalDockerSandbox:
 
 
 def create_sandbox(
-    api_key: Optional[str] = None, timeout: int = DEFAULT_TIMEOUT, **kwargs
+    api_key: str | None = None, timeout: int = DEFAULT_TIMEOUT, **kwargs
 ) -> LocalDockerSandbox:
     """
     Create a LocalDockerSandbox instance (E2B-compatible interface).
@@ -416,7 +418,7 @@ def create_sandbox(
 
 def run_code_in_sandbox(
     code: str,
-    sandbox: Optional[LocalDockerSandbox] = None,
+    sandbox: LocalDockerSandbox | None = None,
     timeout: int = DEFAULT_TIMEOUT,
     output_format: str = "image",
 ) -> SandboxResult:
@@ -445,7 +447,7 @@ def run_code_in_sandbox(
 
 if __name__ == "__main__":
     # Example usage
-    print("Testing Local Docker Sandbox...")
+    logger.info("Testing Local Docker Sandbox...")
 
     # Simple test
     test_code = """
@@ -479,7 +481,7 @@ result = {
     'columns': list(df.columns),
     'success': True
 }
-print(json.dumps(result))
+logger.info(json.dumps(result))
 
 plt.close()
 """
@@ -488,13 +490,13 @@ plt.close()
         # Try to execute
         result = LocalDockerSandbox.execute(test_code)
 
-        print(f"Success: {result.success}")
-        print(f"Logs: {len(result.logs)}")
-        print(f"Artifacts: {len(result.artifacts)}")
+        logger.info(f"Success: {result.success}")
+        logger.info(f"Logs: {len(result.logs)}")
+        logger.info(f"Artifacts: {len(result.artifacts)}")
 
         if result.error:
-            print(f"Error: {result.error}")
+            logger.error(f"Error: {result.error}")
 
     except Exception as e:
-        print(f"Execution failed: {e}")
-        print("Make sure Docker is running and the image is built.")
+        logger.error(f"Execution failed: {e}")
+        logger.error("Make sure Docker is running and the image is built.")

@@ -27,7 +27,11 @@ Performance Impact:
 - Better query plan selectivity
 """
 
+import logging
+
 from sqlalchemy import text
+
+logger = logging.getLogger(__name__)
 
 
 def upgrade(db_session):
@@ -44,7 +48,7 @@ def upgrade(db_session):
             )
         )
     except Exception as e:
-        print(f"Index idx_task_client_status creation info: {e}")
+        logger.info(f"Index idx_task_client_status creation info: {e}")
 
     # Add composite index for admin metrics aggregations
     # This is used in admin metrics to filter by status and sort by created_at
@@ -56,7 +60,7 @@ def upgrade(db_session):
             )
         )
     except Exception as e:
-        print(f"Index idx_task_status_created creation info: {e}")
+        logger.info(f"Index idx_task_status_created creation info: {e}")
 
     # Add index on Bid status for filtering
     try:
@@ -64,7 +68,7 @@ def upgrade(db_session):
             text("CREATE INDEX IF NOT EXISTS idx_bid_status ON bids(status)")
         )
     except Exception as e:
-        print(f"Index idx_bid_status creation info: {e}")
+        logger.info(f"Index idx_bid_status creation info: {e}")
 
     # Add composite index for marketplace-specific bid queries
     # This is used in get_active_bids_optimized and get_recent_bids_optimized
@@ -76,7 +80,7 @@ def upgrade(db_session):
             )
         )
     except Exception as e:
-        print(f"Index idx_bid_marketplace_status creation info: {e}")
+        logger.info(f"Index idx_bid_marketplace_status creation info: {e}")
 
     # Add index on Bid created_at for time-range queries
     try:
@@ -84,7 +88,7 @@ def upgrade(db_session):
             text("CREATE INDEX IF NOT EXISTS idx_bid_created_at ON bids(created_at)")
         )
     except Exception as e:
-        print(f"Index idx_bid_created_at creation info: {e}")
+        logger.info(f"Index idx_bid_created_at creation info: {e}")
 
     connection.commit()
 
@@ -105,6 +109,6 @@ def downgrade(db_session):
         try:
             connection.execute(text(f"DROP INDEX IF EXISTS {index_name}"))
         except Exception as e:
-            print(f"Index {index_name} drop info: {e}")
+            logger.info(f"Index {index_name} drop info: {e}")
 
     connection.commit()

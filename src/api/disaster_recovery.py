@@ -741,7 +741,8 @@ async def health_check_endpoint(db: Session = Depends(get_db)):
         db_ok = True
         try:
             db.execute(text("SELECT 1"))
-        except Exception:
+        except Exception as e:
+            logger.debug(f"Database health check failed: {e}")
             db_ok = False
 
         # Check Redis connectivity if configured
@@ -751,7 +752,8 @@ async def health_check_endpoint(db: Session = Depends(get_db)):
                 redis_client = disaster_recovery_api.backup_manager.redis_client
                 if redis_client:
                     redis_client.ping()
-            except Exception:
+            except Exception as e:
+                logger.debug(f"Redis health check failed: {e}")
                 redis_ok = False
 
         # Check S3 connectivity if configured
@@ -761,7 +763,8 @@ async def health_check_endpoint(db: Session = Depends(get_db)):
                 s3_client = disaster_recovery_api.backup_manager.s3_client
                 if s3_client:
                     s3_client.head_bucket(Bucket=Config().AWS_S3_BACKUP_BUCKET)
-            except Exception:
+            except Exception as e:
+                logger.debug(f"S3 health check failed: {e}")
                 s3_ok = False
 
         status = (

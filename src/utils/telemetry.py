@@ -1,14 +1,16 @@
+import logging
 import os
+
 from opentelemetry import trace
+
 from ..config import get_traceloop_url
-from ..utils.logger import get_logger
 
 # Import APM initialization (Issue #42)
 from ..utils.apm import init_apm
 
 # Import distributed tracing logging integration (Issue #31)
 from ..utils.distributed_tracing import setup_trace_logging
-import logging
+from ..utils.logger import get_logger
 
 # Optional dependencies
 try:
@@ -74,7 +76,7 @@ def init_observability():
     if PHOENIX_AVAILABLE and os.environ.get("ENVIRONMENT") == "development":
         try:
             session = px.launch_app()
-            print(f"🔭 Phoenix Observability Dashboard running at: {session.url}")
+            logger.info(f"🔭 Phoenix Observability Dashboard running at: {session.url}")
         except Exception as e:
             logger.warning(f"Failed to launch Phoenix dashboard: {e}")
     elif not PHOENIX_AVAILABLE:

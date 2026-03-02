@@ -226,7 +226,8 @@ class BrowserPool:
             # Try to get version - quick health check
             _ = browser.version
             return True
-        except Exception:
+        except Exception as e:
+            logger.debug(f"Browser health check failed: {e}")
             return False
 
     def get_metrics(self) -> Dict[str, Any]:

@@ -1,0 +1,229 @@
+# =============================================================================
+# ArbitrageAI - .dockerignore
+# =============================================================================
+# This file tells Docker which files to exclude from the build context
+# Helps reduce image size, improve build performance, and enhance security
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Git and Version Control
+# -----------------------------------------------------------------------------
+.git
+.gitignore
+.gitattributes
+.github/
+
+# -----------------------------------------------------------------------------
+# Python and Virtual Environments
+# -----------------------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments (exclude from Docker)
+venv/
+.venv/
+ENV/
+env/
+.venv/
+test-venv/
+
+# -----------------------------------------------------------------------------
+# IDE and Editor Files
+# -----------------------------------------------------------------------------
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+*.sublime-project
+*.sublime-workspace
+
+# -----------------------------------------------------------------------------
+# Environment and Configuration
+# -----------------------------------------------------------------------------
+.env
+.env.local
+.env.*.local
+.env.production
+.env.staging
+.env.test
+*.env
+
+# -----------------------------------------------------------------------------
+# Logs and Temporary Files
+# -----------------------------------------------------------------------------
+*.log
+logs/
+tmp/
+temp/
+.cache/
+.thumbnails/
+
+# -----------------------------------------------------------------------------
+# Database Files
+# -----------------------------------------------------------------------------
+*.db
+*.sqlite
+*.sqlite3
+data/*.db
+data/*.sqlite
+
+# -----------------------------------------------------------------------------
+# Test and Coverage Artifacts
+# -----------------------------------------------------------------------------
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+
+# -----------------------------------------------------------------------------
+# Node.js (Client Portal)
+# -----------------------------------------------------------------------------
+node_modules/
+npm-debug.log
+yarn-error.log
+src/client_portal/node_modules/
+src/client_portal/dist/
+src/client_portal/.env.local
+
+# -----------------------------------------------------------------------------
+# Docker Files (prevent recursive copying)
+# -----------------------------------------------------------------------------
+Dockerfile
+Dockerfile.*
+docker-compose*.yml
+.dockerignore
+
+# -----------------------------------------------------------------------------
+# Documentation (not needed in production image)
+# -----------------------------------------------------------------------------
+*.md
+!README.md
+docs/
+*.rst
+CONTRIBUTING.md
+CODE_OF_CONDUCT.md
+SECURITY.md
+CHANGELOG.md
+IMPLEMENTATION_*.md
+ISSUE_*.md
+PR_ISSUE_*.md
+QUICK_REFERENCE*.md
+COMPLETION_SUMMARY*.md
+GITHUB_ISSUES*.md
+REVIEW_*.md
+ARCHITECTURE_*.md
+BRANCH_PROTECTION*.md
+DISTRIBUTED_TRACING*.md
+EXHAUSTIVE_REVIEW*.md
+IMPLEMENTATION_COMPLETE*.md
+INTEGRATION_GUIDE*.md
+MAINTENANCE_GUIDE*.md
+MARKETPLACE_DISCOVERY*.md
+MIGRATION_GUIDE*.md
+PLAYWRIGHT_RESOURCE*.md
+ISSUE_TRACKER*.md
+ISSUES_*.md
+REPOSITORY_ANALYSIS.md
+REVIEW_FINDINGS.txt
+
+# -----------------------------------------------------------------------------
+# Scripts (not needed in production)
+# -----------------------------------------------------------------------------
+scripts/dev/
+scripts/test/
+scripts/debug/
+
+# -----------------------------------------------------------------------------
+# Test Files
+# -----------------------------------------------------------------------------
+tests/
+test_*.py
+*_test.py
+conftest.py
+
+# -----------------------------------------------------------------------------
+# Development Tools Configuration
+# -----------------------------------------------------------------------------
+.ruff_cache/
+.mypy_cache/
+.pytype/
+.pyre/
+justfile
+Makefile
+.pre-commit-config.yaml
+.pre-commit-hooks.yaml
+pyproject.toml.bak
+
+# -----------------------------------------------------------------------------
+# Sensitive Files (Security)
+# -----------------------------------------------------------------------------
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+secrets/
+credentials/
+*.credentials
+
+# -----------------------------------------------------------------------------
+# Backup Files
+# -----------------------------------------------------------------------------
+*.bak
+*.backup
+*.old
+*~
+
+# -----------------------------------------------------------------------------
+# OS Generated Files
+# -----------------------------------------------------------------------------
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+
+# -----------------------------------------------------------------------------
+# Jupyter Notebooks (if not needed in production)
+# -----------------------------------------------------------------------------
+.ipynb_checkpoints/
+*.ipynb
+
+# -----------------------------------------------------------------------------
+# Miscellaneous
+# -----------------------------------------------------------------------------
+*.orig
+*.patch
+*.diff
+.hg/
+.bzr/
+_svn/

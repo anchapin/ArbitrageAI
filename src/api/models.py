@@ -1,4 +1,5 @@
 import uuid
+import logging
 from datetime import datetime
 from typing import Dict, Any
 from enum import Enum as PyEnum
@@ -18,6 +19,8 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import relationship, declarative_base
 from sqlalchemy.ext.hybrid import hybrid_property
+
+logger = logging.getLogger(__name__)
 
 Base = declarative_base()
 
@@ -455,7 +458,8 @@ class Task(Base):
                 None,
             )
             return image_output.output_url if image_output else None
-        except Exception:
+        except (StopIteration, AttributeError) as e:
+            logger.debug(f"Failed to get result_image_url: {e}")
             return None
 
     @result_image_url.setter
@@ -487,7 +491,8 @@ class Task(Base):
                 None,
             )
             return doc_output.output_url if doc_output else None
-        except Exception:
+        except (StopIteration, AttributeError) as e:
+            logger.debug(f"Failed to get result_document_url: {e}")
             return None
 
     @result_document_url.setter
@@ -519,7 +524,8 @@ class Task(Base):
                 None,
             )
             return sheet_output.output_url if sheet_output else None
-        except Exception:
+        except (StopIteration, AttributeError) as e:
+            logger.debug(f"Failed to get result_spreadsheet_url: {e}")
             return None
 
     @result_spreadsheet_url.setter

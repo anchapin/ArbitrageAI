@@ -13,10 +13,13 @@ Features:
 - Few-shot example generation for LLM prompts
 """
 
-import os
-import json
-from typing import Optional, List, Dict, Any
 from dataclasses import dataclass
+import json
+import logging
+import os
+from typing import Any
+
+logger = logging.getLogger(__name__)
 
 # ChromaDB for vector storage
 try:
@@ -26,9 +29,7 @@ try:
     CHROMADB_AVAILABLE = True
 except ImportError:
     CHROMADB_AVAILABLE = False
-    print(
-        "Warning: ChromaDB not available. Experience Vector Database will not function."
-    )
+    logger.warning("ChromaDB not available. Experience Vector Database will not function.")
 
 # Sentence-transformers for embeddings
 try:
@@ -37,7 +38,7 @@ try:
     SENTENCE_TRANSFORMERS_AVAILABLE = True
 except ImportError:
     SENTENCE_TRANSFORMERS_AVAILABLE = False
-    print("Warning: sentence-transformers not available. Using fallback embeddings.")
+    logger.warning("Sentence-transformers not available. Using fallback embeddings.")
 
 
 # =============================================================================
@@ -85,7 +86,7 @@ class TaskExperience:
     domain: str
     task_type: str
     output_format: str
-    csv_headers: List[str]
+    csv_headers: list[str]
 
 
 @dataclass
@@ -166,13 +167,13 @@ class ExperienceVectorDB:
 
         # Check availability
         if not CHROMADB_AVAILABLE:
-            print(
+            logger.error(
                 "Error: ChromaDB is not installed. Install with: pip install chromadb"
             )
             return
 
         if not SENTENCE_TRANSFORMERS_AVAILABLE:
-            print(
+            logger.error(
                 "Error: sentence-transformers is not installed. Install with: pip install sentence-transformers"
             )
             return
@@ -201,19 +202,19 @@ class ExperienceVectorDB:
                 self._collection = self._chroma_client.get_collection(
                     "task_experiences"
                 )
-                print(
+                logger.info(
                     f"Experience Vector DB: Loaded existing collection with {self._collection.count()} experiences"
                 )
-            except Exception:
+            except (chromadb.errors.InvalidCollectionException, Exception) as e:
                 # Collection doesn't exist, create it
+                logger.info(f"Creating new task_experiences collection: {e}")
                 self._collection = self._chroma_client.create_collection(
                     name="task_experiences",
                     metadata={"description": "Task experiences for few-shot learning"},
                 )
-                print("Experience Vector DB: Created new collection")
 
         except Exception as e:
-            print(f"Error initializing ChromaDB: {e}")
+            logger.error(f"Error initializing ChromaDB: {e}")
             self._chroma_client = None
             self._collection = None
 
@@ -221,14 +222,14 @@ class ExperienceVectorDB:
         """Initialize the sentence-transformers embedding model."""
         try:
             self._embedding_model = SentenceTransformer(self.embedding_model)
-            print(
+            logger.info(
                 f"Experience Vector DB: Loaded embedding model '{self.embedding_model}'"
             )
         except Exception as e:
-            print(f"Error loading embedding model: {e}")
+            logger.error(f"Error loading embedding model: {e}")
             self._embedding_model = None
 
-    def _get_embedding(self, text: str) -> List[float]:
+    def _get_embedding(self, text: str) -> list[float]:
         """
         Get embedding vector for text using sentence-transformers.
 
@@ -253,7 +254,7 @@ class ExperienceVectorDB:
         domain: str,
         task_type: str = "visualization",
         output_format: str = "image",
-        csv_headers: Optional[List[str]] = None,
+        csv_headers: list[str] | None = None,
     ) -> bool:
         """
         Store a successful task experience in the vector database.
@@ -275,7 +276,7 @@ class ExperienceVectorDB:
             True if storage was successful, False otherwise
         """
         if self._collection is None or self._embedding_model is None:
-            print("Error: ExperienceVectorDB not properly initialized")
+            logger.error("Error: ExperienceVectorDB not properly initialized")
             return False
 
         try:
@@ -305,22 +306,22 @@ class ExperienceVectorDB:
                 documents=[combined_text],
             )
 
-            print(
+            logger.info(
                 f"ExperienceVectorDB: Stored task {task_id} (domain: {domain}, type: {task_type})"
             )
             return True
 
         except Exception as e:
-            print(f"Error storing task experience: {e}")
+            logger.error(f"Error storing task experience: {e}")
             return False
 
     def query_similar_tasks(
         self,
         user_request: str,
-        domain: Optional[str] = None,
-        task_type: Optional[str] = None,
-        top_k: Optional[int] = None,
-    ) -> List[FewShotExample]:
+        domain: str | None = None,
+        task_type: str | None = None,
+        top_k: int | None = None,
+    ) -> list[FewShotExample]:
         """
         Query for similar past tasks based on user request.
 
@@ -337,7 +338,7 @@ class ExperienceVectorDB:
             List of FewShotExample objects sorted by similarity score
         """
         if self._collection is None or self._embedding_model is None:
-            print("Error: ExperienceVectorDB not properly initialized")
+            logger.error("Error: ExperienceVectorDB not properly initialized")
             return []
 
         try:
@@ -367,7 +368,7 @@ class ExperienceVectorDB:
             # Parse results
             examples = []
             if results and results.get("ids") and len(results["ids"]) > 0:
-                for i, task_id in enumerate(results["ids"][0]):
+                for i, _task_id in enumerate(results["ids"][0]):
                     metadata = results["metadatas"][0][i]
                     distances = results.get("distances", [[]])[0]
 
@@ -381,22 +382,22 @@ class ExperienceVectorDB:
                     )
                     examples.append(example)
 
-            print(
+            logger.info(
                 f"ExperienceVectorDB: Found {len(examples)} similar tasks for: {user_request[:50]}..."
             )
             return examples
 
         except Exception as e:
-            print(f"Error querying similar tasks: {e}")
+            logger.error(f"Error querying similar tasks: {e}")
             return []
 
     def build_few_shot_system_prompt(
         self,
         base_system_prompt: str,
-        examples: Optional[List[FewShotExample]] = None,
-        user_request: Optional[str] = None,
-        domain: Optional[str] = None,
-        top_k: Optional[int] = None,
+        examples: list[FewShotExample] | None = None,
+        user_request: str | None = None,
+        domain: str | None = None,
+        top_k: int | None = None,
     ) -> str:
         """
         Build a system prompt with few-shot examples.
@@ -449,7 +450,7 @@ class ExperienceVectorDB:
 
         return enhanced_prompt
 
-    def get_experience_stats(self) -> Dict[str, Any]:
+    def get_experience_stats(self) -> dict[str, Any]:
         """
         Get statistics about the experience database.
 
@@ -493,10 +494,10 @@ class ExperienceVectorDB:
             all_ids = self._collection.get()["ids"]
             if all_ids:
                 self._collection.delete(ids=all_ids)
-            print("ExperienceVectorDB: Cleared all experiences")
+            logger.info("ExperienceVectorDB: Cleared all experiences")
             return True
         except Exception as e:
-            print(f"Error clearing experiences: {e}")
+            logger.error(f"Error clearing experiences: {e}")
             return False
 
 
@@ -505,7 +506,7 @@ class ExperienceVectorDB:
 # =============================================================================
 
 # Global instance for easy access across the application
-_experience_db: Optional[ExperienceVectorDB] = None
+_experience_db: ExperienceVectorDB | None = None
 
 
 def get_experience_db() -> ExperienceVectorDB:
@@ -523,7 +524,7 @@ def get_experience_db() -> ExperienceVectorDB:
         try:
             _experience_db = ExperienceVectorDB()
         except Exception as e:
-            print(f"Error creating ExperienceVectorDB: {e}")
+            logger.error(f"Error creating ExperienceVectorDB: {e}")
             # Return a dummy instance that will fail gracefully
             _experience_db = None
 
@@ -537,7 +538,7 @@ def store_successful_task(
     domain: str,
     task_type: str = "visualization",
     output_format: str = "image",
-    csv_headers: Optional[List[str]] = None,
+    csv_headers: list[str] | None = None,
 ) -> bool:
     """
     Convenience function to store a successful task.
@@ -556,7 +557,7 @@ def store_successful_task(
     """
     db = get_experience_db()
     if db is None:
-        print("Warning: ExperienceVectorDB not available, skipping task storage")
+        logger.warning("Warning: ExperienceVectorDB not available, skipping task storage")
         return False
 
     return db.store_successful_task(
@@ -572,10 +573,10 @@ def store_successful_task(
 
 def query_similar_tasks(
     user_request: str,
-    domain: Optional[str] = None,
-    task_type: Optional[str] = None,
+    domain: str | None = None,
+    task_type: str | None = None,
     top_k: int = DEFAULT_TOP_K,
-) -> List[FewShotExample]:
+) -> list[FewShotExample]:
     """
     Convenience function to query similar tasks.
 
@@ -590,7 +591,7 @@ def query_similar_tasks(
     """
     db = get_experience_db()
     if db is None:
-        print("Warning: ExperienceVectorDB not available, returning empty examples")
+        logger.warning("Warning: ExperienceVectorDB not available, returning empty examples")
         return []
 
     return db.query_similar_tasks(
@@ -601,7 +602,7 @@ def query_similar_tasks(
 def build_few_shot_system_prompt(
     base_system_prompt: str,
     user_request: str,
-    domain: Optional[str] = None,
+    domain: str | None = None,
     top_k: int = DEFAULT_TOP_K,
 ) -> str:
     """
@@ -634,33 +635,33 @@ def build_few_shot_system_prompt(
 
 if __name__ == "__main__":
     # Test the Experience Vector Database
-    print("=" * 60)
-    print("Testing Experience Vector Database")
-    print("=" * 60)
+    logger.info("=" * 60)
+    logger.info("Testing Experience Vector Database")
+    logger.info("=" * 60)
 
     # Check if dependencies are available
     if not CHROMADB_AVAILABLE:
-        print("ERROR: ChromaDB not installed")
-        print("Install with: pip install chromadb")
+        logger.error("ERROR: ChromaDB not installed")
+        logger.error("Install with: pip install chromadb")
     else:
-        print("✓ ChromaDB available")
+        logger.info("✓ ChromaDB available")
 
     if not SENTENCE_TRANSFORMERS_AVAILABLE:
-        print("ERROR: sentence-transformers not installed")
-        print("Install with: pip install sentence-transformers")
+        logger.error("ERROR: sentence-transformers not installed")
+        logger.error("Install with: pip install sentence-transformers")
     else:
-        print("✓ sentence-transformers available")
+        logger.info("✓ sentence-transformers available")
 
     # Initialize the database
-    print("\nInitializing Experience Vector Database...")
+    logger.info("\nInitializing Experience Vector Database...")
     db = ExperienceVectorDB()
 
     # Get stats
     stats = db.get_experience_stats()
-    print(f"\nDatabase stats: {stats}")
+    logger.info(f"\nDatabase stats: {stats}")
 
     # Test storing a sample experience
-    print("\n--- Testing store_successful_task ---")
+    logger.info("\n--- Testing store_successful_task ---")
     success = db.store_successful_task(
         task_id="test-task-001",
         user_request="Create a bar chart showing monthly sales",
@@ -670,29 +671,29 @@ if __name__ == "__main__":
         output_format="image",
         csv_headers=["month", "sales", "expenses"],
     )
-    print(f"Store result: {success}")
+    logger.info(f"Store result: {success}")
 
     # Test querying similar tasks
-    print("\n--- Testing query_similar_tasks ---")
+    logger.info("\n--- Testing query_similar_tasks ---")
     examples = db.query_similar_tasks(
         user_request="Create a chart of quarterly revenue", domain="accounting", top_k=2
     )
-    print(f"Found {len(examples)} similar tasks")
+    logger.info(f"Found {len(examples)} similar tasks")
     for ex in examples:
-        print(f"  - Similarity: {ex.similarity_score:.3f}")
-        print(f"    Request: {ex.user_request[:50]}...")
+        logger.info(f"  - Similarity: {ex.similarity_score:.3f}")
+        logger.info(f"    Request: {ex.user_request[:50]}...")
 
     # Test building few-shot prompt
-    print("\n--- Testing build_few_shot_system_prompt ---")
+    logger.info("\n--- Testing build_few_shot_system_prompt ---")
     base_prompt = "You are an expert data scientist."
     enhanced_prompt = db.build_few_shot_system_prompt(
         base_prompt,
         user_request="Create a chart of quarterly revenue",
         domain="accounting",
     )
-    print(f"Original prompt length: {len(base_prompt)} chars")
-    print(f"Enhanced prompt length: {len(enhanced_prompt)} chars")
+    logger.info(f"Original prompt length: {len(base_prompt)} chars")
+    logger.info(f"Enhanced prompt length: {len(enhanced_prompt)} chars")
 
-    print("\n" + "=" * 60)
-    print("Test complete!")
-    print("=" * 60)
+    logger.info("\n" + "=" * 60)
+    logger.info("Test complete!")
+    logger.info("=" * 60)

@@ -13,12 +13,12 @@ Features:
 - Detailed error tracking for debugging
 """
 
-import os
 import base64
-import json
-import re
-from typing import Optional, List, Any
 from datetime import datetime
+import json
+import os
+import re
+from typing import Any
 
 # Import error categorization (Issue #37)
 
@@ -32,13 +32,12 @@ except ImportError:
     Sandbox = None
 
 # Import LLM Service for AI-powered code generation
-from src.llm_service import LLMService
-
 # Import Traceloop for OpenTelemetry observability
 from traceloop.sdk.decorators import task
 
 # Import file parser for different file types
-from src.agent_execution.file_parser import parse_file, FileType, detect_file_type
+from src.agent_execution.file_parser import FileType, detect_file_type, parse_file
+from src.llm_service import LLMService
 
 # Import logger for proper logging with rotating files
 # (Must be before any modules that use logging for import warnings)
@@ -214,7 +213,7 @@ class TaskRouter:
         "visual",
     ]
 
-    def __init__(self, llm_service: Optional[LLMService] = None):
+    def __init__(self, llm_service: LLMService | None = None):
         """
         Initialize the TaskRouter.
 
@@ -224,7 +223,7 @@ class TaskRouter:
         self.llm = llm_service
 
     def detect_task_type(
-        self, user_request: str, explicit_task_type: Optional[str] = None
+        self, user_request: str, explicit_task_type: str | None = None
     ) -> str:
         """
         Detect the task type from user request.
@@ -261,7 +260,7 @@ class TaskRouter:
         return TaskType.VISUALIZATION
 
     def detect_output_format(
-        self, domain: str, task_type: str, explicit_format: Optional[str] = None
+        self, domain: str, task_type: str, explicit_format: str | None = None
     ) -> str:
         """
         Detect the output format based on domain and task type.
@@ -305,9 +304,9 @@ class TaskRouter:
         domain: str,
         user_request: str,
         csv_data: str,
-        task_type: Optional[str] = None,
-        output_format: Optional[str] = None,
-        few_shot_examples: Optional[List[Any]] = None,
+        task_type: str | None = None,
+        output_format: str | None = None,
+        few_shot_examples: list[Any] | None = None,
         **kwargs,
     ) -> dict:
         """
@@ -382,11 +381,11 @@ class TaskRouter:
             )
 
     def _handle_visualization(
-        self, 
-        domain: str, 
-        user_request: str, 
-        csv_data: str, 
-        few_shot_examples: Optional[List[Any]] = None,
+        self,
+        domain: str,
+        user_request: str,
+        csv_data: str,
+        few_shot_examples: list[Any] | None = None,
         **kwargs
     ) -> dict:
         """
@@ -404,9 +403,9 @@ class TaskRouter:
         """
         # Delegate to existing execute_data_visualization function
         return execute_data_visualization(
-            csv_data=csv_data, 
-            user_request=user_request, 
-            domain=domain, 
+            csv_data=csv_data,
+            user_request=user_request,
+            domain=domain,
             few_shot_examples=few_shot_examples,
             **kwargs
         )
@@ -587,7 +586,7 @@ Return ONLY the Python code, no markdown."""
         except Exception as e:
             return {
                 "success": False,
-                "message": f"Spreadsheet generation error: {str(e)}",
+                "message": f"Spreadsheet generation error: {e!s}",
                 "output_format": OutputFormat.XLSX,
             }
 
@@ -913,11 +912,11 @@ Return ONLY valid JSON, no markdown formatting, no explanations."""
                 }
 
         except json.JSONDecodeError as e:
-            return {"success": False, "message": f"JSON parsing error: {str(e)}"}
+            return {"success": False, "message": f"JSON parsing error: {e!s}"}
         except Exception as e:
             return {
                 "success": False,
-                "message": f"Error generating JSON content: {str(e)}",
+                "message": f"Error generating JSON content: {e!s}",
             }
 
     def _handle_document_generation_with_template(
@@ -1004,7 +1003,7 @@ Return ONLY valid JSON, no markdown formatting, no explanations."""
                 code = get_template_code(content_json, csv_data, output_format)
         except ImportError as e:
             logger.warning(
-                f"Template import failed: {str(e)}, falling back to legacy code generation"
+                f"Template import failed: {e!s}, falling back to legacy code generation"
             )
             return self._handle_document_generation(
                 domain=domain,
@@ -1066,7 +1065,7 @@ Return ONLY valid JSON, no markdown formatting, no explanations."""
         except Exception as e:
             return {
                 "success": False,
-                "message": f"Template document generation error: {str(e)}",
+                "message": f"Template document generation error: {e!s}",
                 "output_format": output_format,
                 "generation_method": "template_json",
             }
@@ -1076,9 +1075,9 @@ def execute_task(
     domain: str,
     user_request: str,
     csv_data: str,
-    task_type: Optional[str] = None,
-    output_format: Optional[str] = None,
-    few_shot_examples: Optional[List[Any]] = None,
+    task_type: str | None = None,
+    output_format: str | None = None,
+    few_shot_examples: list[Any] | None = None,
     **kwargs,
 ) -> dict:
     """
@@ -1127,7 +1126,7 @@ class DocumentGenerator:
     def __init__(
         self,
         domain: str = "data_analysis",
-        llm_service: Optional[LLMService] = None,
+        llm_service: LLMService | None = None,
         output_format: str = OutputFormat.DOCX,
     ):
         """
@@ -1198,7 +1197,7 @@ Return ONLY the Python code, no markdown."""
         except Exception as e:
             return {
                 "success": False,
-                "message": f"Document generation error: {str(e)}",
+                "message": f"Document generation error: {e!s}",
                 "output_format": self.output_format,
                 "document_type": "document",
             }
@@ -1376,7 +1375,7 @@ class ReportGenerator:
     def __init__(
         self,
         domain: str = "data_analysis",
-        llm_service: Optional[LLMService] = None,
+        llm_service: LLMService | None = None,
         report_type: str = "detailed",
     ):
         """
@@ -1470,7 +1469,7 @@ Return ONLY the Python code, no markdown."""
         except Exception as e:
             return {
                 "success": False,
-                "message": f"Summary report generation error: {str(e)}",
+                "message": f"Summary report generation error: {e!s}",
                 "output_format": "docx",
                 "document_type": "report",
                 "report_type": "summary",
@@ -1539,7 +1538,7 @@ Return ONLY the Python code, no markdown."""
         except Exception as e:
             return {
                 "success": False,
-                "message": f"Detailed report generation error: {str(e)}",
+                "message": f"Detailed report generation error: {e!s}",
                 "output_format": "docx",
                 "document_type": "report",
                 "report_type": "detailed",
@@ -1634,7 +1633,7 @@ Return ONLY the Python code, no markdown."""
         except Exception as e:
             return {
                 "success": False,
-                "message": f"Combined report generation error: {str(e)}",
+                "message": f"Combined report generation error: {e!s}",
                 "output_format": "docx",
                 "document_type": "report",
                 "report_type": "combined",
@@ -1897,7 +1896,7 @@ def get_domain_system_prompt(domain: str, file_type: str = "csv") -> str:
 
     # Legal domain prompt
     if domain_lower == "legal":
-        return f"""You are an expert legal data analyst. The user wants to visualize data from legal documents, 
+        return f"""You are an expert legal data analyst. The user wants to visualize data from legal documents,
 court records, case information, or legal metrics. The data comes from a {file_type_desc}.
 
 Your expertise includes:
@@ -1935,7 +1934,7 @@ Return ONLY the Python code, no explanations or markdown. The code should be com
 
     # Accounting domain prompt
     elif domain_lower == "accounting":
-        return f"""You are an expert accounting data analyst. The user wants to visualize data from financial 
+        return f"""You are an expert accounting data analyst. The user wants to visualize data from financial
 statements, bookkeeping records, tax documents, or accounting metrics. The data comes from a {file_type_desc}.
 
 Your expertise includes:
@@ -2004,7 +2003,7 @@ class ArtifactReviewer:
     This ensures the visualization actually matches what the user requested.
     """
 
-    def __init__(self, llm_service: Optional[LLMService] = None):
+    def __init__(self, llm_service: LLMService | None = None):
         """
         Initialize the artifact reviewer.
 
@@ -2210,7 +2209,7 @@ class CodeFixer:
     that includes the error message and asks the LLM to fix the code.
     """
 
-    def __init__(self, llm_service: Optional[LLMService] = None):
+    def __init__(self, llm_service: LLMService | None = None):
         """
         Initialize the code fixer.
 
@@ -2326,10 +2325,10 @@ class AIResponseGenerator:
     """
 
     def __init__(
-        self, 
-        llm_service: Optional[LLMService] = None, 
-        domain: Optional[str] = None,
-        few_shot_examples: Optional[List[Any]] = None
+        self,
+        llm_service: LLMService | None = None,
+        domain: str | None = None,
+        few_shot_examples: list[Any] | None = None
     ):
         """
         Initialize the AI response generator.
@@ -2388,9 +2387,9 @@ class AIResponseGenerator:
         self,
         csv_headers: list,
         user_request: str,
-        domain: Optional[str] = None,
-        file_type: Optional[str] = None,
-        enable_few_shot: Optional[bool] = None,
+        domain: str | None = None,
+        file_type: str | None = None,
+        enable_few_shot: bool | None = None,
     ) -> dict:
         """
         Generate Python code for data visualization using LLM.
@@ -2467,8 +2466,9 @@ Generate the Python code now. Return only the code, no markdown formatting."""
                 "few_shot_used": use_few_shot,
             }
 
-        except Exception:
+        except Exception as e:
             # Fallback to basic code generation if LLM fails
+            logger.warning(f"LLM code generation failed, using fallback: {e}")
             return self._generate_fallback_code(csv_headers, user_request)
 
     def _extract_python_code(self, response: str) -> str:
@@ -2633,7 +2633,7 @@ DEFAULT_SANDBOX_TIMEOUT = 120  # 2 minutes default for simple tasks
 @task(name="sandbox_execution")
 def _execute_code_in_sandbox(
     code: str,
-    e2b_api_key: Optional[str],
+    e2b_api_key: str | None,
     sandbox_timeout: int,
     output_format: str = "image",
     is_complex_task: bool = False,
@@ -2738,7 +2738,7 @@ def _execute_code_in_docker(
 
 def _execute_code_in_e2b(
     code: str,
-    e2b_api_key: Optional[str],
+    e2b_api_key: str | None,
     sandbox_timeout: int,
     output_format: str = "image",
 ) -> tuple:
@@ -2857,7 +2857,7 @@ def _perform_pre_submission_review(
     parsed_result: dict,
     user_request: str,
     code_executed: str,
-    llm_service: Optional[LLMService],
+    llm_service: LLMService | None,
 ) -> tuple:
     """
     Perform Pre-Submission Review of the generated artifact.
@@ -2903,7 +2903,7 @@ def _perform_pre_submission_review(
     )
 
 
-def _get_llm_for_task(domain: Optional[str]) -> LLMService:
+def _get_llm_for_task(domain: str | None) -> LLMService:
     """
     Get the appropriate LLMService based on task domain for cost optimization.
 
@@ -3058,18 +3058,18 @@ def _should_retry_execution(error_message: str) -> bool:
 def execute_data_visualization(
     csv_data: str,
     user_request: str,
-    api_key: Optional[str] = None,
+    api_key: str | None = None,
     sandbox_timeout: int = 120,
-    llm_service: Optional[LLMService] = None,
+    llm_service: LLMService | None = None,
     max_retries: int = MAX_RETRY_ATTEMPTS,
     enable_pre_submission_review: bool = True,
     max_review_attempts: int = MAX_REVIEW_ATTEMPTS,
-    domain: Optional[str] = None,
-    file_type: Optional[str] = None,
-    file_content: Optional[str] = None,
-    filename: Optional[str] = None,
+    domain: str | None = None,
+    file_type: str | None = None,
+    file_content: str | None = None,
+    filename: str | None = None,
     force_cloud: bool = False,
-    few_shot_examples: Optional[List[Any]] = None,
+    few_shot_examples: list[Any] | None = None,
 ) -> dict:
     """
     Execute data visualization in a secure E2B sandbox with retry logic
@@ -3170,8 +3170,8 @@ def execute_data_visualization(
     # Generate visualization code using LLM with domain-specific prompts
     # Now includes file_type information and prefetched examples (Issue #6)
     ai_generator = AIResponseGenerator(
-        effective_llm, 
-        domain=domain, 
+        effective_llm,
+        domain=domain,
         few_shot_examples=few_shot_examples
     )
     llm_result = ai_generator.generate_visualization_code(
@@ -3381,15 +3381,15 @@ Item D,175,Cat2
 Item E,125,Cat3"""
 
     # Example usage
-    print("Testing execute_data_visualization function...")
-    print("Sample CSV data:")
-    print(sample_csv)
-    print("\n" + "=" * 50)
+    logger.info("Testing execute_data_visualization function...")
+    logger.info("Sample CSV data:")
+    logger.info(sample_csv)
+    logger.info("\n" + "=" * 50)
 
     # Note: This will fail without a valid E2B API key
     # Uncomment below to test with valid API key
     # result = execute_data_visualization(sample_csv, "Create a bar chart")
-    # print(result)
+    # logger.info(result)
 
-    print("\nTo test with a real sandbox, provide a valid E2B_API_KEY")
-    print("or set the E2B_API_KEY environment variable.")
+    logger.info("\nTo test with a real sandbox, provide a valid E2B_API_KEY")
+    logger.info("or set the E2B_API_KEY environment variable.")

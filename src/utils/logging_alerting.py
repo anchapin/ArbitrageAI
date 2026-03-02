@@ -452,12 +452,14 @@ class AlertManager:
             # Parse the condition into an AST
             tree = ast.parse(condition, mode='eval')
             return eval_node(tree.body)
-        except Exception:
+        except (ValueError, SyntaxError, TypeError) as e:
             # Fallback to the original eval method with restricted builtins
             # This is less safe but maintains backward compatibility
+            logger.debug(f"AST evaluation failed, using fallback: {e}")
             try:
                 return eval(condition, {"__builtins__": {}}, metrics)
-            except Exception:
+            except (SyntaxError, TypeError, NameError) as fallback_e:
+                logger.debug(f"Fallback evaluation also failed: {fallback_e}")
                 return False
 
     async def _trigger_rule(

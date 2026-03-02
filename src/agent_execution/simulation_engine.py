@@ -21,15 +21,12 @@ When TRAINING_MODE is enabled:
 """
 
 import asyncio
-from typing import Optional, Dict, Any, List
 from datetime import datetime
+from typing import Any, Optional
 import uuid
 
 # Load environment variables
 from dotenv import load_dotenv
-
-# Import logger
-from src.utils.logger import get_logger
 
 # Import database and models
 from src.api.database import SessionLocal
@@ -37,6 +34,9 @@ from src.api.models import SimulationBid
 
 # Import ConfigManager
 from src.config.config_manager import ConfigManager
+
+# Import logger
+from src.utils.logger import get_logger
 
 # Load environment variables
 load_dotenv()
@@ -71,11 +71,11 @@ class SimulationEngine:
         job_url: str,
         bid_amount_cents: int,
         strategy_type: str = "balanced",
-        confidence: Optional[int] = None,
-        would_have_won: Optional[bool] = None,
-        outcome_reasoning: Optional[str] = None,
-        job_marketplace: Optional[str] = None,
-        skills_matched: Optional[List[str]] = None,
+        confidence: int | None = None,
+        would_have_won: bool | None = None,
+        outcome_reasoning: str | None = None,
+        job_marketplace: str | None = None,
+        skills_matched: list[str] | None = None,
     ) -> SimulationBid:
         """
         Record a hypothetical bid to the simulation database.
@@ -136,9 +136,9 @@ class SimulationEngine:
 
     def calculate_total_profit(
         self,
-        strategy_type: Optional[str] = None,
-        date_filter: Optional[Dict[str, str]] = None,
-    ) -> Dict[str, Any]:
+        strategy_type: str | None = None,
+        date_filter: dict[str, str] | None = None,
+    ) -> dict[str, Any]:
         """
         Calculate total simulated profit/loss from simulation bids.
 
@@ -222,8 +222,8 @@ class SimulationEngine:
 
     def compare_strategies(
         self,
-        date_filter: Optional[Dict[str, str]] = None,
-    ) -> Dict[str, Any]:
+        date_filter: dict[str, str] | None = None,
+    ) -> dict[str, Any]:
         """
         Compare performance of different bidding strategies.
 
@@ -267,7 +267,7 @@ class SimulationEngine:
             "insights": insights,
         }
 
-    def _generate_insights(self, results: Dict[str, Any]) -> List[str]:
+    def _generate_insights(self, results: dict[str, Any]) -> list[str]:
         """
         Generate actionable insights from simulation results.
 
@@ -334,8 +334,8 @@ class SimulationEngine:
     def get_strategy_summary(
         self,
         strategy_type: str,
-        date_filter: Optional[Dict[str, str]] = None,
-    ) -> Dict[str, Any]:
+        date_filter: dict[str, str] | None = None,
+    ) -> dict[str, Any]:
         """
         Get a summary of performance for a specific strategy.
 
@@ -366,8 +366,8 @@ class SimulationEngine:
         return summary
 
     def get_recent_simulations(
-        self, limit: int = 100, date_filter: Optional[Dict[str, str]] = None
-    ) -> List[SimulationBid]:
+        self, limit: int = 100, date_filter: dict[str, str] | None = None
+    ) -> list[SimulationBid]:
         """
         Get recent simulation bids for review and analysis.
 
@@ -439,16 +439,16 @@ if __name__ == "__main__":
 
     async def test_simulation_engine():
         """Test all simulation engine functionality."""
-        print("=" * 60)
-        print("Simulation Engine - Test Run")
-        print("=" * 60)
+        logger.info("=" * 60)
+        logger.info("Simulation Engine - Test Run")
+        logger.info("=" * 60)
 
         # Initialize engine
         engine = SimulationEngine()
-        print(f"\nTraining Mode: {engine.training_mode}")
+        logger.info(f"\nTraining Mode: {engine.training_mode}")
 
         # Record some test simulation bids
-        print("\nRecording test simulation bids...")
+        logger.info("\nRecording test simulation bids...")
 
         engine.record_simulation_bid(
             job_title="Python Data Analysis Script",
@@ -490,44 +490,44 @@ if __name__ == "__main__":
         )
 
         # Calculate total profit
-        print("\n" + "=" * 60)
-        print("Total Profit Calculation")
-        print("=" * 60)
+        logger.info("\n" + "=" * 60)
+        logger.info("Total Profit Calculation")
+        logger.info("=" * 60)
         total_profit = engine.calculate_total_profit()
-        print(f"Total Profit: ${total_profit['total_profit_dollars']:.2f}")
-        print(f"Total Bids: {total_profit['total_bids']}")
-        print(f"Win Rate: {total_profit['win_rate_percentage']:.1f}%")
-        print(f"Average Bid: ${total_profit['average_bid_dollars']:.2f}")
+        logger.info(f"Total Profit: ${total_profit['total_profit_dollars']:.2f}")
+        logger.info(f"Total Bids: {total_profit['total_bids']}")
+        logger.info(f"Win Rate: {total_profit['win_rate_percentage']:.1f}%")
+        logger.info(f"Average Bid: ${total_profit['average_bid_dollars']:.2f}")
 
         # Compare strategies
-        print("\n" + "=" * 60)
-        print("Strategy Comparison")
-        print("=" * 60)
+        logger.info("\n" + "=" * 60)
+        logger.info("Strategy Comparison")
+        logger.info("=" * 60)
         comparison = engine.compare_strategies()
-        print(f"Best Strategy: {comparison['best_strategy']}")
-        print(f"Best Win Rate: {comparison['best_win_rate']:.1f}%")
-        print(f"Best Profit: ${comparison['best_profit_dollars']:.2f}")
+        logger.info(f"Best Strategy: {comparison['best_strategy']}")
+        logger.info(f"Best Win Rate: {comparison['best_win_rate']:.1f}%")
+        logger.info(f"Best Profit: ${comparison['best_profit_dollars']:.2f}")
 
-        print("\nInsights:")
+        logger.info("\nInsights:")
         for insight in comparison["insights"]:
-            print(f"  - {insight}")
+            logger.info(f"  - {insight}")
 
         # Get strategy summary
-        print("\n" + "=" * 60)
-        print("Strategy Summary - Aggressive")
-        print("=" * 60)
+        logger.info("\n" + "=" * 60)
+        logger.info("Strategy Summary - Aggressive")
+        logger.info("=" * 60)
         aggressive_summary = engine.get_strategy_summary("aggressive")
-        print(f"Strategy: {aggressive_summary['strategy_type']}")
-        print(f"Win Rate: {aggressive_summary['win_rate_percentage']:.1f}%")
-        print(f"Total Profit: ${aggressive_summary['total_profit_dollars']:.2f}")
-        print(f"Total Bids: {aggressive_summary['total_bids']}")
-        print(
+        logger.info(f"Strategy: {aggressive_summary['strategy_type']}")
+        logger.info(f"Win Rate: {aggressive_summary['win_rate_percentage']:.1f}%")
+        logger.info(f"Total Profit: ${aggressive_summary['total_profit_dollars']:.2f}")
+        logger.info(f"Total Bids: {aggressive_summary['total_bids']}")
+        logger.info(
             f"Wins: {aggressive_summary['wins']}, Losses: {aggressive_summary['losses']}"
         )
 
-        print("\n" + "=" * 60)
-        print("Simulation Engine Test Complete")
-        print("=" * 60)
+        logger.info("\n" + "=" * 60)
+        logger.info("Simulation Engine Test Complete")
+        logger.info("=" * 60)
 
     # Run test
     asyncio.run(test_simulation_engine())

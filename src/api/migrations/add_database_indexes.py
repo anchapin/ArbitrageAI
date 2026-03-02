@@ -1,7 +1,12 @@
 """Add database indexes for query optimization - Issue #38"""
 
+import logging
+
 from sqlalchemy import text
+
 from src.api.database import engine
+
+logger = logging.getLogger(__name__)
 
 
 def add_indexes():
@@ -19,7 +24,7 @@ def add_indexes():
             conn.execute(text(idx_sql))
         conn.commit()
 
-    print("Database indexes created successfully")
+    logger.info("Database indexes created successfully")
 
 
 if __name__ == "__main__":

@@ -13,10 +13,12 @@ The parser extracts data ands tables and text column headers that can be used by
 to generate appropriate visualizations.
 """
 
-import io
 import base64
-from typing import Optional
 from enum import Enum
+import io
+import logging
+
+logger = logging.getLogger(__name__)
 
 # Import pandas for data handling
 try:
@@ -46,7 +48,7 @@ class FileType(Enum):
     UNKNOWN = "unknown"
 
 
-def detect_file_type(filename: str, content: Optional[bytes] = None) -> FileType:
+def detect_file_type(filename: str, content: bytes | None = None) -> FileType:
     """
     Detect the file type based on filename extension or content.
 
@@ -246,7 +248,7 @@ def parse_pdf(content: bytes) -> dict:
                     for line in table_lines[1:]:
                         values = [v.strip() for v in line.split("\t")]
                         if len(values) == len(headers):
-                            data.append(dict(zip(headers, values)))
+                            data.append(dict(zip(headers, values, strict=False)))
 
                     # Convert to CSV format
                     if pd is not None:
@@ -263,8 +265,8 @@ def parse_pdf(content: bytes) -> dict:
                         "data_as_csv": csv_output,
                         "extracted_text": combined_text[:1000],  # First 1000 chars
                     }
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"Table extraction from PDF failed: {e}")
 
         # If table extraction failed, return the text data
         # Create a simple CSV with the text
@@ -308,7 +310,7 @@ def parse_pdf(content: bytes) -> dict:
 
 
 def parse_file(
-    file_content: str, filename: str, file_type: Optional[str] = None
+    file_content: str, filename: str, file_type: str | None = None
 ) -> dict:
     """
     Parse a file based on its type.
@@ -334,7 +336,8 @@ def parse_file(
             # Try to decode as base64
             content_bytes = base64.b64decode(file_content)
             detected_type = detect_file_type(filename, content_bytes)
-        except Exception:
+        except (ValueError, TypeError) as e:
+            logger.debug(f"Base64 decode failed, assuming CSV: {e}")
             # Assume it's raw CSV content
             detected_type = FileType.CSV
 
@@ -343,7 +346,8 @@ def parse_file(
         # Try to decode if base64 encoded
         try:
             csv_content = base64.b64decode(file_content).decode("utf-8")
-        except Exception:
+        except (ValueError, UnicodeDecodeError) as e:
+            logger.debug(f"CSV decode failed, using as-is: {e}")
             # Use as-is (likely already a string)
             csv_content = file_content
         return parse_csv(csv_content)
@@ -352,7 +356,8 @@ def parse_file(
         # Decode base64 to bytes
         try:
             excel_bytes = base64.b64decode(file_content)
-        except Exception:
+        except ValueError as e:
+            logger.debug(f"Excel base64 decode failed: {e}")
             # Already bytes
             excel_bytes = file_content
         return parse_excel(excel_bytes)
@@ -361,8 +366,9 @@ def parse_file(
         # Decode base64 to bytes
         try:
             pdf_bytes = base64.b64decode(file_content)
-        except Exception:
-            # Already bytes
+        except (TypeError, ValueError) as e:
+            # Already bytes or invalid base64
+            logger.debug(f"Base64 decode failed, using raw content: {e}")
             pdf_bytes = file_content
         return parse_pdf(pdf_bytes)
 
@@ -403,16 +409,16 @@ Item A,100,Cat1
 Item B,150,Cat1
 Item C,200,Cat2"""
 
-    print("Testing CSV parsing...")
+    logger.info("Testing CSV parsing...")
     csv_result = parse_csv(csv_content)
-    print(f"Success: {csv_result['success']}")
-    print(f"Headers: {csv_result['headers']}")
-    print(f"Row count: {csv_result['row_count']}")
-    print(f"CSV data:\n{csv_result['data_as_csv']}")
-    print()
+    logger.info(f"Success: {csv_result['success']}")
+    logger.info(f"Headers: {csv_result['headers']}")
+    logger.info(f"Row count: {csv_result['row_count']}")
+    logger.info(f"CSV data:\n{csv_result['data_as_csv']}")
+    logger.info("")
 
     # Test file type detection
-    print("Testing file type detection...")
-    print(f"test.csv: {detect_file_type('test.csv')}")
-    print(f"data.xlsx: {detect_file_type('data.xlsx')}")
-    print(f"document.pdf: {detect_file_type('document.pdf')}")
+    logger.info("Testing file type detection...")
+    logger.info(f"test.csv: {detect_file_type('test.csv')}")
+    logger.info(f"data.xlsx: {detect_file_type('data.xlsx')}")
+    logger.info(f"document.pdf: {detect_file_type('document.pdf')}")

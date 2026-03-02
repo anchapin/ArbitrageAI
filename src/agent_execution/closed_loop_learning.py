@@ -133,7 +133,8 @@ class ClosedLoopLearningSystem:
             new_confidence_score = self.confidence_tracker.calculate_confidence_score(
                 threshold=50
             )
-        except Exception:
+        except Exception as e:
+            logger.warning(f"Failed to calculate confidence score: {e}")
             new_confidence_score = initial_confidence_score
             
         confidence_adjustment = new_confidence_score - initial_confidence_score

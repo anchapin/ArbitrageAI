@@ -172,7 +172,7 @@ LEARNING_RATE = {learning_rate}
 BATCH_SIZE = {batch_size}
 
 # Load base model
-print(f"Loading base model: {{BASE_MODEL}}")
+logger.info(f"Loading base model: {BASE_MODEL}")
 max_seq_length = 2048
 dtype = None  # Auto detect
 load_in_4bit = True
@@ -196,7 +196,7 @@ model = FastLanguageModel.get_peft_model(
 )
 
 # Load dataset
-print(f"Loading dataset: {{DATASET_PATH}}")
+logger.info(f"Loading dataset: {DATASET_PATH}")
 with open(DATASET_PATH, 'r') as f:
     data = json.load(f)
 
@@ -241,15 +241,15 @@ trainer = SFTTrainer(
 )
 
 # Train
-print("Starting training...")
+logger.info("Starting training...")
 trainer.train()
 
 # Save model
-print(f"Saving fine-tuned model...")
+logger.info("Saving fine-tuned model...")
 model.save_pretrained(f"./models/{{OUTPUT_MODEL_NAME}}/final")
 tokenizer.save_pretrained(f"./models/{{OUTPUT_MODEL_NAME}}/final")
 
-print(f"Fine-tuning complete! Model saved to ./models/{{OUTPUT_MODEL_NAME}}/final")
+logger.info(f"Fine-tuning complete! Model saved to ./models/{{OUTPUT_MODEL_NAME}}/final")
 '''
 
         with open(output_path, "w") as f:

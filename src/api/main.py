@@ -1023,8 +1023,8 @@ Support,180"""
                     task.status = TaskStatus.FAILED
                     task.review_feedback = error_message
                     db.commit()
-        except Exception:
-            pass
+        except Exception as e:
+            logger.error(f"Error in task completion processing: {e}")
     finally:
         db.close()
 

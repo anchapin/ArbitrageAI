@@ -284,7 +284,8 @@ class BidLockManager:
                 .filter(DistributedLock.expires_at >= time.time())
                 .count()
             )
-        except Exception:
+        except Exception as e:
+            logger.debug(f"Failed to count active locks: {e}")
             active_locks = 0
         finally:
             db.close()

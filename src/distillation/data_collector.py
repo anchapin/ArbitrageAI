@@ -12,11 +12,14 @@ The concept:
 - Update TASK_MODEL_MAP to route to your fine-tuned local model
 """
 
-import os
-import json
-import uuid
 from datetime import datetime, timezone
-from typing import Optional, Dict, Any, List
+import json
+import logging
+import os
+from typing import Any
+import uuid
+
+logger = logging.getLogger(__name__)
 
 
 # =============================================================================
@@ -51,9 +54,9 @@ class DistillationDataCollector:
 
     def __init__(
         self,
-        output_dir: Optional[str] = None,
-        teacher_file: Optional[str] = None,
-        curated_file: Optional[str] = None,
+        output_dir: str | None = None,
+        teacher_file: str | None = None,
+        curated_file: str | None = None,
     ):
         """
         Initialize the data collector.
@@ -87,7 +90,7 @@ class DistillationDataCollector:
         domain: str,
         task_type: str,
         rating: int = 5,
-        metadata: Optional[Dict[str, Any]] = None,
+        metadata: dict[str, Any] | None = None,
         model_used: str = "gpt-4o",
     ) -> str:
         """
@@ -136,10 +139,10 @@ class DistillationDataCollector:
 
     def capture_task_completion(
         self,
-        task_result: Dict[str, Any],
-        task_request: Dict[str, Any],
+        task_result: dict[str, Any],
+        task_request: dict[str, Any],
         model_used: str = "gpt-4o",
-    ) -> Optional[str]:
+    ) -> str | None:
         """
         Capture a task completion result for distillation.
 
@@ -203,7 +206,7 @@ class DistillationDataCollector:
             model_used=model_used,
         )
 
-    def _append_to_jsonl(self, filepath: str, record: Dict[str, Any]) -> None:
+    def _append_to_jsonl(self, filepath: str, record: dict[str, Any]) -> None:
         """
         Append a record to a JSONL file with atomic write semantics.
 
@@ -227,9 +230,8 @@ class DistillationDataCollector:
                 temp_path = tmp.name
 
             # Append temp file to actual file atomically
-            with open(filepath, "a") as f:
-                with open(temp_path, "r") as tmp:
-                    f.write(tmp.read())
+            with open(filepath, "a") as f, open(temp_path) as tmp:
+                f.write(tmp.read())
 
             # Clean up temp file
             os.unlink(temp_path)
@@ -238,11 +240,11 @@ class DistillationDataCollector:
             if "temp_path" in locals():
                 try:
                     os.unlink(temp_path)
-                except Exception:
-                    pass
-            raise IOError(f"Failed to write to {filepath}: {e}") from e
+                except (OSError, PermissionError) as cleanup_error:
+                    logger.warning(f"Failed to clean up temp file {temp_path}: {cleanup_error}")
+            raise OSError(f"Failed to write to {filepath}: {e}") from e
 
-    def get_dataset_stats(self) -> Dict[str, Any]:
+    def get_dataset_stats(self) -> dict[str, Any]:
         """
         Get statistics about the collected dataset.
 
@@ -268,16 +270,16 @@ class DistillationDataCollector:
     def _count_jsonl_lines(self, filepath: str) -> int:
         """Count lines in a JSONL file."""
         try:
-            with open(filepath, "r") as f:
+            with open(filepath) as f:
                 return sum(1 for line in f if line.strip())
         except FileNotFoundError:
             return 0
 
-    def _get_domain_distribution(self, filepath: str) -> Dict[str, int]:
+    def _get_domain_distribution(self, filepath: str) -> dict[str, int]:
         """Get distribution of examples by domain."""
         domain_counts = {}
         try:
-            with open(filepath, "r") as f:
+            with open(filepath) as f:
                 for line in f:
                     if line.strip():
                         try:
@@ -292,10 +294,10 @@ class DistillationDataCollector:
 
     def get_curated_examples(
         self,
-        domain: Optional[str] = None,
+        domain: str | None = None,
         min_rating: int = MIN_CURATION_RATING,
-        limit: Optional[int] = None,
-    ) -> List[Dict[str, Any]]:
+        limit: int | None = None,
+    ) -> list[dict[str, Any]]:
         """
         Get curated examples from the dataset.
 
@@ -310,7 +312,7 @@ class DistillationDataCollector:
         examples = []
 
         try:
-            with open(self.curated_file, "r") as f:
+            with open(self.curated_file) as f:
                 for line in f:
                     if line.strip():
                         try:
@@ -334,7 +336,7 @@ class DistillationDataCollector:
         return examples
 
     def export_for_training(
-        self, output_path: Optional[str] = None, format: str = "alpaca"
+        self, output_path: str | None = None, format: str = "alpaca"
     ) -> str:
         """
         Export the curated dataset in a specific format for training.
@@ -413,7 +415,7 @@ def capture_cloud_success(
     )
 
 
-def get_distillation_status() -> Dict[str, Any]:
+def get_distillation_status() -> dict[str, Any]:
     """
     Get the current status of the distillation dataset.
 
@@ -426,21 +428,21 @@ def get_distillation_status() -> Dict[str, Any]:
 
 if __name__ == "__main__":
     # Example usage
-    print("Distillation Data Collector")
-    print("=" * 50)
+    logger.info("Distillation Data Collector")
+    logger.info("=" * 50)
 
     # Initialize collector
     collector = DistillationDataCollector()
 
     # Get stats
     stats = collector.get_dataset_stats()
-    print(f"Teacher examples: {stats['teacher_examples']}")
-    print(f"Curated examples: {stats['curated_examples']}")
-    print(f"Ready for training: {stats['ready_for_training']}")
-    print(f"Domain distribution: {stats['domain_distribution']}")
+    logger.info(f"Teacher examples: {stats['teacher_examples']}")
+    logger.info(f"Curated examples: {stats['curated_examples']}")
+    logger.info(f"Ready for training: {stats['ready_for_training']}")
+    logger.info(f"Domain distribution: {stats['domain_distribution']}")
 
     # Example: Capture a successful task
-    print("\nExample: Capturing a successful task...")
+    logger.info("\nExample: Capturing a successful task...")
     example_id = collector.capture_success(
         prompt="Create a bar chart showing sales by region",
         response="import pandas as pd\nimport matplotlib.pyplot as plt\n...",
@@ -449,4 +451,4 @@ if __name__ == "__main__":
         rating=5,
         metadata={"chart_type": "bar", "columns": ["region", "sales"]},
     )
-    print(f"Captured example ID: {example_id}")
+    logger.info(f"Captured example ID: {example_id}")
