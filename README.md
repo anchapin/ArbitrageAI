@@ -1,5 +1,9 @@
 # ArbitrageAI - Developer Setup Guide
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Security: pip-audit](https://img.shields.io/badge/security-pip--audit-blue.svg)](https://github.com/pypa/pip-audit)
+[![Code style: ruff](https://img.shields.io/badge/code%20style-ruff-000000.svg)](https://github.com/astral-sh/ruff)
+
 This guide covers how to set up and run the complete ArbitrageAI locally, including the Ollama local LLM instance, FastAPI backend, and Vite React frontend.
 
 ## Prerequisites
@@ -498,3 +502,17 @@ When deploying to production with the Nvidia P40:
 - [Vite Documentation](https://vitejs.dev/)
 - [Stripe CLI Documentation](https://stripe.com/docs/cli)
 - [Nvidia P40 Specifications](https://www.nvidia.com/en-us/data-center/tesla-p40/)
+
+---
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+### Key Points
+- ✅ Free to use for personal and commercial projects
+- ✅ Modification and distribution allowed
+- ✅ License and copyright notice must be included
+- ✅ No warranty provided
+
+---
