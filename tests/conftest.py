@@ -19,6 +19,35 @@ import os
 # Add src to path for imports
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
+# =============================================================================
+# DATABASE CONFIGURATION FOR TESTS
+# =============================================================================
+
+# Use file-based SQLite database for testing (shared between sync and async)
+# In-memory databases have issues sharing state between sync and async engines
+import tempfile
+import atexit
+import shutil
+
+_test_db_dir = tempfile.mkdtemp()
+_test_db_path = os.path.join(_test_db_dir, "test_tasks.db")
+os.environ.setdefault("DATABASE_URL", f"sqlite:///{_test_db_path}")
+
+# Clean up temp directory on exit
+def cleanup_test_db():
+    try:
+        shutil.rmtree(_test_db_dir, ignore_errors=True)
+    except Exception:
+        pass
+
+atexit.register(cleanup_test_db)
+
+# Disable rate limiting for tests
+os.environ.setdefault("DISABLE_RATE_LIMITING", "true")
+
+# Disable scheduler during tests to prevent background database access
+os.environ.setdefault("SCHEDULER_ENABLED", "false")
+
 
 # =============================================================================
 # PYTEST CONFIGURATION
@@ -178,19 +207,87 @@ def mock_openai_client(mock_openai_response):
 # =============================================================================
 
 
-@pytest.fixture(scope="function", autouse=True)
-def setup_database():
-    """Create all database tables before tests and drop them after."""
+@pytest.fixture(scope="function")
+def setup_database_tables():
+    """Create all database tables once per test function and clean up data after.
+    
+    For in-memory databases with StaticPool, we create tables once and then
+    just clean up data between tests. This is faster and avoids table recreation.
+    """
     from src.api.models import Base
     from src.api.database import engine
+    
+    # Import all models to ensure they're registered with Base.metadata
+    # This ensures all tables are created, including ScheduledTask, etc.
+    from src.api import models  # noqa: F401
 
-    # Create all tables
+    # Create all tables (idempotent - won't fail if already exist)
     Base.metadata.create_all(bind=engine)
 
     yield
 
-    # Drop all tables after tests
-    Base.metadata.drop_all(bind=engine)
+    # Clean up data after test (but keep tables for next test)
+    from src.api.database import SessionLocal
+    try:
+        with SessionLocal() as session:
+            for table in reversed(Base.metadata.sorted_tables):
+                try:
+                    session.execute(table.delete())
+                except Exception:
+                    pass  # Table might not exist yet
+            session.commit()
+    except Exception:
+        pass  # Ignore cleanup errors
+
+
+@pytest.fixture(scope="function", autouse=True)
+def setup_database(setup_database_tables):
+    """Provide access to database for sync tests."""
+
+    # Tables are created by function-scoped fixture
+    yield
+
+    # Data cleanup is handled by dropping tables in setup_database_tables
+    # No additional cleanup needed
+
+
+@pytest.fixture(scope="function")
+async def setup_async_database(setup_database_tables):
+    """Create all database tables for async tests."""
+    # Tables are already created by sync engine with StaticPool
+    # Just yield for async tests to use
+    yield
+
+    # Data cleanup is handled by dropping tables in setup_database_tables
+
+
+@pytest.fixture
+async def db_session(setup_async_database):
+    """Provide an async database session for tests."""
+    from src.api.database import AsyncSessionLocal
+
+    async with AsyncSessionLocal() as session:
+        yield session
+
+
+@pytest.fixture
+def client(setup_async_database):
+    """Provide a TestClient for API endpoint testing."""
+    from fastapi.testclient import TestClient
+    from src.api.main import app
+
+    return TestClient(app)
+
+
+@pytest.fixture
+def mock_config():
+    """Create a mock config for WebSocket tests."""
+    from unittest.mock import Mock
+    from src.config import Config
+
+    config = Mock(spec=Config)
+    config.JWT_SECRET_KEY = "test_secret"
+    return config
 
 
 @pytest.fixture

@@ -90,14 +90,14 @@ class TestAPMManagerInitialization:
             del os.environ["TRACE_SAMPLE_RATE"]
         if "APM_ENVIRONMENT" in os.environ:
             del os.environ["APM_ENVIRONMENT"]
-    
+
         try:
             # Development: should default to 1.0 (100%)
             os.environ["ENVIRONMENT"] = "development"
             APMManager._instance = None
             manager = APMManager()
             assert manager.trace_sample_rate == 1.0
-    
+
             # Production: should default to 0.1 (10%)
             os.environ["ENVIRONMENT"] = "production"
             APMManager._instance = None
@@ -113,14 +113,17 @@ class TestAPMManagerInitialization:
         manager = get_apm_manager()
 
         # Mock the span exporter to avoid actually connecting to Jaeger
+        # Also mock PrometheusMetricReader to ensure meter_provider is created
         with patch("src.utils.apm.JaegerExporter"):
-            manager.initialize()
+            with patch("src.utils.apm.PrometheusMetricReader") as mock_reader:
+                mock_reader.return_value = MagicMock()
+                manager.initialize()
 
-            # Verify providers were created
-            assert manager.tracer_provider is not None
-            assert manager.meter_provider is not None
-            assert manager.tracer is not None
-            assert manager.meter is not None
+                # Verify providers were created
+                assert manager.tracer_provider is not None
+                assert manager.meter_provider is not None
+                assert manager.tracer is not None
+                assert manager.meter is not None
 
 
 class TestMetricsInstrumentation:
@@ -234,6 +237,7 @@ class TestSpanCreation:
 
     def test_instrument_function_decorator(self):
         """Test @instrument_function decorator"""
+
         @instrument_function(span_name="test.function")
         def test_func(x: int, y: int) -> int:
             return x + y
@@ -243,6 +247,7 @@ class TestSpanCreation:
 
     def test_instrument_function_with_exception(self):
         """Test @instrument_function handles exceptions"""
+
         @instrument_function()
         def failing_func():
             raise ValueError("Test error")
@@ -428,12 +433,12 @@ class TestAPMIntegration:
             del os.environ["TRACE_SAMPLE_RATE"]
         if "APM_ENVIRONMENT" in os.environ:
             del os.environ["APM_ENVIRONMENT"]
-    
+
         try:
             os.environ["ENVIRONMENT"] = "production"
             os.environ["APM_ENABLED"] = "true"
             APMManager._instance = None
-    
+
             manager = APMManager()
             assert manager.trace_sample_rate == 0.1  # 10% sampling in prod
             assert manager.apm_environment == "production"
