@@ -2467,8 +2467,9 @@ Generate the Python code now. Return only the code, no markdown formatting."""
                 "few_shot_used": use_few_shot,
             }
 
-        except Exception:
+        except Exception as e:
             # Fallback to basic code generation if LLM fails
+            logger.warning(f"LLM code generation failed, using fallback: {e}")
             return self._generate_fallback_code(csv_headers, user_request)
 
     def _extract_python_code(self, response: str) -> str:
@@ -3381,15 +3382,15 @@ Item D,175,Cat2
 Item E,125,Cat3"""
 
     # Example usage
-    print("Testing execute_data_visualization function...")
-    print("Sample CSV data:")
-    print(sample_csv)
-    print("\n" + "=" * 50)
+    logger.info("Testing execute_data_visualization function...")
+    logger.info("Sample CSV data:")
+    logger.info(sample_csv)
+    logger.info("\n" + "=" * 50)
 
     # Note: This will fail without a valid E2B API key
     # Uncomment below to test with valid API key
     # result = execute_data_visualization(sample_csv, "Create a bar chart")
-    # print(result)
+    # logger.info(result)
 
-    print("\nTo test with a real sandbox, provide a valid E2B_API_KEY")
-    print("or set the E2B_API_KEY environment variable.")
+    logger.info("\nTo test with a real sandbox, provide a valid E2B_API_KEY")
+    logger.info("or set the E2B_API_KEY environment variable.")

@@ -19,8 +19,11 @@ Usage:
 
 import os
 import tempfile
+import logging
 from typing import Optional, List
 from dataclasses import dataclass
+
+logger = logging.getLogger(__name__)
 
 # Docker SDK
 try:
@@ -172,10 +175,10 @@ class LocalDockerSandbox:
             client.images.get(self.image)
             return True
         except NotFound:
-            print(f"Image '{self.image}' not found locally.")
+            logger.warning(f"Image '{self.image}' not found locally.")
             return False
         except Exception as e:
-            print(f"Warning: Error checking for image: {e}")
+            logger.warning(f"Warning: Error checking for image: {e}")
             return False
 
     def _extract_artifacts(self, host_dir: str) -> List[SandboxArtifact]:
@@ -234,10 +237,10 @@ class LocalDockerSandbox:
                                 name=filename, data=data, mime_type=mime_type
                             )
                         )
-                    except Exception:
-                        pass  # Skip files that can't be read
-        except Exception:
-            pass  # Silently ignore extraction errors
+                    except (OSError, IOError) as e:
+                        logger.debug(f"Failed to read artifact {filename}: {e}")
+        except (OSError, IOError) as e:
+            logger.debug(f"Artifact extraction error: {e}")
 
         return artifacts
 
@@ -328,8 +331,8 @@ class LocalDockerSandbox:
                 # Cleanup container
                 try:
                     container.remove(force=True)
-                except Exception:
-                    pass
+                except (DockerException, NotFound) as e:
+                    logger.debug(f"Container cleanup warning: {e}")
 
                 # Check for errors
                 error = None
@@ -445,7 +448,7 @@ def run_code_in_sandbox(
 
 if __name__ == "__main__":
     # Example usage
-    print("Testing Local Docker Sandbox...")
+    logger.info("Testing Local Docker Sandbox...")
 
     # Simple test
     test_code = """
@@ -479,7 +482,7 @@ result = {
     'columns': list(df.columns),
     'success': True
 }
-print(json.dumps(result))
+logger.info(json.dumps(result))
 
 plt.close()
 """
@@ -488,13 +491,13 @@ plt.close()
         # Try to execute
         result = LocalDockerSandbox.execute(test_code)
 
-        print(f"Success: {result.success}")
-        print(f"Logs: {len(result.logs)}")
-        print(f"Artifacts: {len(result.artifacts)}")
+        logger.info(f"Success: {result.success}")
+        logger.info(f"Logs: {len(result.logs)}")
+        logger.info(f"Artifacts: {len(result.artifacts)}")
 
         if result.error:
-            print(f"Error: {result.error}")
+            logger.error(f"Error: {result.error}")
 
     except Exception as e:
-        print(f"Execution failed: {e}")
-        print("Make sure Docker is running and the image is built.")
+        logger.error(f"Execution failed: {e}")
+        logger.error("Make sure Docker is running and the image is built.")

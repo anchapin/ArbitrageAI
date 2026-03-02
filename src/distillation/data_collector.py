@@ -15,8 +15,11 @@ The concept:
 import os
 import json
 import uuid
+import logging
 from datetime import datetime, timezone
 from typing import Optional, Dict, Any, List
+
+logger = logging.getLogger(__name__)
 
 
 # =============================================================================
@@ -238,8 +241,8 @@ class DistillationDataCollector:
             if "temp_path" in locals():
                 try:
                     os.unlink(temp_path)
-                except Exception:
-                    pass
+                except (OSError, PermissionError) as cleanup_error:
+                    logger.warning(f"Failed to clean up temp file {temp_path}: {cleanup_error}")
             raise IOError(f"Failed to write to {filepath}: {e}") from e
 
     def get_dataset_stats(self) -> Dict[str, Any]:
@@ -426,21 +429,21 @@ def get_distillation_status() -> Dict[str, Any]:
 
 if __name__ == "__main__":
     # Example usage
-    print("Distillation Data Collector")
-    print("=" * 50)
+    logger.info("Distillation Data Collector")
+    logger.info("=" * 50)
 
     # Initialize collector
     collector = DistillationDataCollector()
 
     # Get stats
     stats = collector.get_dataset_stats()
-    print(f"Teacher examples: {stats['teacher_examples']}")
-    print(f"Curated examples: {stats['curated_examples']}")
-    print(f"Ready for training: {stats['ready_for_training']}")
-    print(f"Domain distribution: {stats['domain_distribution']}")
+    logger.info(f"Teacher examples: {stats['teacher_examples']}")
+    logger.info(f"Curated examples: {stats['curated_examples']}")
+    logger.info(f"Ready for training: {stats['ready_for_training']}")
+    logger.info(f"Domain distribution: {stats['domain_distribution']}")
 
     # Example: Capture a successful task
-    print("\nExample: Capturing a successful task...")
+    logger.info("\nExample: Capturing a successful task...")
     example_id = collector.capture_success(
         prompt="Create a bar chart showing sales by region",
         response="import pandas as pd\nimport matplotlib.pyplot as plt\n...",
@@ -449,4 +452,4 @@ if __name__ == "__main__":
         rating=5,
         metadata={"chart_type": "bar", "columns": ["region", "sales"]},
     )
-    print(f"Captured example ID: {example_id}")
+    logger.info(f"Captured example ID: {example_id}")

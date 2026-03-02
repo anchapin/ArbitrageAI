@@ -21,9 +21,12 @@ CLIENT PREFERENCE MEMORY (Pillar 2.5 Gap):
 
 from typing import Optional, Dict, Any, List
 from datetime import datetime, timezone
+import logging
 
 from src.llm_service import LLMService
 from src.agent_execution.file_parser import parse_file, detect_file_type
+
+logger = logging.getLogger(__name__)
 
 # Import Traceloop decorators for OpenTelemetry observability
 from traceloop.sdk.decorators import workflow, task
@@ -141,7 +144,7 @@ def get_client_preferences_from_tasks(
                 db_session.close()
 
     except Exception as e:
-        print(f"Error getting client preferences: {e}")
+        logger.error(f"Error getting client preferences: {e}")
 
     return preferences
 
@@ -408,14 +411,14 @@ def save_client_preferences(
             profile.feedback_history = history[-20:]
 
             db_session.commit()
-            print(f"Updated client preferences for {client_email}")
+            logger.info(f"Updated client preferences for {client_email}")
 
         finally:
             if should_close_session:
                 db_session.close()
 
     except Exception as e:
-        print(f"Error saving client preferences: {e}")
+        logger.error(f"Error saving client preferences: {e}")
 
 
 class ContextExtractor:
@@ -1128,11 +1131,11 @@ def _get_llm_for_task(domain: Optional[str]) -> LLMService:
 
     # Legal and Accounting require high accuracy - use cloud models
     if domain_lower in ["legal", "accounting"]:
-        print(f"Using cloud model for {domain} task (high accuracy required)")
+        logger.info(f"Using cloud model for {domain} task (high accuracy required)")
         return LLMService.for_complex_task()
 
     # Data analysis - use local models for cost savings
-    print("Using local model for data analysis task (cost optimization)")
+    logger.info("Using local model for data analysis task (cost optimization)")
     return LLMService.for_basic_admin()
 
 
@@ -1219,7 +1222,7 @@ class ResearchAndPlanOrchestrator:
         }
 
         # Step 1: Extract Context
-        print("Step 1: Extracting context from uploaded files...")
+        logger.info("Step 1: Extracting context from uploaded files...")
         extracted_context = self.context_extractor.extract_context(
             file_content=file_content,
             csv_data=csv_data,
@@ -1233,7 +1236,7 @@ class ResearchAndPlanOrchestrator:
         }
 
         # Step 2: Generate Work Plan
-        print("Step 2: Creating work plan...")
+        logger.info("Step 2: Creating work plan...")
         plan_result = self.plan_generator.create_work_plan(
             user_request=user_request,
             domain=domain,
@@ -1259,7 +1262,7 @@ class ResearchAndPlanOrchestrator:
         exec_csv_data = extracted_context.get("raw_data") or csv_data or ""
 
         # Step 3: Execute Plan
-        print("Step 3: Executing work plan in E2B sandbox...")
+        logger.info("Step 3: Executing work plan in E2B sandbox...")
         execution_result = self.plan_executor.execute_plan(
             work_plan=work_plan,
             csv_data=exec_csv_data,
@@ -1285,7 +1288,7 @@ class ResearchAndPlanOrchestrator:
             return workflow_result
 
         # Step 4: Review Artifact against Plan
-        print("Step 4: Reviewing artifact against work plan...")
+        logger.info("Step 4: Reviewing artifact against work plan...")
         review_attempts = 0
         approved = False
         current_feedback = ""
@@ -1304,10 +1307,10 @@ class ResearchAndPlanOrchestrator:
             current_feedback = review_result.get("feedback", "")
 
             if not approved and review_attempts < max_review_attempts:
-                print(
+                logger.info(
                     f"Review not approved, attempt {review_attempts + 1}/{max_review_attempts}"
                 )
-                print(f"Feedback: {current_feedback}")
+                logger.info(f"Feedback: {current_feedback}")
 
                 # Try to regenerate with feedback
                 revision = self.plan_reviewer.regenerate_with_feedback(

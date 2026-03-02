@@ -74,7 +74,7 @@ def init_observability():
     if PHOENIX_AVAILABLE and os.environ.get("ENVIRONMENT") == "development":
         try:
             session = px.launch_app()
-            print(f"🔭 Phoenix Observability Dashboard running at: {session.url}")
+            logger.info(f"🔭 Phoenix Observability Dashboard running at: {session.url}")
         except Exception as e:
             logger.warning(f"Failed to launch Phoenix dashboard: {e}")
     elif not PHOENIX_AVAILABLE:

@@ -28,6 +28,9 @@ Impact:
 """
 
 from sqlalchemy import text
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def upgrade(db_session):
@@ -45,9 +48,9 @@ def upgrade(db_session):
                     "ON bids(job_id, marketplace)"
                 )
             )
-            print("✓ Created unique index on bids(job_id, marketplace)")
+            logger.info("✓ Created unique index on bids(job_id, marketplace)")
         except Exception as e:
-            print(
+            logger.warning(
                 f"Warning: Could not create unique index on bids "
                 f"(job_id, marketplace): {e}"
             )
@@ -60,9 +63,9 @@ def upgrade(db_session):
                     "ON escalation_logs(task_id, idempotency_key)"
                 )
             )
-            print("✓ Created unique index on escalation_logs(task_id, idempotency_key)")
+            logger.info("✓ Created unique index on escalation_logs(task_id, idempotency_key)")
         except Exception as e:
-            print(
+            logger.warning(
                 f"Warning: Could not create unique index on escalation_logs "
                 f"(task_id, idempotency_key): {e}"
             )
@@ -77,10 +80,10 @@ def upgrade(db_session):
                     "UNIQUE (job_id, marketplace)"
                 )
             )
-            print("✓ Added UNIQUE constraint on bids(job_id, marketplace)")
+            logger.info("✓ Added UNIQUE constraint on bids(job_id, marketplace)")
         except Exception as e:
             if "already exists" not in str(e):
-                print(
+                logger.warning(
                     f"Warning: Could not add constraint on bids "
                     f"(job_id, marketplace): {e}"
                 )
@@ -93,10 +96,10 @@ def upgrade(db_session):
                     "UNIQUE (task_id, idempotency_key)"
                 )
             )
-            print("✓ Added UNIQUE constraint on escalation_logs(task_id, idempotency_key)")
+            logger.info("✓ Added UNIQUE constraint on escalation_logs(task_id, idempotency_key)")
         except Exception as e:
             if "already exists" not in str(e):
-                print(
+                logger.warning(
                     f"Warning: Could not add constraint on escalation_logs "
                     f"(task_id, idempotency_key): {e}"
                 )
@@ -111,10 +114,10 @@ def upgrade(db_session):
                     "UNIQUE (job_id, marketplace)"
                 )
             )
-            print("✓ Added UNIQUE constraint on bids(job_id, marketplace)")
+            logger.info("✓ Added UNIQUE constraint on bids(job_id, marketplace)")
         except Exception as e:
             if "already exists" not in str(e) and "Duplicate key" not in str(e):
-                print(
+                logger.warning(
                     f"Warning: Could not add constraint on bids "
                     f"(job_id, marketplace): {e}"
                 )
@@ -127,10 +130,10 @@ def upgrade(db_session):
                     "UNIQUE (task_id, idempotency_key)"
                 )
             )
-            print("✓ Added UNIQUE constraint on escalation_logs(task_id, idempotency_key)")
+            logger.info("✓ Added UNIQUE constraint on escalation_logs(task_id, idempotency_key)")
         except Exception as e:
             if "already exists" not in str(e) and "Duplicate key" not in str(e):
-                print(
+                logger.warning(
                     f"Warning: Could not add constraint on escalation_logs "
                     f"(task_id, idempotency_key): {e}"
                 )
@@ -148,17 +151,17 @@ def downgrade(db_session):
             connection.execute(
                 text("DROP INDEX IF EXISTS idx_bid_job_marketplace_unique")
             )
-            print("✓ Dropped unique index on bids(job_id, marketplace)")
+            logger.info("✓ Dropped unique index on bids(job_id, marketplace)")
         except Exception as e:
-            print(f"Warning: Could not drop index on bids: {e}")
+            logger.warning(f"Warning: Could not drop index on bids: {e}")
 
         try:
             connection.execute(
                 text("DROP INDEX IF EXISTS idx_escalation_task_key_unique")
             )
-            print("✓ Dropped unique index on escalation_logs(task_id, idempotency_key)")
+            logger.info("✓ Dropped unique index on escalation_logs(task_id, idempotency_key)")
         except Exception as e:
-            print(f"Warning: Could not drop index on escalation_logs: {e}")
+            logger.warning(f"Warning: Could not drop index on escalation_logs: {e}")
 
     elif db_type == "postgresql":
         try:
@@ -168,9 +171,9 @@ def downgrade(db_session):
                     "DROP CONSTRAINT IF EXISTS unique_bid_per_posting"
                 )
             )
-            print("✓ Dropped UNIQUE constraint on bids(job_id, marketplace)")
+            logger.info("✓ Dropped UNIQUE constraint on bids(job_id, marketplace)")
         except Exception as e:
-            print(f"Warning: Could not drop constraint on bids: {e}")
+            logger.warning(f"Warning: Could not drop constraint on bids: {e}")
 
         try:
             connection.execute(
@@ -179,19 +182,19 @@ def downgrade(db_session):
                     "DROP CONSTRAINT IF EXISTS unique_escalation_per_task"
                 )
             )
-            print("✓ Dropped UNIQUE constraint on escalation_logs(task_id, idempotency_key)")
+            logger.info("✓ Dropped UNIQUE constraint on escalation_logs(task_id, idempotency_key)")
         except Exception as e:
-            print(f"Warning: Could not drop constraint on escalation_logs: {e}")
+            logger.warning(f"Warning: Could not drop constraint on escalation_logs: {e}")
 
     elif db_type == "mysql":
         try:
             connection.execute(
                 text("ALTER TABLE bids DROP INDEX unique_bid_per_posting")
             )
-            print("✓ Dropped UNIQUE constraint on bids(job_id, marketplace)")
+            logger.info("✓ Dropped UNIQUE constraint on bids(job_id, marketplace)")
         except Exception as e:
             if "check that column/key exists" not in str(e):
-                print(f"Warning: Could not drop constraint on bids: {e}")
+                logger.warning(f"Warning: Could not drop constraint on bids: {e}")
 
         try:
             connection.execute(
@@ -199,9 +202,9 @@ def downgrade(db_session):
                     "ALTER TABLE escalation_logs DROP INDEX unique_escalation_per_task"
                 )
             )
-            print("✓ Dropped UNIQUE constraint on escalation_logs(task_id, idempotency_key)")
+            logger.info("✓ Dropped UNIQUE constraint on escalation_logs(task_id, idempotency_key)")
         except Exception as e:
             if "check that column/key exists" not in str(e):
-                print(f"Warning: Could not drop constraint on escalation_logs: {e}")
+                logger.warning(f"Warning: Could not drop constraint on escalation_logs: {e}")
 
     connection.commit()

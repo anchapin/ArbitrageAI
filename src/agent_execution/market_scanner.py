@@ -294,8 +294,8 @@ class MarketScanner:
             # Ensure pool is started
             try:
                 await pool.start()
-            except Exception:
-                pass
+            except Exception as e:
+                logger.warning(f"BrowserPool start failed, will retry on acquire: {e}")
 
             self.browser = await pool.acquire_browser()
 
@@ -1012,8 +1012,8 @@ def _extract_marketplace_id_helper(url: str) -> str:
         domain_match = re.search(r"https?://(?:www\.)?([^/]+)", url)
         if domain_match:
             return domain_match.group(1).split(".")[0]
-    except Exception:
-        pass
+    except (re.error, IndexError) as e:
+        logger.debug(f"Domain extraction failed: {e}")
     return "other"
 
 
@@ -1136,28 +1136,28 @@ if __name__ == "__main__":
 
     async def main():
         """Main entry point for testing."""
-        print("=" * 60)
-        print("Market Scanner - Test Run")
-        print("=" * 60)
+        logger.info("=" * 60)
+        logger.info("Market Scanner - Test Run")
+        logger.info("=" * 60)
 
         # Run a single scan
-        print("\nRunning market scan...")
+        logger.info("\nRunning market scan...")
         result = await run_single_scan(max_posts=5)
 
-        print("\nScan Result:")
-        print(f"  Success: {result.get('success')}")
-        print(f"  Message: {result.get('message')}")
-        print(f"  Postings Found: {result.get('postings_count', 0)}")
-        print(f"  Suitable Jobs: {result.get('suitable_count', 0)}")
+        logger.info("\nScan Result:")
+        logger.info(f"  Success: {result.get('success')}")
+        logger.info(f"  Message: {result.get('message')}")
+        logger.info(f"  Postings Found: {result.get('postings_count', 0)}")
+        logger.info(f"  Suitable Jobs: {result.get('suitable_count', 0)}")
 
         if result.get("suitable_jobs"):
-            print("\nSuitable Jobs:")
+            logger.info("\nSuitable Jobs:")
             for i, job in enumerate(result["suitable_jobs"], 1):
-                print(f"\n  {i}. {job['posting']['title']}")
-                print(f"     Bid: ${job['evaluation']['bid_amount']}")
-                print(f"     Reasoning: {job['evaluation']['reasoning']}")
+                logger.info(f"\n  {i}. {job['posting']['title']}")
+                logger.info(f"     Bid: ${job['evaluation']['bid_amount']}")
+                logger.info(f"     Reasoning: {job['evaluation']['reasoning']}")
 
-        print(f"\nScan Duration: {result.get('scan_duration_seconds', 0):.2f}s")
+        logger.info(f"\nScan Duration: {result.get('scan_duration_seconds', 0):.2f}s")
 
     # Run the main function
     asyncio.run(main())

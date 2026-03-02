@@ -16,9 +16,12 @@ import os
 import asyncio
 import random
 import time
+import logging
 from typing import Optional, Dict, Any
 from .llm_health_check import get_health_checker, CircuitBreakerError
 from .config.config_manager import ConfigManager
+
+logger = logging.getLogger(__name__)
 
 # Load environment variables from .env file
 # Create a .env file in your project root with the following variables:
@@ -790,8 +793,8 @@ class LLMService:
 
         # Try fallback to local if enabled
         if self.enable_fallback and not self._is_local:
-            print(f"Cloud inference failed: {last_error}")
-            print("Attempting fallback to local model...")
+            logger.info(f"Cloud inference failed: {last_error}")
+            logger.info("Attempting fallback to local model...")
 
             # Create local service (with larger timeout for local)
             local_service = self.with_local(
@@ -835,9 +838,9 @@ if __name__ == "__main__":
     # BASE_URL=https://api.openai.com/v1
     # API_KEY=your-openai-api-key
 
-    print("=" * 60)
-    print("LLM Service - Usage Examples")
-    print("=" * 60)
+    logger.info("=" * 60)
+    logger.info("LLM Service - Usage Examples")
+    logger.info("=" * 60)
 
     # Example 2: Using local Ollama
     # For local Ollama, create a .env file with:
@@ -851,26 +854,26 @@ if __name__ == "__main__":
         model="llama3.2",  # or whatever model you have installed in Ollama
     )
 
-    print("\nConfiguration:")
-    print(llm.get_config())
+    logger.info("\nConfiguration:")
+    logger.info(llm.get_config())
 
-    print("\n" + "-" * 60)
-    print("To test the service:")
-    print("1. For cloud: Set BASE_URL and API_KEY in .env file")
-    print("2. For local: Run 'ollama serve' and ensure model is installed")
-    print("3. Uncomment the completion call below to test")
-    print("-" * 60)
+    logger.info("\n" + "-" * 60)
+    logger.info("To test the service:")
+    logger.info("1. For cloud: Set BASE_URL and API_KEY in .env file")
+    logger.info("2. For local: Run 'ollama serve' and ensure model is installed")
+    logger.info("3. Uncomment the completion call below to test")
+    logger.info("-" * 60)
 
     # Test the service (uncomment to test)
     # try:
     #     result = llm.complete("What is the capital of France?")
-    #     print(f"\nResponse: {result['content']}")
+    #     logger.info(f"\nResponse: {result['content']}")
     # except Exception as e:
-    #     print(f"\nError (make sure Ollama is running): {e}")
+    #     logger.error(f"\nError (make sure Ollama is running): {e}")
 
-    print("\nStreaming example:")
-    print("-" * 60)
-    print("""
+    logger.info("\nStreaming example:")
+    logger.info("-" * 60)
+    logger.info("""
 # For streaming responses:
 for chunk in llm.complete_streaming("Count to 5"):
     print(chunk, end="", flush=True)

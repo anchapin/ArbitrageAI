@@ -2,6 +2,9 @@
 
 from sqlalchemy import text
 from src.api.database import engine
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def add_indexes():
@@ -19,7 +22,7 @@ def add_indexes():
             conn.execute(text(idx_sql))
         conn.commit()
 
-    print("Database indexes created successfully")
+    logger.info("Database indexes created successfully")
 
 
 if __name__ == "__main__":

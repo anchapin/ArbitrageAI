@@ -12,8 +12,11 @@ Features:
 
 import os
 import json
+import logging
 from datetime import datetime, timezone
 from typing import Optional, Dict, Any, List, Callable
+
+logger = logging.getLogger(__name__)
 
 
 # Import configuration from data_collector
@@ -390,25 +393,25 @@ def prepare_training_data(format: str = "unsloth", domain: Optional[str] = None)
 
 
 if __name__ == "__main__":
-    print("Distillation Dataset Manager")
-    print("=" * 50)
+    logger.info("Distillation Dataset Manager")
+    logger.info("=" * 50)
 
     manager = DistillationDatasetManager()
 
     # Get statistics
     stats = manager.get_statistics()
-    print(f"Curated examples: {stats['curated_count']}")
-    print(f"Teacher examples: {stats['teacher_count']}")
-    print(f"Ready for training: {stats['ready_for_training']}")
-    print(f"By domain: {stats['curated_by_domain']}")
-    print(f"By task type: {stats['curated_by_task_type']}")
-    print(f"By rating: {stats['curated_by_rating']}")
-    print(f"Avg prompt length: {stats['avg_prompt_length']:.0f}")
-    print(f"Avg response length: {stats['avg_response_length']:.0f}")
+    logger.info(f"Curated examples: {stats['curated_count']}")
+    logger.info(f"Teacher examples: {stats['teacher_count']}")
+    logger.info(f"Ready for training: {stats['ready_for_training']}")
+    logger.info(f"By domain: {stats['curated_by_domain']}")
+    logger.info(f"By task type: {stats['curated_by_task_type']}")
+    logger.info(f"By rating: {stats['curated_by_rating']}")
+    logger.info(f"Avg prompt length: {stats['avg_prompt_length']:.0f}")
+    logger.info(f"Avg response length: {stats['avg_response_length']:.0f}")
 
     # Validate
-    print("\nValidation:")
+    logger.info("\nValidation:")
     validation = manager.validate_dataset()
-    print(f"Valid examples: {validation['valid_examples']}")
-    print(f"Invalid examples: {validation['invalid_examples']}")
-    print(f"Is valid: {validation['is_valid']}")
+    logger.info(f"Valid examples: {validation['valid_examples']}")
+    logger.info(f"Invalid examples: {validation['invalid_examples']}")
+    logger.info(f"Is valid: {validation['is_valid']}")
