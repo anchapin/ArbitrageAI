@@ -128,10 +128,10 @@ def mock_circuit_breaker(monkeypatch):
                 result = func(*args, **kwargs)
                 self.record_success()
                 return result
-            except Exception as e:
+            except Exception:
                 self.record_failure()
-                raise e
-    
+                raise
+
     return CircuitBreaker
 
 
