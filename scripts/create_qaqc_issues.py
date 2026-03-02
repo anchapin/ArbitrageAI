@@ -1655,8 +1655,8 @@ def main():
         cmd = ["gh", "label", "create", label, "--force"]
         try:
             subprocess.run(cmd, capture_output=True, text=True, check=False)
-        except Exception:
-            pass
+        except (subprocess.SubprocessError, OSError):
+            pass  # Ignore errors creating labels
 
     print("\nCreating issues...\n")
     success_count = 0

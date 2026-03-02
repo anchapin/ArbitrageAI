@@ -19,6 +19,9 @@ import os
 # Add src to path for imports
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
+# SQLAlchemy exceptions for error handling
+from sqlalchemy.exc import DatabaseError, OperationalError, SQLAlchemyError
+
 # =============================================================================
 # DATABASE CONFIGURATION FOR TESTS
 # =============================================================================
@@ -37,8 +40,8 @@ os.environ.setdefault("DATABASE_URL", f"sqlite:///{_test_db_path}")
 def cleanup_test_db():
     try:
         shutil.rmtree(_test_db_dir, ignore_errors=True)
-    except Exception:
-        pass
+    except (OSError, PermissionError):
+        pass  # Ignore cleanup errors on Windows or permission issues
 
 atexit.register(cleanup_test_db)
 
@@ -233,10 +236,10 @@ def setup_database_tables():
             for table in reversed(Base.metadata.sorted_tables):
                 try:
                     session.execute(table.delete())
-                except Exception:
-                    pass  # Table might not exist yet
+                except (DatabaseError, OperationalError):
+                    pass  # Table might not exist yet or database errors
             session.commit()
-    except Exception:
+    except (DatabaseError, OperationalError, SQLAlchemyError):
         pass  # Ignore cleanup errors
 
 

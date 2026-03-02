@@ -40,7 +40,7 @@ def get_fd_count() -> int:
         import os
 
         return len(os.listdir(f"/proc/{os.getpid()}/fd"))
-    except Exception:
+    except (OSError, FileNotFoundError):
         return 0
 
 
@@ -95,7 +95,7 @@ class TestMarketScannerResourceCleanup:
                         raise ValueError("Test exception")
                 except ValueError:
                     exception_raised = True
-                except Exception:
+                except (RuntimeError, asyncio.CancelledError):
                     # Some other exception occurred
                     pass
 

@@ -13,6 +13,7 @@ Coverage: ~20% of critical path
 import pytest
 from datetime import datetime, timezone
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from src.api.models import BidStatus
 from .utils import (
@@ -254,7 +255,7 @@ class TestBidDeduplication:
         duplicate_found = False
         try:
             create_test_bid(e2e_db, job_id=job_id, marketplace="Upwork")
-        except Exception:
+        except (IntegrityError, SQLAlchemyError):
             # Unique constraint violation is expected
             duplicate_found = True
             e2e_db.rollback()

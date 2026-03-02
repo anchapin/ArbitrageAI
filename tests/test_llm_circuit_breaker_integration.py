@@ -97,7 +97,7 @@ class TestLLMServiceCircuitBreaker:
             try:
                 service.complete("test")
             except Exception:
-                pass
+                pass  # Expected failures for testing
 
         # Should transition to OPEN
         assert metrics.state == CircuitState.OPEN
