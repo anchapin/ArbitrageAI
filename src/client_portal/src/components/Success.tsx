@@ -3,10 +3,16 @@ import { useNavigate } from 'react-router-dom';
 
 const API_BASE_URL = 'http://localhost:8000';
 
+interface SessionResponse {
+  task_id: string;
+  client_email?: string;
+  client_auth_token?: string;
+}
+
 function Success() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     // Get session_id from URL query parameter
@@ -26,16 +32,16 @@ function Success() {
         const response = await fetch(`${API_BASE_URL}/api/session/${sessionId}`, {
           signal: abortController.signal
         });
-        
+
         if (!response.ok) {
           if (response.status === 404) {
             throw new Error('Task not found for this session');
           }
           throw new Error('Failed to fetch task');
         }
-        
-        const data = await response.json();
-        
+
+        const data = await response.json() as SessionResponse;
+
         // Store client authentication token in localStorage (Issue #17)
         // This token is required for authenticated dashboard access
         if (data.client_email && data.client_auth_token) {
@@ -44,7 +50,7 @@ function Success() {
             data.client_auth_token
           );
         }
-        
+
         // Redirect to task status page with the task_id and email
         let redirectUrl = `/task-status?task_id=${data.task_id}`;
         if (data.client_email) {
@@ -53,7 +59,7 @@ function Success() {
         navigate(redirectUrl);
       } catch (err) {
         // Don't log abort errors as they're expected on cleanup
-        if (err.name !== 'AbortError') {
+        if (err instanceof Error && err.name !== 'AbortError') {
           setError(err.message);
           setLoading(false);
         }
@@ -61,7 +67,7 @@ function Success() {
     };
 
     fetchTaskId();
-    
+
     // Cleanup on unmount
     return () => {
       abortController.abort();

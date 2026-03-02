@@ -461,12 +461,13 @@ The codebase contains **33 bare `except Exception:` blocks** that hide errors an
 ## Current Code Examples
 ```python
 # executor.py:577
-except Exception:
-    pass
+except Exception as e:
+    logger.error(f"Unexpected error: {e}", exc_info=True)
+    raise
 
 # rate_limit_middleware.py:51
-except Exception:
-    logger.warning("Redis not available. Using in-memory rate limiter.")
+except (RedisConnectionError, TimeoutError) as e:
+    logger.warning(f"Redis not available: {e}. Using in-memory rate limiter.")
 ```
 
 ## Required Fix

@@ -1,20 +1,57 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, FormEvent, ChangeEvent } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import './TaskStatus.css';
 
 const API_BASE_URL = 'http://localhost:8000';
 
+interface Task {
+  id: string;
+  title: string;
+  description: string;
+  domain: string;
+  status: string;
+  result?: string;
+  result_image_url?: string;
+  delivery_token?: string;
+  amount_paid?: number;
+}
+
+interface DashboardData {
+  stats: {
+    total_tasks: number;
+    completed_tasks: number;
+    in_progress_tasks: number;
+    total_spent: number;
+  };
+  discount: {
+    current_tier: number;
+    discount_percentage: number;
+  };
+  next_discount?: {
+    tasks_needed: number;
+    label: string;
+  };
+  tasks: Array<{
+    id: string;
+    title: string;
+    domain: string;
+    status: string;
+    amount_dollars?: number;
+    delivery_token?: string;
+  }>;
+}
+
 function TaskStatus() {
   const [searchParams] = useSearchParams();
   const taskId = searchParams.get('task_id');
   const clientEmail = searchParams.get('email');
-  
-  const [task, setTask] = useState(null);
+
+  const [task, setTask] = useState<Task | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  
+  const [error, setError] = useState<string | null>(null);
+
   // Client dashboard state
-  const [dashboardData, setDashboardData] = useState(null);
+  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
   const [showDashboard, setShowDashboard] = useState(false);
   const [emailInput, setEmailInput] = useState(clientEmail || '');
 
@@ -23,13 +60,13 @@ function TaskStatus() {
   const STOP_POLLING_STATES = ['COMPLETED', 'FAILED', 'CANCELLED'];
 
   // Fetch dashboard data when email is provided (requires authentication token)
-  const fetchDashboardData = async (email) => {
+  const fetchDashboardData = async (email: string) => {
     if (!email || !email.includes('@')) return;
-    
+
     try {
       // Get stored token from localStorage (generated at checkout)
       const storedToken = localStorage.getItem(`client_token_${email}`);
-      
+
       // Build URL with email and token (token is required for authentication)
       let url = `${API_BASE_URL}/api/client/history?email=${encodeURIComponent(email)}`;
       if (storedToken) {
@@ -39,10 +76,10 @@ function TaskStatus() {
         console.warn(`No authentication token found for ${email}. Dashboard access denied.`);
         return;
       }
-      
+
       const response = await fetch(url);
       if (response.ok) {
-        const data = await response.json();
+        const data = await response.json() as DashboardData;
         setDashboardData(data);
       } else if (response.status === 403) {
         console.error('Invalid or missing authentication token for dashboard access');
@@ -66,20 +103,20 @@ function TaskStatus() {
     }
 
     let pollIndex = 0;
-    let timeoutId = null;
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
 
     const fetchTask = async () => {
       try {
         const response = await fetch(`${API_BASE_URL}/api/tasks/${taskId}`);
-        
+
         if (!response.ok) {
           if (response.status === 404) {
             throw new Error('Task not found');
           }
           throw new Error('Failed to fetch task');
         }
-        
-        const data = await response.json();
+
+        const data = await response.json() as Task;
         setTask(data);
         setError(null);
 
@@ -93,10 +130,10 @@ function TaskStatus() {
         // Exponential backoff: increase interval between polls
         pollIndex = Math.min(pollIndex + 1, POLL_INTERVALS.length - 1);
         const nextInterval = POLL_INTERVALS[pollIndex];
-        
+
         timeoutId = setTimeout(fetchTask, nextInterval);
       } catch (err) {
-        setError(err.message);
+        setError((err as Error).message);
         setLoading(false);
       }
     };
@@ -111,12 +148,20 @@ function TaskStatus() {
   }, [taskId]);
 
   // Handle email submission for dashboard
-  const handleEmailSubmit = (e) => {
+  const handleEmailSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (emailInput && emailInput.includes('@')) {
       fetchDashboardData(emailInput);
       setShowDashboard(true);
     }
+  };
+
+  const handleEmailChange = (e: ChangeEvent<HTMLInputElement>) => {
+    setEmailInput(e.target.value);
+  };
+
+  const handleToggleDashboard = () => {
+    setShowDashboard(!showDashboard);
   };
 
   // Handle case where no task ID is provided - show dashboard instead
@@ -129,14 +174,14 @@ function TaskStatus() {
             <h1>Client Dashboard</h1>
             <p>View your task history and track your orders</p>
           </div>
-          
+
           <div className="email-lookup">
             <form onSubmit={handleEmailSubmit}>
               <input
                 type="email"
                 placeholder="Enter your email to view history"
                 value={emailInput}
-                onChange={(e) => setEmailInput(e.target.value)}
+                onChange={handleEmailChange}
                 required
               />
               <button type="submit">View Dashboard</button>
@@ -177,8 +222,8 @@ function TaskStatus() {
                        dashboardData.discount.current_tier === 2 ? 'Loyal Client' : 'VIP Client'}
                     </span>
                     <span className="discount-amount">
-                      {dashboardData.discount.discount_percentage > 0 
-                        ? `${dashboardData.discount.discount_percentage * 100}% off` 
+                      {dashboardData.discount.discount_percentage > 0
+                        ? `${dashboardData.discount.discount_percentage * 100}% off`
                         : 'No discount'}
                     </span>
                   </div>
@@ -197,27 +242,27 @@ function TaskStatus() {
                   <p className="no-tasks">No tasks found. Submit your first task above!</p>
                 ) : (
                   <div className="task-list">
-                    {dashboardData.tasks.map((task) => (
-                      <div key={task.id} className={`task-item status-${task.status.toLowerCase()}`}>
+                    {dashboardData.tasks.map((taskItem) => (
+                      <div key={taskItem.id} className={`task-item status-${taskItem.status.toLowerCase()}`}>
                         <div className="task-header">
-                          <span className={`status-badge status-${task.status.toLowerCase()}`}>
-                            {task.status}
+                          <span className={`status-badge status-${taskItem.status.toLowerCase()}`}>
+                            {taskItem.status}
                           </span>
                           <span className="task-date">
-                            {new Date(task.id.split('-')[0], 0).toLocaleDateString()}
+                            {new Date(parseInt(taskItem.id.split('-')[0], 10), 0).toLocaleDateString()}
                           </span>
                         </div>
                         <div className="task-info">
-                          <h4>{task.title}</h4>
-                          <p className="task-domain">{task.domain}</p>
+                          <h4>{taskItem.title}</h4>
+                          <p className="task-domain">{taskItem.domain}</p>
                         </div>
                         <div className="task-meta">
-                          {task.amount_dollars && (
-                            <span className="task-price">${task.amount_dollars}</span>
+                          {taskItem.amount_dollars && (
+                            <span className="task-price">${taskItem.amount_dollars}</span>
                           )}
-                          {task.status === 'COMPLETED' && task.delivery_token && (
-                            <a 
-                              href={`/task-status?task_id=${task.id}&token=${task.delivery_token}`}
+                          {taskItem.status === 'COMPLETED' && taskItem.delivery_token && (
+                            <a
+                              href={`/task-status?task_id=${taskItem.id}&token=${taskItem.delivery_token}`}
                               className="delivery-link"
                               target="_blank"
                               rel="noopener noreferrer"
@@ -262,6 +307,8 @@ function TaskStatus() {
 
   // Render based on task status
   const renderContent = () => {
+    if (!task) return null;
+
     switch (task.status) {
       case 'PENDING':
         return (
@@ -272,7 +319,7 @@ function TaskStatus() {
             <p className="task-id">Task ID: {task.id}</p>
           </div>
         );
-      
+
       case 'PAID':
         return (
           <div className="status-container paid">
@@ -284,9 +331,9 @@ function TaskStatus() {
             <p className="task-id">Task ID: {task.id}</p>
           </div>
         );
-      
+
       case 'COMPLETED':
-        const deliveryUrl = task.delivery_token 
+        const deliveryUrl = task.delivery_token
           ? `/task-status?task_id=${task.id}&token=${task.delivery_token}`
           : null;
         return (
@@ -295,9 +342,9 @@ function TaskStatus() {
             <h2>Task Completed!</h2>
             {task.result_image_url ? (
               <div className="result-image-container">
-                <img 
-                  src={task.result_image_url} 
-                  alt="Task Result" 
+                <img
+                  src={task.result_image_url}
+                  alt="Task Result"
                   className="result-image"
                 />
               </div>
@@ -312,7 +359,7 @@ function TaskStatus() {
             <p className="task-id">Task ID: {task.id}</p>
           </div>
         );
-      
+
       case 'FAILED':
         return (
           <div className="status-container failed">
@@ -322,7 +369,7 @@ function TaskStatus() {
             <p className="task-id">Task ID: {task.id}</p>
           </div>
         );
-      
+
       default:
         return (
           <div className="status-container unknown">
@@ -337,7 +384,7 @@ function TaskStatus() {
     <div className="task-status">
       <div className="task-status-card">
         {renderContent()}
-        
+
         {task && (
           <div className="task-details">
             <h3>Task Details</h3>
@@ -349,14 +396,14 @@ function TaskStatus() {
             )}
           </div>
         )}
-        
+
         {/* Quick Link to Dashboard */}
         <div className="dashboard-quick-link">
-          <button onClick={() => setShowDashboard(!showDashboard)}>
+          <button onClick={handleToggleDashboard}>
             {showDashboard ? 'Hide Dashboard' : 'View My Dashboard'}
           </button>
         </div>
-        
+
         {/* Show mini dashboard if toggled */}
         {showDashboard && emailInput && (
           <div className="mini-dashboard">

@@ -96,7 +96,7 @@ class TestLLMServiceCircuitBreaker:
         for _ in range(3):
             try:
                 service.complete("test")
-            except Exception:
+            except Exception as e:
                 pass  # Expected failures for testing
 
         # Should transition to OPEN

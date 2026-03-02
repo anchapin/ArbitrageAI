@@ -75,9 +75,16 @@ build-backend = "setuptools.build_meta"
 # Exclude specific directories
 exclude = [
     ".agents/",
+    ".git/",
     ".venv/",
     "venv/",
+    "__pycache__/",
+    "node_modules/",
     "src/client_portal/node_modules/",
+    "*.egg-info/",
+    ".eggs/",
+    "dist/",
+    "build/",
 ]
 line-length = 100
 target-version = "py310"
@@ -102,12 +109,22 @@ select = [
     "PL",     # Pylint
     "RUF",    # Ruff-specific rules
     "E722",   # bare-except (explicitly included)
+    "S",      # flake8-bandit (security)
+    "DTZ",    # flake8-datetimez (datetime safety)
+    "ISC",    # flake8-implicit-str-concat
+    "ICN",    # flake8-import-conventions
+    "PIE",    # flake8-pie (additional bugbear rules)
+    "Q",      # flake8-quotes
+    "RET",    # flake8-return
+    "TID",    # flake8-tidy-imports
 ]
 ignore = [
     "E501",     # line too long (handled by formatter)
     "PLR0913",  # Too many arguments in function definition
     "PLR2004",  # Magic value used in comparison
     "PTH123",   # `open()` should be replaced by `Path.open()`
+    "S101",     # assert statements (allowed in tests)
+    "DTZ005",   # datetime.now() without tz (acceptable for logs)
 ]
 
 # Allow autofix for specific rules
@@ -123,11 +140,22 @@ unfixable = [
     "PLR2004",  # Magic values
     "S101",     # assert statements
     "ARG",      # Unused arguments (fixtures)
+    "DTZ",      # Datetime rules (test data)
+    "S105",     # Hardcoded passwords (test data)
+    "S106",     # Hardcoded passwords (test data)
 ]
 # Fine-tuning CLI can have simple code
 "src/fine_tuning/**/*.py" = ["T201"]
 # Ignore commented-out code in config files
 "pyproject.toml" = ["ALL"]
+# __init__.py files can have unused imports (for re-exporting)
+"**/__init__.py" = ["F401", "F403"]
+# Conftest can have unused fixtures and imports
+"**/conftest.py" = ["F401", "F403", "ARG"]
+# Scripts can use print statements
+"scripts/**/*.py" = ["T201"]
+# Migrations can have magic values and raw SQL
+"**/migrations/**/*.py" = ["PLR2004", "S608"]
 
 [tool.ruff.lint.mccabe]
 max-complexity = 12
@@ -168,6 +196,10 @@ package-dir = {"" = "src"}
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
+# Test discovery configuration
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
 filterwarnings = [
     # Suppress Pydantic v2 deprecation warnings from external dependencies (traceloop, etc)
     # These are from third-party libraries that haven't fully migrated to Pydantic v2

@@ -125,6 +125,11 @@ pip-audit
 - **Functions/Methods**: snake_case (e.g., `send_task_update`)
 - **Constants**: UPPER_SNAKE_CASE (e.g., `MAX_RETRIES`)
 - **Private methods**: Prefix with underscore (e.g., `_internal_helper`)
+- **Test files**: Must follow `test_*.py` pattern (e.g., `test_api_endpoints.py`)
+- **Test classes**: Must follow `Test*` pattern (e.g., `TestAuthentication`)
+- **Test functions**: Must follow `test_*` pattern (e.g., `test_valid_token`)
+
+> **Note:** Test file naming is enforced by pytest configuration to ensure consistent test discovery.
 
 ### Documentation
 

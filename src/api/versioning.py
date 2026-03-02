@@ -43,6 +43,17 @@ def get_api_version(
     if x_api_version is None:
         return APIVersion.V1
 
+    # First check if it's a valid format
+    if not isinstance(x_api_version, str) or not x_api_version.startswith("v"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={
+                "error": "INVALID_VERSION_FORMAT",
+                "message": f"Invalid API version format: '{x_api_version}'",
+                "supported_versions": [v.value for v in SUPPORTED_VERSIONS],
+            },
+        )
+
     try:
         version = APIVersion(x_api_version)
         if version not in SUPPORTED_VERSIONS:
@@ -59,8 +70,8 @@ def get_api_version(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail={
-                "error": "INVALID_VERSION_FORMAT",
-                "message": f"Invalid API version format: '{x_api_version}'",
+                "error": "VERSION_NOT_SUPPORTED",
+                "message": f"API version '{x_api_version}' is not supported.",
                 "supported_versions": [v.value for v in SUPPORTED_VERSIONS],
             },
         ) from None

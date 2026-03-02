@@ -9,4 +9,12 @@ export default defineConfig({
     port: process.env.VITE_PORT || 5173,
     strictPort: false,
   },
+  resolve: {
+    alias: {
+      '@': '/src',
+      '@components': '/src/components',
+      '@types': '/src/types',
+      '@utils': '/src/utils',
+    },
+  },
 })
