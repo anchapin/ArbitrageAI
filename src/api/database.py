@@ -2,7 +2,6 @@ import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
-from sqlalchemy.pool import StaticPool
 from .models import Base
 
 # Get the database URL from environment variable or use default SQLite path
@@ -16,25 +15,13 @@ DATABASE_URL = os.getenv(
 
 # Create engine based on database type
 if DATABASE_URL.startswith("sqlite"):
-    # For in-memory databases, we need to use StaticPool to share the same database across connections
-    if DATABASE_URL == "sqlite:///:memory:":
-        engine = create_engine(
-            DATABASE_URL,
-            connect_args={"check_same_thread": False},
-            poolclass=StaticPool,
-            echo=False,
-        )
-    else:
-        engine = create_engine(
-            DATABASE_URL,
-            connect_args={"check_same_thread": False},
-            echo=False,
-        )
+    engine = create_engine(
+        DATABASE_URL,
+        connect_args={"check_same_thread": False},
+        echo=False,
+    )
     # Convert to async URL for SQLite
-    # Handle in-memory databases differently from file-based databases
-    if DATABASE_URL == "sqlite:///:memory:":
-        ASYNC_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
-    elif "sqlite:///" in DATABASE_URL:
+    if "sqlite:///" in DATABASE_URL:
         ASYNC_DATABASE_URL = DATABASE_URL.replace("sqlite:///", "sqlite+aiosqlite:///")
     elif DATABASE_URL.startswith("sqlite://"):
         ASYNC_DATABASE_URL = DATABASE_URL.replace("sqlite://", "sqlite+aiosqlite://")
