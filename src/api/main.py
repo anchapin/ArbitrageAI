@@ -3491,6 +3491,451 @@ async def get_auto_threshold_status():
     }
 
 
+# =============================================================================
+# MARKETPLACE OAUTH ENDPOINTS (Issue #105)
+# =============================================================================
+
+
+@app.get("/api/v1/marketplace/oauth/{platform}/authorize", response_model=dict)
+async def initiate_oauth(platform: str, redirect_uri: Optional[str] = None):
+    """
+    Initiate OAuth flow for marketplace platform.
+
+    Args:
+        platform: Marketplace platform (upwork, fiverr, peopleperhour)
+        redirect_uri: Optional custom redirect URI
+
+    Response:
+        - authorization_url: URL to redirect user to for authorization
+        - state: State parameter for CSRF protection
+    """
+    from src.agent_execution.marketplace_adapters.oauth_manager import (
+        create_oauth_manager,
+        get_oauth_manager,
+    )
+
+    platform = platform.lower()
+
+    # Get credentials from config
+    client_id = ConfigManager.get(f"{platform.upper()}_CLIENT_ID")
+    client_secret = ConfigManager.get(f"{platform.upper()}_CLIENT_SECRET")
+
+    if not client_id or not client_secret:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Missing OAuth credentials for {platform}. "
+            f"Set {platform.upper()}_CLIENT_ID and {platform.upper()}_CLIENT_SECRET environment variables.",
+        )
+
+    # Create or get OAuth manager
+    manager = get_oauth_manager(platform)
+    if not manager:
+        manager = create_oauth_manager(platform, client_id, client_secret)
+
+    # Generate authorization URL
+    auth_url = manager.generate_authorization_url(redirect_uri=redirect_uri)
+
+    return {
+        "authorization_url": auth_url,
+        "platform": platform,
+        "message": f"Redirect user to authorization_url to authenticate with {platform}",
+    }
+
+
+@app.get("/api/v1/marketplace/oauth/{platform}/callback", response_model=dict)
+async def oauth_callback(
+    platform: str,
+    code: str,
+    state: str,
+    error: Optional[str] = None,
+    error_description: Optional[str] = None,
+):
+    """
+    Handle OAuth callback from marketplace platform.
+
+    Args:
+        platform: Marketplace platform
+        code: Authorization code
+        state: State parameter from authorization
+        error: Error message (if authorization failed)
+
+    Response:
+        - success: Boolean indicating success
+        - message: Status message
+        - access_token: Access token (if successful)
+    """
+    from src.agent_execution.marketplace_adapters.oauth_manager import (
+        get_oauth_manager,
+        get_token_storage,
+    )
+
+    if error:
+        logger.error(f"OAuth error for {platform}: {error_description}")
+        raise HTTPException(
+            status_code=400,
+            detail=f"OAuth authorization failed: {error} - {error_description}",
+        )
+
+    platform = platform.lower()
+    manager = get_oauth_manager(platform)
+
+    if not manager:
+        raise HTTPException(
+            status_code=400,
+            detail=f"OAuth manager not initialized for {platform}. "
+            "Call /authorize endpoint first.",
+        )
+
+    try:
+        # Exchange code for token
+        token = await manager.exchange_code_for_token(code, state)
+
+        # Store token
+        storage = get_token_storage()
+        storage.store(platform, token)
+
+        logger.info(f"Successfully authenticated with {platform}")
+
+        return {
+            "success": True,
+            "platform": platform,
+            "message": f"Successfully authenticated with {platform}",
+            "access_token": token.access_token,
+            "expires_at": token.expires_at.isoformat(),
+        }
+
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"OAuth callback failed for {platform}: {e}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to complete OAuth flow: {str(e)}"
+        )
+
+
+@app.get("/api/v1/marketplace/oauth/{platform}/status", response_model=dict)
+async def get_oauth_status(platform: str):
+    """
+    Get OAuth authentication status for platform.
+
+    Args:
+        platform: Marketplace platform
+
+    Response:
+        - authenticated: Boolean indicating if authenticated
+        - token_valid: Boolean indicating if token is valid
+        - expires_at: Token expiration timestamp
+    """
+    from src.agent_execution.marketplace_adapters.oauth_manager import (
+        get_oauth_manager,
+        get_token_storage,
+    )
+
+    platform = platform.lower()
+    manager = get_oauth_manager(platform)
+    storage = get_token_storage()
+
+    if not manager:
+        return {
+            "platform": platform,
+            "authenticated": False,
+            "message": "OAuth manager not initialized",
+        }
+
+    token = manager.get_token() or storage.retrieve(platform)
+
+    if not token:
+        return {
+            "platform": platform,
+            "authenticated": False,
+            "message": "No token found",
+        }
+
+    return {
+        "platform": platform,
+        "authenticated": True,
+        "token_valid": not token.is_expired(buffer_seconds=300),
+        "expires_at": token.expires_at.isoformat(),
+        "scope": token.scope,
+    }
+
+
+@app.post("/api/v1/marketplace/oauth/{platform}/refresh", response_model=dict)
+async def refresh_oauth_token(platform: str):
+    """
+    Refresh OAuth access token.
+
+    Args:
+        platform: Marketplace platform
+
+    Response:
+        - success: Boolean indicating success
+        - access_token: New access token
+        - expires_at: New expiration timestamp
+    """
+    from src.agent_execution.marketplace_adapters.oauth_manager import (
+        get_oauth_manager,
+        get_token_storage,
+    )
+
+    platform = platform.lower()
+    manager = get_oauth_manager(platform)
+
+    if not manager:
+        raise HTTPException(
+            status_code=400, detail=f"No OAuth manager for {platform}"
+        )
+
+    token = manager.get_token()
+    if not token:
+        # Try to load from storage
+        storage = get_token_storage()
+        token = storage.retrieve(platform)
+        if token:
+            manager.set_token(token)
+        else:
+            raise HTTPException(
+                status_code=400, detail=f"No token found for {platform}"
+            )
+
+    try:
+        new_token = await manager.refresh_access_token()
+        get_token_storage().store(platform, new_token)
+
+        return {
+            "success": True,
+            "platform": platform,
+            "access_token": new_token.access_token,
+            "expires_at": new_token.expires_at.isoformat(),
+        }
+
+    except Exception as e:
+        logger.error(f"Failed to refresh {platform} token: {e}")
+        raise HTTPException(status_code=500, detail=f"Token refresh failed: {str(e)}")
+
+
+@app.post("/api/v1/marketplace/oauth/{platform}/revoke", response_model=dict)
+async def revoke_oauth_token(platform: str):
+    """
+    Revoke OAuth access token.
+
+    Args:
+        platform: Marketplace platform
+
+    Response:
+        - success: Boolean indicating success
+        - message: Status message
+    """
+    from src.agent_execution.marketplace_adapters.oauth_manager import (
+        get_oauth_manager,
+        get_token_storage,
+    )
+
+    platform = platform.lower()
+    manager = get_oauth_manager(platform)
+
+    if not manager:
+        return {
+            "success": False,
+            "message": f"No OAuth manager for {platform}",
+        }
+
+    manager.revoke_token()
+    get_token_storage().delete(platform)
+
+    return {
+        "success": True,
+        "platform": platform,
+        "message": f"Successfully revoked {platform} authentication",
+    }
+
+
+# =============================================================================
+# CLOSED-LOOP LEARNING ENDPOINTS (Issue #106)
+# =============================================================================
+
+
+@app.post("/api/v1/learning/job-completion", response_model=dict)
+async def record_job_completion(
+    task_id: str,
+    marketplace: str,
+    revenue_dollars: float,
+    cost_dollars: float,
+    predicted_profit_dollars: float,
+    initial_confidence_score: int,
+    strategy_type: Optional[str] = None,
+):
+    """
+    Record job completion for learning system.
+
+    Args:
+        task_id: Task identifier
+        marketplace: Marketplace platform
+        revenue_dollars: Actual revenue in dollars
+        cost_dollars: Total cost in dollars
+        predicted_profit_dollars: Predicted profit in dollars
+        initial_confidence_score: Initial confidence score (0-100)
+        strategy_type: Bidding strategy used
+
+    Response:
+        - success: Boolean indicating success
+        - actual_profit_dollars: Calculated actual profit
+        - prediction_error_dollars: Difference from prediction
+        - new_confidence_score: Updated confidence score
+    """
+    from src.agent_execution.closed_loop_learning import get_learning_system
+
+    learning_system = get_learning_system()
+
+    try:
+        entry = learning_system.record_job_completion(
+            task_id=task_id,
+            marketplace=marketplace,
+            revenue_cents=int(revenue_dollars * 100),
+            total_cost_cents=int(cost_dollars * 100),
+            predicted_profit_cents=int(predicted_profit_dollars * 100),
+            initial_confidence_score=initial_confidence_score,
+            strategy_type=strategy_type,
+        )
+
+        return {
+            "success": True,
+            "task_id": task_id,
+            "actual_profit_dollars": entry.actual_profit_cents / 100,
+            "prediction_error_dollars": entry.prediction_error_cents / 100,
+            "prediction_error_percentage": entry.prediction_error_percentage,
+            "new_confidence_score": entry.final_confidence_score,
+            "confidence_adjustment": entry.confidence_adjustment,
+        }
+
+    except Exception as e:
+        logger.error(f"Failed to record job completion: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/v1/learning/accuracy", response_model=dict)
+async def get_prediction_accuracy(
+    marketplace: Optional[str] = None,
+    strategy_type: Optional[str] = None,
+    limit: int = 100,
+):
+    """
+    Get prediction accuracy metrics.
+
+    Args:
+        marketplace: Filter by marketplace
+        strategy_type: Filter by strategy type
+        limit: Number of entries to analyze
+
+    Response:
+        - accuracy_rate: Percentage of accurate predictions
+        - average_error_percentage: Average prediction error
+        - total_entries: Number of entries analyzed
+    """
+    from src.agent_execution.closed_loop_learning import get_learning_system
+
+    learning_system = get_learning_system()
+
+    try:
+        return learning_system.calculate_prediction_accuracy(
+            marketplace=marketplace, strategy_type=strategy_type, limit=limit
+        )
+    except Exception as e:
+        logger.error(f"Failed to calculate prediction accuracy: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/v1/learning/insights", response_model=dict)
+async def get_learning_insights(
+    marketplace: Optional[str] = None,
+    strategy_type: Optional[str] = None,
+):
+    """
+    Get learning insights and recommendations.
+
+    Args:
+        marketplace: Filter by marketplace
+        strategy_type: Filter by strategy type
+
+    Response:
+        - insights: List of insights
+        - recommendations: List of recommendations
+        - accuracy_metrics: Accuracy statistics
+    """
+    from src.agent_execution.closed_loop_learning import get_learning_system
+
+    learning_system = get_learning_system()
+
+    try:
+        return learning_system.get_learning_insights(
+            marketplace=marketplace, strategy_type=strategy_type
+        )
+    except Exception as e:
+        logger.error(f"Failed to get learning insights: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/v1/learning/weekly-review", response_model=dict)
+async def perform_weekly_review():
+    """
+    Perform weekly strategy review.
+
+    Analyzes past week's performance and generates strategic recommendations.
+
+    Response:
+        - status: Review status
+        - total_jobs_analyzed: Number of jobs analyzed
+        - marketplace_performance: Performance by marketplace
+        - strategy_performance: Performance by strategy
+        - recommendations: Strategic recommendations
+    """
+    from src.agent_execution.closed_loop_learning import get_learning_system
+
+    learning_system = get_learning_system()
+
+    try:
+        return learning_system.perform_weekly_review()
+    except Exception as e:
+        logger.error(f"Failed to perform weekly review: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/v1/learning/history", response_model=list)
+async def get_learning_history(
+    limit: int = 100,
+    event_type: Optional[str] = None,
+    marketplace: Optional[str] = None,
+):
+    """
+    Get learning history.
+
+    Args:
+        limit: Maximum entries to return
+        event_type: Filter by event type
+        marketplace: Filter by marketplace
+
+    Response:
+        - List of learning entries
+    """
+    from src.agent_execution.closed_loop_learning import (
+        get_learning_system,
+        LearningEventType,
+    )
+
+    learning_system = get_learning_system()
+
+    try:
+        entries = learning_system.get_learning_history(
+            limit=limit,
+            event_type=LearningEventType(event_type) if event_type else None,
+            marketplace=marketplace,
+        )
+        return [entry.to_dict() for entry in entries]
+    except Exception as e:
+        logger.error(f"Failed to get learning history: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 # Register scheduler routes
 register_scheduler_routes(app)
 register_analytics_routes(app)

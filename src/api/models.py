@@ -1,5 +1,6 @@
 import uuid
 from datetime import datetime
+from typing import Dict, Any
 from enum import Enum as PyEnum
 from sqlalchemy import (
     Column,
@@ -1818,4 +1819,72 @@ class WebhookSecret(Base):
             "is_active": self.is_active,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+        }
+
+
+class LearningEntry(Base):
+    """
+    Learning Entry Database Model
+
+    Stores learning data from completed jobs for analysis and strategy improvement.
+    Used by the Closed-Loop Learning System (Issue #106).
+    """
+
+    __tablename__ = "learning_entries"
+
+    __table_args__ = (
+        Index("idx_learning_task", "task_id"),
+        Index("idx_learning_marketplace", "marketplace"),
+        Index("idx_learning_event_type", "event_type"),
+        Index("idx_learning_created_at", "created_at"),
+    )
+
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+
+    # Event details
+    task_id = Column(String, nullable=False, index=True)
+    event_type = Column(String, nullable=False, index=True)
+    marketplace = Column(String, nullable=True, index=True)
+
+    # Financial data
+    predicted_profit_cents = Column(Integer, nullable=True)
+    actual_profit_cents = Column(Integer, nullable=True)
+    prediction_error_cents = Column(Integer, nullable=True)
+    prediction_error_percentage = Column(Float, nullable=True)
+
+    # Confidence data
+    initial_confidence_score = Column(Integer, nullable=True)
+    final_confidence_score = Column(Integer, nullable=True)
+    confidence_adjustment = Column(Integer, nullable=True)
+
+    # Strategy data
+    strategy_type = Column(String, nullable=True)
+    strategy_adjustment_type = Column(String, nullable=True)
+    strategy_adjustment_reason = Column(String, nullable=True)
+
+    # Additional data
+    extra_data = Column(JSON, nullable=True)
+
+    # Timestamps
+    created_at = Column(DateTime, default=datetime.utcnow, index=True)
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary."""
+        return {
+            "id": self.id,
+            "task_id": self.task_id,
+            "event_type": self.event_type,
+            "marketplace": self.marketplace,
+            "predicted_profit_cents": self.predicted_profit_cents,
+            "actual_profit_cents": self.actual_profit_cents,
+            "prediction_error_cents": self.prediction_error_cents,
+            "prediction_error_percentage": self.prediction_error_percentage,
+            "initial_confidence_score": self.initial_confidence_score,
+            "final_confidence_score": self.final_confidence_score,
+            "confidence_adjustment": self.confidence_adjustment,
+            "strategy_type": self.strategy_type,
+            "strategy_adjustment_type": self.strategy_adjustment_type,
+            "strategy_adjustment_reason": self.strategy_adjustment_reason,
+            "extra_data": self.extra_data,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
         }
