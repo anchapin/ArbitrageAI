@@ -23,13 +23,20 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 # DATABASE CONFIGURATION FOR TESTS
 # =============================================================================
 
-# Use file-based SQLite database for testing (shared between sync and async)
-# In-memory databases are connection-isolated, so sync and async engines would have separate tables
-import tempfile
+# Use in-memory SQLite database for faster tests and to avoid file locking issues
+# File-based SQLite can cause aiosqlite connection hangs in CI with parallel test shards
+import sys
 
-_test_db_dir = tempfile.mkdtemp()
-_test_db_path = os.path.join(_test_db_dir, "test_tasks.db")
-os.environ.setdefault("DATABASE_URL", f"sqlite:///{_test_db_path}")
+# Check if running in CI (GitHub Actions sets CI=true)
+if os.environ.get("CI") == "true":
+    # Use in-memory database for CI to avoid file locking issues
+    os.environ.setdefault("DATABASE_URL", "sqlite:///:memory:")
+else:
+    # Use file-based database for local testing (shared between sync and async)
+    import tempfile
+    _test_db_dir = tempfile.mkdtemp()
+    _test_db_path = os.path.join(_test_db_dir, "test_tasks.db")
+    os.environ.setdefault("DATABASE_URL", f"sqlite:///{_test_db_path}")
 
 # Disable rate limiting for tests
 os.environ.setdefault("DISABLE_RATE_LIMITING", "true")
