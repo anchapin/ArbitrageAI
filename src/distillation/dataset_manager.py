@@ -10,22 +10,23 @@ Features:
 - Prepare data in various formats for different fine-tuning frameworks
 """
 
-import os
+from collections.abc import Callable
+from datetime import datetime, timezone
 import json
 import logging
-from datetime import datetime, timezone
-from typing import Optional, Dict, Any, List, Callable
+import os
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
 
 # Import configuration from data_collector
 from .data_collector import (
-    DISTILLATION_DIR,
-    TEACHER_EXAMPLES_FILE,
     CURATED_DATASET_FILE,
+    DISTILLATION_DIR,
     MIN_CURATION_RATING,
     MIN_EXAMPLES_FOR_TRAINING,
+    TEACHER_EXAMPLES_FILE,
 )
 
 
@@ -40,7 +41,7 @@ class DistillationDatasetManager:
     """
 
     def __init__(
-        self, curated_file: Optional[str] = None, teacher_file: Optional[str] = None
+        self, curated_file: str | None = None, teacher_file: str | None = None
     ):
         """
         Initialize the dataset manager.
@@ -54,13 +55,13 @@ class DistillationDatasetManager:
 
     def load_examples(
         self,
-        filepath: Optional[str] = None,
-        domain: Optional[str] = None,
-        task_type: Optional[str] = None,
+        filepath: str | None = None,
+        domain: str | None = None,
+        task_type: str | None = None,
         min_rating: int = 1,
         max_rating: int = 5,
-        limit: Optional[int] = None,
-    ) -> List[Dict[str, Any]]:
+        limit: int | None = None,
+    ) -> list[dict[str, Any]]:
         """
         Load examples from the dataset with optional filters.
 
@@ -79,7 +80,7 @@ class DistillationDatasetManager:
         examples = []
 
         try:
-            with open(filepath, "r") as f:
+            with open(filepath) as f:
                 for line in f:
                     if line.strip():
                         try:
@@ -105,7 +106,7 @@ class DistillationDatasetManager:
 
         return examples
 
-    def validate_example(self, example: Dict[str, Any]) -> tuple:
+    def validate_example(self, example: dict[str, Any]) -> tuple:
         """
         Validate a single example for training quality.
 
@@ -124,14 +125,12 @@ class DistillationDatasetManager:
                 issues.append(f"Missing required field: {field}")
 
         # Check prompt is not empty
-        if "prompt" in example:
-            if len(example["prompt"]) < 10:
-                issues.append("Prompt too short")
+        if "prompt" in example and len(example["prompt"]) < 10:
+            issues.append("Prompt too short")
 
         # Check response is not empty
-        if "response" in example:
-            if len(example["response"]) < 20:
-                issues.append("Response too short")
+        if "response" in example and len(example["response"]) < 20:
+            issues.append("Response too short")
 
         # Check rating is valid
         rating = example.get("rating", 0)
@@ -142,9 +141,9 @@ class DistillationDatasetManager:
 
     def validate_dataset(
         self,
-        filepath: Optional[str] = None,
+        filepath: str | None = None,
         min_examples: int = MIN_EXAMPLES_FOR_TRAINING,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Validate the entire dataset.
 
@@ -201,8 +200,8 @@ class DistillationDatasetManager:
 
     def prepare_for_unsloth(
         self,
-        output_path: Optional[str] = None,
-        domain: Optional[str] = None,
+        output_path: str | None = None,
+        domain: str | None = None,
         min_rating: int = MIN_CURATION_RATING,
     ) -> str:
         """
@@ -239,8 +238,8 @@ class DistillationDatasetManager:
 
     def prepare_for_ollama(
         self,
-        output_path: Optional[str] = None,
-        domain: Optional[str] = None,
+        output_path: str | None = None,
+        domain: str | None = None,
         min_rating: int = MIN_CURATION_RATING,
     ) -> str:
         """
@@ -271,7 +270,7 @@ class DistillationDatasetManager:
 
         return output_path
 
-    def get_statistics(self) -> Dict[str, Any]:
+    def get_statistics(self) -> dict[str, Any]:
         """
         Get comprehensive dataset statistics.
 
@@ -297,7 +296,7 @@ class DistillationDatasetManager:
             "avg_prompt_length": self._avg_field(curated, "prompt", lambda x: len(x)),
         }
 
-    def _count_by_field(self, examples: List[Dict], field: str) -> Dict:
+    def _count_by_field(self, examples: list[dict], field: str) -> dict:
         """Count examples by a specific field."""
         counts = {}
         for ex in examples:
@@ -306,7 +305,7 @@ class DistillationDatasetManager:
         return counts
 
     def _avg_field(
-        self, examples: List[Dict], field: str, transform: Callable = len
+        self, examples: list[dict], field: str, transform: Callable = len
     ) -> float:
         """Calculate average of a field."""
         if not examples:
@@ -314,7 +313,7 @@ class DistillationDatasetManager:
         total = sum(transform(ex.get(field, "")) for ex in examples)
         return total / len(examples)
 
-    def deduplicate(self, output_path: Optional[str] = None) -> int:
+    def deduplicate(self, output_path: str | None = None) -> int:
         """
         Remove duplicate examples based on prompt content.
 
@@ -353,19 +352,19 @@ class DistillationDatasetManager:
 # =============================================================================
 
 
-def get_dataset_stats() -> Dict[str, Any]:
+def get_dataset_stats() -> dict[str, Any]:
     """Get dataset statistics."""
     manager = DistillationDatasetManager()
     return manager.get_statistics()
 
 
-def validate_distillation_data() -> Dict[str, Any]:
+def validate_distillation_data() -> dict[str, Any]:
     """Validate the distillation dataset."""
     manager = DistillationDatasetManager()
     return manager.validate_dataset()
 
 
-def prepare_training_data(format: str = "unsloth", domain: Optional[str] = None) -> str:
+def prepare_training_data(format: str = "unsloth", domain: str | None = None) -> str:
     """
     Prepare training data in the specified format.
 

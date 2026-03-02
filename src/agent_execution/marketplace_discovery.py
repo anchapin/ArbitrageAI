@@ -463,8 +463,8 @@ class MarketplaceDiscovery:
             # Ensure pool is started
             try:
                 await pool.start()
-            except Exception:
-                pass
+            except Exception as e:
+                logger.warning(f"BrowserPool start failed, will retry on acquire: {e}")
 
             browser = await pool.acquire_browser()
 

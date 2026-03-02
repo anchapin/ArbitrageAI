@@ -13,11 +13,10 @@ The parser extracts data ands tables and text column headers that can be used by
 to generate appropriate visualizations.
 """
 
-import io
 import base64
-import logging
-from typing import Optional
 from enum import Enum
+import io
+import logging
 
 logger = logging.getLogger(__name__)
 
@@ -49,7 +48,7 @@ class FileType(Enum):
     UNKNOWN = "unknown"
 
 
-def detect_file_type(filename: str, content: Optional[bytes] = None) -> FileType:
+def detect_file_type(filename: str, content: bytes | None = None) -> FileType:
     """
     Detect the file type based on filename extension or content.
 
@@ -249,7 +248,7 @@ def parse_pdf(content: bytes) -> dict:
                     for line in table_lines[1:]:
                         values = [v.strip() for v in line.split("\t")]
                         if len(values) == len(headers):
-                            data.append(dict(zip(headers, values)))
+                            data.append(dict(zip(headers, values, strict=False)))
 
                     # Convert to CSV format
                     if pd is not None:
@@ -311,7 +310,7 @@ def parse_pdf(content: bytes) -> dict:
 
 
 def parse_file(
-    file_content: str, filename: str, file_type: Optional[str] = None
+    file_content: str, filename: str, file_type: str | None = None
 ) -> dict:
     """
     Parse a file based on its type.

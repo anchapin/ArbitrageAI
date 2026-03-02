@@ -1,0 +1,314 @@
+# =============================================================================
+# ArbitrageAI - Pre-commit Configuration
+# =============================================================================
+# Pre-commit hooks for automated code quality checks before each commit
+#
+# Installation:
+#   pip install pre-commit
+#   pre-commit install
+#
+# Usage:
+#   pre-commit run          # Run all hooks on staged files
+#   pre-commit run --all-files  # Run all hooks on all files
+#   pre-commit autoupdate   # Update hook versions
+#
+# Skip hooks (not recommended):
+#   pre-commit run --no-stash
+#   git commit -m "msg" --no-verify
+# =============================================================================
+
+repos:
+  # ---------------------------------------------------------------------------
+  # Core Python Code Quality
+  # ---------------------------------------------------------------------------
+
+  # Ruff - Fast Python linter (replaces flake8, isort, pyupgrade, etc.)
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.1.14
+    hooks:
+      # Lint Python code
+      - id: ruff
+        args: [--fix, --exit-non-zero-on-fix]
+        types_or: [python, pyi, jupyter]
+
+      # Format Python code
+      - id: ruff-format
+        types_or: [python, pyi, jupyter]
+
+  # ---------------------------------------------------------------------------
+  # Type Checking
+  # ---------------------------------------------------------------------------
+
+  # mypy - Static type checker
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.8.0
+    hooks:
+      - id: mypy
+        name: mypy - Python type checking
+        description: Static type checker for Python
+        entry: mypy
+        language: system
+        types: [python]
+        require_serial: true
+        # Don't fail on commit, but show warnings
+        fail_fast: false
+        args: [
+          --ignore-missing-imports,
+          --no-strict-optional,
+          --disallow-untyped-defs,
+          --disallow-incomplete-defs,
+          --warn-return-any,
+          --warn-unused-ignores,
+        ]
+        # Exclude specific paths
+        exclude: ^(tests/|\.venv/|venv/|build/)
+
+  # ---------------------------------------------------------------------------
+  # Security Scanning
+  # ---------------------------------------------------------------------------
+
+  # Bandit - Python security linter
+  - repo: https://github.com/PyCQA/bandit
+    rev: 1.7.7
+    hooks:
+      - id: bandit
+        name: bandit - Python security linter
+        description: Security linter for Python
+        entry: bandit
+        language: system
+        types: [python]
+        args: [-r, -ll, --ini, .bandit]
+        # Don't fail on commit, but show warnings
+        fail_fast: false
+
+  # Detect secrets and credentials
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.4.0
+    hooks:
+      - id: detect-secrets
+        name: detect-secrets - Secret detection
+        description: Detect secrets in code
+        entry: detect-secrets
+        language: python
+        types: [python]
+        args: [
+          --baseline, .secrets.baseline,
+          --exclude-files, .secrets.baseline|requirements.*|pyproject.toml
+        ]
+        exclude: .secrets.baseline|requirements.*|pyproject.toml
+
+  # ---------------------------------------------------------------------------
+  # Code Formatting
+  # ---------------------------------------------------------------------------
+
+  # prettier - Code formatter (for JSON, YAML, Markdown, etc.)
+  - repo: https://github.com/pre-commit/mirrors-prettier
+    rev: v3.1.0
+    hooks:
+      - id: prettier
+        name: prettier - Code formatter
+        description: Formatter for JSON, YAML, Markdown, and more
+        entry: prettier
+        language: node
+        types_or: [json, yaml, markdown, html, css, scss, javascript, typescript]
+        args: [--write]
+        exclude: ^(src/client_portal/node_modules/|\.venv/|venv/)
+
+  # ---------------------------------------------------------------------------
+  # Git and File Checks
+  # ---------------------------------------------------------------------------
+
+  # Check for merge conflict markers
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: check-merge-conflict
+        name: check-merge-conflict - Merge conflict markers
+        description: Check for merge conflict markers
+
+      - id: check-added-large-files
+        name: check-added-large-files - Large file detection
+        description: Prevent large files from being committed
+        args: ['--maxkb=10240']  # 10MB limit
+
+      - id: check-case-conflict
+        name: check-case-conflict - Case sensitivity
+        description: Check for case conflicts in filenames
+
+      - id: check-json
+        name: check-json - JSON validation
+        description: Validate JSON files
+
+      - id: check-yaml
+        name: check-yaml - YAML validation
+        description: Validate YAML files
+        args: [--unsafe]  # Allow custom YAML tags
+
+      - id: check-toml
+        name: check-toml - TOML validation
+        description: Validate TOML files
+
+      - id: check-xml
+        name: check-xml - XML validation
+        description: Validate XML files
+
+      - id: check-executables-have-shebangs
+        name: check-executables-have-shebangs
+        description: Check that executables have shebangs
+
+      - id: check-shebang-scripts-are-executable
+        name: check-shebang-scripts-are-executable
+        description: Check that shebang scripts are executable
+
+      - id: end-of-file-fixer
+        name: end-of-file-fixer - EOF newline
+        description: Ensure files end with a newline
+        exclude: ^(src/client_portal/|\.min\.js$)
+
+      - id: trailing-whitespace
+        name: trailing-whitespace - Remove trailing whitespace
+        description: Remove trailing whitespace
+        args: [--markdown-linebreak-ext=md]
+        exclude: ^(src/client_portal/)
+
+      - id: mixed-line-ending
+        name: mixed-line-ending - Line ending normalization
+        description: Normalize line endings
+        args: [--fix=lf]
+
+      - id: detect-private-key
+        name: detect-private-key - Private key detection
+        description: Detect private keys in code
+
+      - id: forbid-new-submodules
+        name: forbid-new-submodules - Git submodules
+        description: Prevent new git submodules
+
+      - id: no-commit-to-branch
+        name: no-commit-to-branch - Protected branches
+        description: Prevent direct commits to protected branches
+        args: [--branch, main, --branch, master, --pattern, ^release/.*]
+
+  # ---------------------------------------------------------------------------
+  # Docker
+  # ---------------------------------------------------------------------------
+
+  # Dockerfile linting
+  - repo: https://github.com/hadolint/hadolint
+    rev: v2.12.0
+    hooks:
+      - id: hadolint-docker
+        name: hadolint - Dockerfile linter
+        description: Lint Dockerfiles
+        entry: hadolint
+        language: system
+        types: [dockerfile]
+        args: [--ignore, DL3008, --ignore, DL3013]  # Ignore pin version warnings
+
+  # ---------------------------------------------------------------------------
+  # Documentation
+  # ---------------------------------------------------------------------------
+
+  # Markdown linting
+  - repo: https://github.com/igorshubovych/markdownlint-cli
+    rev: v0.38.0
+    hooks:
+      - id: markdownlint
+        name: markdownlint - Markdown linter
+        description: Lint Markdown files
+        entry: markdownlint
+        language: node
+        types: [markdown]
+        args: [--disable, MD013, --disable, MD033]  # Disable line length and inline HTML
+        exclude: ^(CHANGELOG.md|\.agents/)
+
+  # ---------------------------------------------------------------------------
+  # Shell Scripts
+  # ---------------------------------------------------------------------------
+
+  # ShellCheck - Shell script linting
+  - repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: v0.9.0.8
+    hooks:
+      - id: shellcheck
+        name: shellcheck - Shell script linter
+        description: Lint shell scripts
+        entry: shellcheck
+        language: system
+        types: [shell]
+        args: [--exclude=SC1091]  # Ignore "not following" warnings
+
+  # ---------------------------------------------------------------------------
+  # Performance Optimization
+  # ---------------------------------------------------------------------------
+
+  # Cache optimization for large repos
+  - repo: local
+    hooks:
+      - id: pytest-fast
+        name: pytest-fast - Fast test subset
+        description: Run a fast subset of tests on commit
+        entry: pytest
+        language: system
+        types: [python]
+        pass_filenames: false
+        always_run: false
+        stages: [pre-commit]
+        args: [
+          tests/,
+          -v,
+          -m, "not slow",
+          --tb=short,
+          -q,
+        ]
+        # Only run if test files are staged
+        files: ^(tests/|src/)
+
+  # ---------------------------------------------------------------------------
+  # Custom Local Hooks
+  # ---------------------------------------------------------------------------
+
+  # Run custom Python checks
+  - repo: local
+    hooks:
+      - id: python-compile
+        name: python-compile - Syntax check
+        description: Check Python syntax by compiling
+        entry: python -m py_compile
+        language: system
+        types: [python]
+        require_serial: true
+
+      - id: check-docstrings
+        name: check-docstrings - Public function docs
+        description: Check that public functions have docstrings
+        entry: python scripts/check_docstrings.py
+        language: system
+        types: [python]
+        pass_filenames: true
+        always_run: false
+        require_serial: true
+        # Optional - uncomment when script is created
+        # files: ^(src/)
+
+  # ---------------------------------------------------------------------------
+  # End of Pre-commit Configuration
+  # ---------------------------------------------------------------------------
+
+# Global settings
+default_stages: [pre-commit]
+default_language_version:
+  python: python3.10
+  node: system
+
+# CI/CD optimization - only run relevant hooks
+ci:
+  autofix_commit_msg: |
+    [pre-commit.ci] auto fixes from pre-commit hooks
+
+  autofix_prs: true
+  autoupdate_branch: ''
+  autoupdate_commit_msg: '[pre-commit.ci] pre-commit autoupdate'
+  autoupdate_schedule: weekly
+  skip: []
+  submodules: false

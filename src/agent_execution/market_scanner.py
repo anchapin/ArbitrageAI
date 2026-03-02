@@ -12,13 +12,13 @@ Features:
 - Configurable marketplace URL from environment variables
 """
 
-import os
-import json
 import asyncio
-import re
-from typing import Optional, Dict, Any, List
 from dataclasses import dataclass
 from datetime import datetime
+import json
+import os
+import re
+from typing import Any
 
 # Load environment variables
 from dotenv import load_dotenv
@@ -26,16 +26,16 @@ from dotenv import load_dotenv
 # Import logger
 from src.utils.logger import get_logger
 
-# Import ConfigManager for centralized configuration
-from ..config.config_manager import ConfigManager
-
 # Import database and models for bidding (Issue #19 Integration)
 from ..api.database import SessionLocal
 from ..api.models import BidStatus
 
+# Import ConfigManager for centralized configuration
+from ..config.config_manager import ConfigManager
+from .bid_deduplication import create_bid_atomically, should_bid
+
 # Import distributed locking and deduplication (Issue #19 Integration)
 from .bid_lock_manager_factory import get_bid_lock_manager
-from .bid_deduplication import should_bid, create_bid_atomically
 
 # Import browser pool (Issue #4 Integration)
 from .browser_pool import get_browser_pool
@@ -53,7 +53,7 @@ except ImportError:
 
 # Try to import Playwright
 try:
-    from playwright.async_api import async_playwright, Page, Browser  # noqa: F401
+    from playwright.async_api import Browser, Page, async_playwright  # noqa: F401
 
     PLAYWRIGHT_AVAILABLE = True
 except ImportError:
@@ -133,12 +133,12 @@ class JobPosting:
 
     title: str
     description: str
-    budget: Optional[str] = None
-    skills: List[str] = None
-    url: Optional[str] = None
-    posted_date: Optional[str] = None
-    client_rating: Optional[float] = None
-    client_spend: Optional[str] = None
+    budget: str | None = None
+    skills: list[str] = None
+    url: str | None = None
+    posted_date: str | None = None
+    client_rating: float | None = None
+    client_spend: str | None = None
 
     def __post_init__(self):
         if self.skills is None:
@@ -152,15 +152,15 @@ class EvaluationResult:
     is_suitable: bool
     bid_amount: int
     reasoning: str
-    task_id: Optional[str] = None
-    confidence: Optional[float] = None
-    evaluated_at: Optional[datetime] = None
+    task_id: str | None = None
+    confidence: float | None = None
+    evaluated_at: datetime | None = None
 
     def __post_init__(self):
         if self.evaluated_at is None:
             self.evaluated_at = datetime.now()
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for JSON serialization."""
         return {
             "is_suitable": self.is_suitable,
@@ -194,7 +194,7 @@ class MarketScanner:
 
     def __init__(
         self,
-        marketplace_url: Optional[str] = None,
+        marketplace_url: str | None = None,
         headless: bool = True,
         timeout: int = PAGE_LOAD_TIMEOUT,
     ):
@@ -206,7 +206,7 @@ class MarketScanner:
             headless: Whether to run Playwright in headless mode
             timeout: Page load timeout in seconds
         """
-        self.marketplace_urls: List[str] = []
+        self.marketplace_urls: list[str] = []
         self.marketplace_url = marketplace_url  # Single URL override
 
         # Load marketplace URLs from config if no override provided
@@ -241,7 +241,7 @@ class MarketScanner:
                 self.marketplace_urls = [DEFAULT_MARKETPLACE_URL]
                 return
 
-            with open(MARKETPLACES_FILE, "r") as f:
+            with open(MARKETPLACES_FILE) as f:
                 data = json.load(f)
 
             # Extract active marketplace URLs
@@ -331,8 +331,8 @@ class MarketScanner:
             self.playwright = None
 
     async def fetch_job_postings(
-        self, max_posts: int = 10, marketplace_url: Optional[str] = None
-    ) -> List[JobPosting]:
+        self, max_posts: int = 10, marketplace_url: str | None = None
+    ) -> list[JobPosting]:
         """
         Fetch job postings from the marketplace.
 
@@ -428,7 +428,7 @@ class MarketScanner:
 
         return job_postings
 
-    async def _extract_job_posting(self, element, index: int) -> Optional[JobPosting]:
+    async def _extract_job_posting(self, element, index: int) -> JobPosting | None:
         """
         Extract job posting data from a page element.
 
@@ -485,7 +485,7 @@ class MarketScanner:
             logger.warning(f"Failed to extract job posting: {e}")
             return None
 
-    def _get_mock_job_postings(self, max_posts: int) -> List[JobPosting]:
+    def _get_mock_job_postings(self, max_posts: int) -> list[JobPosting]:
         """
         Get mock job postings for testing or when marketplace is unavailable.
 
@@ -739,8 +739,8 @@ Evaluate this job posting and return JSON."""
         self,
         max_posts: int = 10,
         min_bid_threshold: int = 30,
-        marketplace_url: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        marketplace_url: str | None = None,
+    ) -> dict[str, Any]:
         """
         Scan marketplace and evaluate all job postings.
 
@@ -830,7 +830,7 @@ Evaluate this job posting and return JSON."""
             logger.error(f"Scan and evaluation failed: {e}")
             return {
                 "success": False,
-                "message": f"Scan failed: {str(e)}",
+                "message": f"Scan failed: {e!s}",
                 "postings": [],
                 "evaluations": [],
                 "scan_time": 0,
@@ -839,7 +839,7 @@ Evaluate this job posting and return JSON."""
 
     async def scan_all_marketplaces(
         self, max_posts: int = 10, min_bid_threshold: int = 30
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Scan all configured marketplaces and evaluate all job postings.
 
@@ -922,7 +922,7 @@ Evaluate this job posting and return JSON."""
             logger.error(f"Multi-marketplace scan failed: {e}")
             return {
                 "success": False,
-                "message": f"Multi-marketplace scan failed: {str(e)}",
+                "message": f"Multi-marketplace scan failed: {e!s}",
                 "marketplaces_scanned": 0,
                 "total_postings": 0,
                 "suitable_jobs": [],
@@ -936,8 +936,8 @@ Evaluate this job posting and return JSON."""
 
 
 async def run_single_scan(
-    marketplace_url: Optional[str] = None, max_posts: int = 10
-) -> Dict[str, Any]:
+    marketplace_url: str | None = None, max_posts: int = 10
+) -> dict[str, Any]:
     """
     Run a single market scan.
 
@@ -954,9 +954,9 @@ async def run_single_scan(
 
 async def run_continuous_scan(
     interval: int = SCAN_INTERVAL,
-    marketplace_url: Optional[str] = None,
+    marketplace_url: str | None = None,
     max_posts: int = 10,
-    max_iterations: Optional[int] = None,
+    max_iterations: int | None = None,
 ):
     """
     Run continuous market scanning at regular intervals.

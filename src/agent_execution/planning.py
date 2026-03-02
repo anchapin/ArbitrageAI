@@ -19,18 +19,17 @@ CLIENT PREFERENCE MEMORY (Pillar 2.5 Gap):
 - Passes preferences to WorkPlanGenerator to avoid ArtifactReviewer failures
 """
 
-from typing import Optional, Dict, Any, List
 from datetime import datetime, timezone
 import logging
+from typing import Any
 
+from src.agent_execution.file_parser import detect_file_type, parse_file
 from src.llm_service import LLMService
-from src.agent_execution.file_parser import parse_file, detect_file_type
 
 logger = logging.getLogger(__name__)
 
 # Import Traceloop decorators for OpenTelemetry observability
-from traceloop.sdk.decorators import workflow, task
-
+from traceloop.sdk.decorators import task, workflow
 
 # =============================================================================
 # CLIENT PREFERENCE MEMORY (Pillar 2.5 Gap)
@@ -39,7 +38,7 @@ from traceloop.sdk.decorators import workflow, task
 
 def get_client_preferences_from_tasks(
     client_email: str, db_session=None
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Query the Task table for previous review_feedback from the same client_email.
 
@@ -149,7 +148,7 @@ def get_client_preferences_from_tasks(
     return preferences
 
 
-def _extract_preferences_from_feedback(feedback: str) -> Dict[str, Any]:
+def _extract_preferences_from_feedback(feedback: str) -> dict[str, Any]:
     """
     Extract specific preferences from review feedback text.
 
@@ -229,7 +228,7 @@ def _extract_preferences_from_feedback(feedback: str) -> Dict[str, Any]:
     formats = ["image", "docx", "pdf", "xlsx", "excel", "spreadsheet", "document"]
     for fmt in formats:
         if fmt in feedback_lower:
-            if fmt == "excel" or fmt == "spreadsheet":
+            if fmt in {"excel", "spreadsheet"}:
                 extracted["preferred_output_formats"].append("xlsx")
             elif fmt == "document":
                 extracted["preferred_output_formats"].append("docx")
@@ -256,7 +255,7 @@ def _extract_preferences_from_feedback(feedback: str) -> Dict[str, Any]:
     return extracted
 
 
-def _merge_preferences(target: Dict[str, Any], source: Dict[str, Any]):
+def _merge_preferences(target: dict[str, Any], source: dict[str, Any]):
     """Merge extracted preferences into target, avoiding duplicates."""
     for key in [
         "preferred_colors",
@@ -274,7 +273,7 @@ def _merge_preferences(target: Dict[str, Any], source: Dict[str, Any]):
         target["style_preferences"].update(source["style_preferences"])
 
 
-def _generate_preferences_summary(preferences: Dict[str, Any]) -> str:
+def _generate_preferences_summary(preferences: dict[str, Any]) -> str:
     """Generate a human-readable summary of preferences for LLM prompts."""
     parts = []
 
@@ -429,7 +428,7 @@ class ContextExtractor:
     to inform the work plan generation.
     """
 
-    def __init__(self, llm_service: Optional[LLMService] = None):
+    def __init__(self, llm_service: LLMService | None = None):
         """
         Initialize the context extractor.
 
@@ -440,12 +439,12 @@ class ContextExtractor:
 
     def extract_context(
         self,
-        file_content: Optional[str] = None,
-        csv_data: Optional[str] = None,
-        filename: Optional[str] = None,
-        file_type: Optional[str] = None,
-        domain: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        file_content: str | None = None,
+        csv_data: str | None = None,
+        filename: str | None = None,
+        file_type: str | None = None,
+        domain: str | None = None,
+    ) -> dict[str, Any]:
         """
         Extract context from uploaded files.
 
@@ -497,8 +496,9 @@ class ContextExtractor:
         # Handle CSV data
         elif csv_data:
             try:
-                import pandas as pd
                 import io
+
+                import pandas as pd
 
                 df = pd.read_csv(io.StringIO(csv_data))
 
@@ -546,7 +546,7 @@ class ContextExtractor:
 
         return context
 
-    def _extract_basic_insights(self, df) -> List[str]:
+    def _extract_basic_insights(self, df) -> list[str]:
         """Extract basic statistical insights from the data."""
         insights = []
 
@@ -560,8 +560,8 @@ class ContextExtractor:
         return insights
 
     def _enhance_with_llm(
-        self, context: Dict[str, Any], domain: Optional[str]
-    ) -> Dict[str, Any]:
+        self, context: dict[str, Any], domain: str | None
+    ) -> dict[str, Any]:
         """
         Use LLM to enhance context understanding.
 
@@ -631,7 +631,7 @@ class WorkPlanGenerator:
     - Helps avoid ArtifactReviewer failures by incorporating known preferences
     """
 
-    def __init__(self, llm_service: Optional[LLMService] = None):
+    def __init__(self, llm_service: LLMService | None = None):
         """
         Initialize the work plan generator.
 
@@ -645,11 +645,11 @@ class WorkPlanGenerator:
         self,
         user_request: str,
         domain: str,
-        extracted_context: Dict[str, Any],
-        task_type: Optional[str] = None,
-        output_format: Optional[str] = None,
-        client_preferences: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
+        extracted_context: dict[str, Any],
+        task_type: str | None = None,
+        output_format: str | None = None,
+        client_preferences: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         """
         Create a comprehensive work plan based on context and requirements.
 
@@ -676,7 +676,7 @@ class WorkPlanGenerator:
 \n\nIMPORTANT - CLIENT PREFERENCES (from past tasks):
 {prefs_summary}
 
-When creating the work plan, MUST incorporate these preferences to avoid 
+When creating the work plan, MUST incorporate these preferences to avoid
 failing the ArtifactReviewer step. This saves expensive retry cycles."""
 
         system_prompt = f"""You are an expert project planner for {domain} tasks.
@@ -743,7 +743,7 @@ Generate the work plan as JSON."""
         except Exception as e:
             return {"success": False, "error": str(e)}
 
-    def _build_context_summary(self, context: Dict[str, Any]) -> str:
+    def _build_context_summary(self, context: dict[str, Any]) -> str:
         """Build a text summary of the extracted context."""
         parts = []
 
@@ -778,7 +778,7 @@ Generate the work plan as JSON."""
 
         return "\n".join(parts) if parts else "No context available"
 
-    def _parse_plan_json(self, content: str) -> Optional[Dict[str, Any]]:
+    def _parse_plan_json(self, content: str) -> dict[str, Any] | None:
         """Parse JSON plan from LLM response."""
         # Try to find JSON in the response
         try:
@@ -806,7 +806,7 @@ class PlanExecutor:
     generating the final artifact.
     """
 
-    def __init__(self, llm_service: Optional[LLMService] = None):
+    def __init__(self, llm_service: LLMService | None = None):
         """
         Initialize the plan executor.
 
@@ -817,12 +817,12 @@ class PlanExecutor:
 
     def execute_plan(
         self,
-        work_plan: Dict[str, Any],
+        work_plan: dict[str, Any],
         csv_data: str,
         domain: str,
-        api_key: Optional[str] = None,
+        api_key: str | None = None,
         sandbox_timeout: int = 120,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Execute the work plan to generate the artifact.
 
@@ -837,7 +837,7 @@ class PlanExecutor:
             Dictionary with execution results
         """
         # Import here to avoid circular imports
-        from src.agent_execution.executor import execute_data_visualization, TaskRouter
+        from src.agent_execution.executor import TaskRouter, execute_data_visualization
 
         user_request = work_plan.get("user_request", "")
         task_type = self._infer_task_type(work_plan)
@@ -905,7 +905,7 @@ class PlanExecutor:
 
             return {"success": False, "error": str(e), "execution_log": execution_log}
 
-    def _infer_task_type(self, plan: Dict[str, Any]) -> str:
+    def _infer_task_type(self, plan: dict[str, Any]) -> str:
         """Infer task type from work plan."""
         recommended = plan.get("recommended_chart_type", "")
         if recommended in ["bar", "line", "pie", "scatter", "histogram"]:
@@ -916,7 +916,7 @@ class PlanExecutor:
             return "document"
         return "auto"
 
-    def _infer_output_format(self, plan: Dict[str, Any]) -> str:
+    def _infer_output_format(self, plan: dict[str, Any]) -> str:
         """Infer output format from work plan."""
         output_format = plan.get("output_format", "")
         if output_format in ["image", "docx", "xlsx", "pdf"]:
@@ -932,7 +932,7 @@ class PlanReviewer:
     matches both the original user request AND the work plan.
     """
 
-    def __init__(self, llm_service: Optional[LLMService] = None):
+    def __init__(self, llm_service: LLMService | None = None):
         """
         Initialize the plan reviewer.
 
@@ -944,11 +944,11 @@ class PlanReviewer:
     def review_against_plan(
         self,
         artifact_url: str,
-        work_plan: Dict[str, Any],
+        work_plan: dict[str, Any],
         user_request: str,
         domain: str,
-        execution_result: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
+        execution_result: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         """
         Review the generated artifact against the work plan.
 
@@ -1045,11 +1045,11 @@ Return your review in JSON format."""
 
     def regenerate_with_feedback(
         self,
-        work_plan: Dict[str, Any],
+        work_plan: dict[str, Any],
         review_feedback: str,
         csv_data: str,
         domain: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Regenerate artifact based on review feedback.
 
@@ -1113,7 +1113,7 @@ Please revise the approach to address the review feedback. Return JSON."""
 # =============================================================================
 
 
-def _get_llm_for_task(domain: Optional[str]) -> LLMService:
+def _get_llm_for_task(domain: str | None) -> LLMService:
     """
     Get the appropriate LLMService based on task domain for cost optimization.
 
@@ -1160,7 +1160,7 @@ class ResearchAndPlanOrchestrator:
     """
 
     def __init__(
-        self, llm_service: Optional[LLMService] = None, domain: Optional[str] = None
+        self, llm_service: LLMService | None = None, domain: str | None = None
     ):
         """
         Initialize the orchestrator.
@@ -1186,16 +1186,16 @@ class ResearchAndPlanOrchestrator:
         self,
         user_request: str,
         domain: str,
-        csv_data: Optional[str] = None,
-        file_content: Optional[str] = None,
-        filename: Optional[str] = None,
-        file_type: Optional[str] = None,
-        api_key: Optional[str] = None,
+        csv_data: str | None = None,
+        file_content: str | None = None,
+        filename: str | None = None,
+        file_type: str | None = None,
+        api_key: str | None = None,
         sandbox_timeout: int = 120,
-        task_type: Optional[str] = None,
-        output_format: Optional[str] = None,
+        task_type: str | None = None,
+        output_format: str | None = None,
         max_review_attempts: int = 2,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Execute the complete Research & Plan workflow.
 
@@ -1358,13 +1358,13 @@ class ResearchAndPlanOrchestrator:
 def create_research_plan_workflow(
     user_request: str,
     domain: str,
-    csv_data: Optional[str] = None,
-    file_content: Optional[str] = None,
-    filename: Optional[str] = None,
-    file_type: Optional[str] = None,
-    api_key: Optional[str] = None,
+    csv_data: str | None = None,
+    file_content: str | None = None,
+    filename: str | None = None,
+    file_type: str | None = None,
+    api_key: str | None = None,
     **kwargs,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Convenience function to execute the Research & Plan workflow.
 

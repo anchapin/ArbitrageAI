@@ -6,22 +6,77 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  lint:
-    name: Lint
+  security-scan:
+    name: Security Scan
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+        with:
+          fetch-depth: 0
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
           cache: 'pip'
-          
+
+      # Dependency vulnerability scanning with pip-audit
+      - name: Install pip-audit
+        run: pip install pip-audit
+
+      - name: Security scan dependencies (pip-audit)
+        run: |
+          pip-audit -r pyproject.toml || true  # Non-blocking initially
+
+      # Backup dependency scanning with Safety
+      - name: Install safety
+        run: pip install safety
+
+      - name: Safety check
+        run: |
+          safety check -r pyproject.toml --full-report || true
+
+      # Python SAST with Bandit
+      - name: Install bandit
+        run: pip install bandit
+
+      - name: Run bandit security scan
+        run: |
+          bandit -r src/ -f json -o bandit-report.json || true
+
+      # Upload bandit report as artifact
+      - name: Upload bandit report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: bandit-security-report
+          path: bandit-report.json
+          retention-days: 30
+
+      # Secret detection with Gitleaks
+      - name: Run gitleaks secret detection
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    needs: [security-scan]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+
       - name: Install dependencies
         run: |
           pip install ruff
-          
+
       - name: Run Linter (Ruff)
         run: ruff check .
   
@@ -57,7 +112,7 @@ jobs:
           
       - name: Run Unit Tests (Shard ${{ matrix.shard }})
         run: |
-          pytest tests/ --ignore=tests/e2e/ -v --cov=src --cov-report=xml --cov-report=term:skip-covered --timeout=300 --cov-config=pyproject.toml
+          pytest tests/ --ignore=tests/e2e/ -v --cov=src --cov-report=xml --cov-report=term:skip-covered --timeout=300 --cov-config=pyproject.toml --cov-fail-under=80
         env:
           PYTHONUNBUFFERED: 1
           DISABLE_RATE_LIMITING: true

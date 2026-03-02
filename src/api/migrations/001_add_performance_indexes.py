@@ -27,8 +27,9 @@ Performance Impact:
 - Better query plan selectivity
 """
 
-from sqlalchemy import text
 import logging
+
+from sqlalchemy import text
 
 logger = logging.getLogger(__name__)
 

@@ -48,8 +48,11 @@ def get_rate_limiter():
             )
             redis_client.ping()
             _rate_limiter = RateLimiter(redis_client)
-        except Exception:
+        except (redis.ConnectionError, redis.TimeoutError):
             logger.warning("Redis not available. Using in-memory rate limiter.")
+            _rate_limiter = RateLimiter(None)
+        except Exception as e:
+            logger.warning(f"Redis connection failed: {e}. Using in-memory rate limiter.")
             _rate_limiter = RateLimiter(None)
     return _rate_limiter
 

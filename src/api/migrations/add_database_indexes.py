@@ -1,8 +1,10 @@
 """Add database indexes for query optimization - Issue #38"""
 
-from sqlalchemy import text
-from src.api.database import engine
 import logging
+
+from sqlalchemy import text
+
+from src.api.database import engine
 
 logger = logging.getLogger(__name__)
 

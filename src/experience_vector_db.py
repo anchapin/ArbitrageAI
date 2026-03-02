@@ -13,11 +13,11 @@ Features:
 - Few-shot example generation for LLM prompts
 """
 
-import os
+from dataclasses import dataclass
 import json
 import logging
-from typing import Optional, List, Dict, Any
-from dataclasses import dataclass
+import os
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -86,7 +86,7 @@ class TaskExperience:
     domain: str
     task_type: str
     output_format: str
-    csv_headers: List[str]
+    csv_headers: list[str]
 
 
 @dataclass
@@ -229,7 +229,7 @@ class ExperienceVectorDB:
             logger.error(f"Error loading embedding model: {e}")
             self._embedding_model = None
 
-    def _get_embedding(self, text: str) -> List[float]:
+    def _get_embedding(self, text: str) -> list[float]:
         """
         Get embedding vector for text using sentence-transformers.
 
@@ -254,7 +254,7 @@ class ExperienceVectorDB:
         domain: str,
         task_type: str = "visualization",
         output_format: str = "image",
-        csv_headers: Optional[List[str]] = None,
+        csv_headers: list[str] | None = None,
     ) -> bool:
         """
         Store a successful task experience in the vector database.
@@ -318,10 +318,10 @@ class ExperienceVectorDB:
     def query_similar_tasks(
         self,
         user_request: str,
-        domain: Optional[str] = None,
-        task_type: Optional[str] = None,
-        top_k: Optional[int] = None,
-    ) -> List[FewShotExample]:
+        domain: str | None = None,
+        task_type: str | None = None,
+        top_k: int | None = None,
+    ) -> list[FewShotExample]:
         """
         Query for similar past tasks based on user request.
 
@@ -368,7 +368,7 @@ class ExperienceVectorDB:
             # Parse results
             examples = []
             if results and results.get("ids") and len(results["ids"]) > 0:
-                for i, task_id in enumerate(results["ids"][0]):
+                for i, _task_id in enumerate(results["ids"][0]):
                     metadata = results["metadatas"][0][i]
                     distances = results.get("distances", [[]])[0]
 
@@ -394,10 +394,10 @@ class ExperienceVectorDB:
     def build_few_shot_system_prompt(
         self,
         base_system_prompt: str,
-        examples: Optional[List[FewShotExample]] = None,
-        user_request: Optional[str] = None,
-        domain: Optional[str] = None,
-        top_k: Optional[int] = None,
+        examples: list[FewShotExample] | None = None,
+        user_request: str | None = None,
+        domain: str | None = None,
+        top_k: int | None = None,
     ) -> str:
         """
         Build a system prompt with few-shot examples.
@@ -450,7 +450,7 @@ class ExperienceVectorDB:
 
         return enhanced_prompt
 
-    def get_experience_stats(self) -> Dict[str, Any]:
+    def get_experience_stats(self) -> dict[str, Any]:
         """
         Get statistics about the experience database.
 
@@ -506,7 +506,7 @@ class ExperienceVectorDB:
 # =============================================================================
 
 # Global instance for easy access across the application
-_experience_db: Optional[ExperienceVectorDB] = None
+_experience_db: ExperienceVectorDB | None = None
 
 
 def get_experience_db() -> ExperienceVectorDB:
@@ -538,7 +538,7 @@ def store_successful_task(
     domain: str,
     task_type: str = "visualization",
     output_format: str = "image",
-    csv_headers: Optional[List[str]] = None,
+    csv_headers: list[str] | None = None,
 ) -> bool:
     """
     Convenience function to store a successful task.
@@ -573,10 +573,10 @@ def store_successful_task(
 
 def query_similar_tasks(
     user_request: str,
-    domain: Optional[str] = None,
-    task_type: Optional[str] = None,
+    domain: str | None = None,
+    task_type: str | None = None,
     top_k: int = DEFAULT_TOP_K,
-) -> List[FewShotExample]:
+) -> list[FewShotExample]:
     """
     Convenience function to query similar tasks.
 
@@ -602,7 +602,7 @@ def query_similar_tasks(
 def build_few_shot_system_prompt(
     base_system_prompt: str,
     user_request: str,
-    domain: Optional[str] = None,
+    domain: str | None = None,
     top_k: int = DEFAULT_TOP_K,
 ) -> str:
     """

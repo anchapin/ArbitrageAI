@@ -29,8 +29,9 @@ Impact:
 - Reduces need for manual data cleanup
 """
 
-from sqlalchemy import text
 import logging
+
+from sqlalchemy import text
 
 logger = logging.getLogger(__name__)
 

@@ -21,15 +21,12 @@ When TRAINING_MODE is enabled:
 """
 
 import asyncio
-from typing import Optional, Dict, Any, List
 from datetime import datetime
+from typing import Any, Optional
 import uuid
 
 # Load environment variables
 from dotenv import load_dotenv
-
-# Import logger
-from src.utils.logger import get_logger
 
 # Import database and models
 from src.api.database import SessionLocal
@@ -37,6 +34,9 @@ from src.api.models import SimulationBid
 
 # Import ConfigManager
 from src.config.config_manager import ConfigManager
+
+# Import logger
+from src.utils.logger import get_logger
 
 # Load environment variables
 load_dotenv()
@@ -71,11 +71,11 @@ class SimulationEngine:
         job_url: str,
         bid_amount_cents: int,
         strategy_type: str = "balanced",
-        confidence: Optional[int] = None,
-        would_have_won: Optional[bool] = None,
-        outcome_reasoning: Optional[str] = None,
-        job_marketplace: Optional[str] = None,
-        skills_matched: Optional[List[str]] = None,
+        confidence: int | None = None,
+        would_have_won: bool | None = None,
+        outcome_reasoning: str | None = None,
+        job_marketplace: str | None = None,
+        skills_matched: list[str] | None = None,
     ) -> SimulationBid:
         """
         Record a hypothetical bid to the simulation database.
@@ -136,9 +136,9 @@ class SimulationEngine:
 
     def calculate_total_profit(
         self,
-        strategy_type: Optional[str] = None,
-        date_filter: Optional[Dict[str, str]] = None,
-    ) -> Dict[str, Any]:
+        strategy_type: str | None = None,
+        date_filter: dict[str, str] | None = None,
+    ) -> dict[str, Any]:
         """
         Calculate total simulated profit/loss from simulation bids.
 
@@ -222,8 +222,8 @@ class SimulationEngine:
 
     def compare_strategies(
         self,
-        date_filter: Optional[Dict[str, str]] = None,
-    ) -> Dict[str, Any]:
+        date_filter: dict[str, str] | None = None,
+    ) -> dict[str, Any]:
         """
         Compare performance of different bidding strategies.
 
@@ -267,7 +267,7 @@ class SimulationEngine:
             "insights": insights,
         }
 
-    def _generate_insights(self, results: Dict[str, Any]) -> List[str]:
+    def _generate_insights(self, results: dict[str, Any]) -> list[str]:
         """
         Generate actionable insights from simulation results.
 
@@ -334,8 +334,8 @@ class SimulationEngine:
     def get_strategy_summary(
         self,
         strategy_type: str,
-        date_filter: Optional[Dict[str, str]] = None,
-    ) -> Dict[str, Any]:
+        date_filter: dict[str, str] | None = None,
+    ) -> dict[str, Any]:
         """
         Get a summary of performance for a specific strategy.
 
@@ -366,8 +366,8 @@ class SimulationEngine:
         return summary
 
     def get_recent_simulations(
-        self, limit: int = 100, date_filter: Optional[Dict[str, str]] = None
-    ) -> List[SimulationBid]:
+        self, limit: int = 100, date_filter: dict[str, str] | None = None
+    ) -> list[SimulationBid]:
         """
         Get recent simulation bids for review and analysis.
 

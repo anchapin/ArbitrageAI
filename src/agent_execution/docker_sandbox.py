@@ -17,11 +17,10 @@ Usage:
         print(result.logs)
 """
 
+from dataclasses import dataclass
+import logging
 import os
 import tempfile
-import logging
-from typing import Optional, List
-from dataclasses import dataclass
 
 logger = logging.getLogger(__name__)
 
@@ -79,9 +78,9 @@ class SandboxArtifact:
 class SandboxResult:
     """Represents the result of sandbox execution."""
 
-    logs: List[SandboxLog]
-    artifacts: List[SandboxArtifact]
-    error: Optional[str] = None
+    logs: list[SandboxLog]
+    artifacts: list[SandboxArtifact]
+    error: str | None = None
     timed_out: bool = False
 
     @property
@@ -181,7 +180,7 @@ class LocalDockerSandbox:
             logger.warning(f"Warning: Error checking for image: {e}")
             return False
 
-    def _extract_artifacts(self, host_dir: str) -> List[SandboxArtifact]:
+    def _extract_artifacts(self, host_dir: str) -> list[SandboxArtifact]:
         """
         Extract artifacts from the host directory.
 
@@ -237,15 +236,15 @@ class LocalDockerSandbox:
                                 name=filename, data=data, mime_type=mime_type
                             )
                         )
-                    except (OSError, IOError) as e:
+                    except OSError as e:
                         logger.debug(f"Failed to read artifact {filename}: {e}")
-        except (OSError, IOError) as e:
+        except OSError as e:
             logger.debug(f"Artifact extraction error: {e}")
 
         return artifacts
 
     def run_code(
-        self, code: str, timeout: Optional[int] = None, output_format: str = "image"
+        self, code: str, timeout: int | None = None, output_format: str = "image"
     ) -> SandboxResult:
         """
         Execute Python code in the sandbox.
@@ -345,11 +344,11 @@ class LocalDockerSandbox:
 
             except DockerException as e:
                 return SandboxResult(
-                    logs=[], artifacts=[], error=f"Docker error: {str(e)}"
+                    logs=[], artifacts=[], error=f"Docker error: {e!s}"
                 )
             except Exception as e:
                 return SandboxResult(
-                    logs=[], artifacts=[], error=f"Execution error: {str(e)}"
+                    logs=[], artifacts=[], error=f"Execution error: {e!s}"
                 )
 
     # =========================================================================
@@ -401,7 +400,7 @@ class LocalDockerSandbox:
 
 
 def create_sandbox(
-    api_key: Optional[str] = None, timeout: int = DEFAULT_TIMEOUT, **kwargs
+    api_key: str | None = None, timeout: int = DEFAULT_TIMEOUT, **kwargs
 ) -> LocalDockerSandbox:
     """
     Create a LocalDockerSandbox instance (E2B-compatible interface).
@@ -419,7 +418,7 @@ def create_sandbox(
 
 def run_code_in_sandbox(
     code: str,
-    sandbox: Optional[LocalDockerSandbox] = None,
+    sandbox: LocalDockerSandbox | None = None,
     timeout: int = DEFAULT_TIMEOUT,
     output_format: str = "image",
 ) -> SandboxResult:

@@ -27,8 +27,9 @@ Impact:
 - Reduces application complexity
 """
 
-from sqlalchemy import text
 import logging
+
+from sqlalchemy import text
 
 logger = logging.getLogger(__name__)
 
