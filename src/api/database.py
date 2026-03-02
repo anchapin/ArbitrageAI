@@ -19,9 +19,8 @@ if DATABASE_URL.startswith("sqlite"):
     # For in-memory databases, we need to use StaticPool to share the same database across connections
     connect_args = {"check_same_thread": False}
     if DATABASE_URL == "sqlite:///:memory:":
-        from sqlalchemy.pool import StaticPool
         connect_args["poolclass"] = StaticPool
-    
+
     engine = create_engine(
         DATABASE_URL,
         connect_args=connect_args,
