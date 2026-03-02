@@ -1673,6 +1673,51 @@ class ConfidenceEntry(Base):
         }
 
 
+class ConfidenceAdjustment(Base):
+    """
+    Confidence Adjustment Database Model
+
+    Tracks all adjustments made by the self-adjusting confidence algorithm
+    for audit and human review purposes.
+
+    Issue #97: Self-Adjusting Confidence Algorithm
+    """
+
+    __tablename__ = "confidence_adjustments"
+
+    __table_args__ = (
+        Index("idx_conf_adj_reason", "adjustment_reason"),
+        Index("idx_conf_adj_created_at", "created_at"),
+        Index("idx_conf_adj_manual", "is_manual_override"),
+    )
+
+    id = Column(String, primary_key=True)
+
+    # Conservatism values
+    old_conservatism = Column(Integer, nullable=False)
+    new_conservatism = Column(Integer, nullable=False)
+
+    # Adjustment metadata
+    adjustment_reason = Column(String, nullable=False, index=True)
+    total_adjustments = Column(Integer, default=0, nullable=False)
+    is_manual_override = Column(Boolean, default=False, nullable=False)
+
+    # Timestamps
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    def to_dict(self):
+        """Convert adjustment to dictionary."""
+        return {
+            "id": self.id,
+            "old_conservatism": self.old_conservatism,
+            "new_conservatism": self.new_conservatism,
+            "adjustment_reason": self.adjustment_reason,
+            "total_adjustments": self.total_adjustments,
+            "is_manual_override": self.is_manual_override,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+        }
+
+
 class VirtualWallet(Base):
     """
     Virtual Wallet Database Model
