@@ -41,6 +41,9 @@ else:
 # Disable rate limiting for tests
 os.environ.setdefault("DISABLE_RATE_LIMITING", "true")
 
+# Disable scheduler during tests to prevent background database access
+os.environ.setdefault("SCHEDULER_ENABLED", "false")
+
 
 # =============================================================================
 # PYTEST CONFIGURATION
