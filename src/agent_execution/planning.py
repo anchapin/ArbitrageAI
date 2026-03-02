@@ -604,8 +604,9 @@ that would inform a work plan. Return JSON with keys: analysis, key_insights."""
             if "{" in content and "}" in content:
                 json_start = content.find("{")
                 json_end = content.rfind("}") + 1
-                return eval(content[json_start:json_end])
-        except Exception:
+                json_str = content[json_start:json_end]
+                return json.loads(json_str)
+        except (json.JSONDecodeError, Exception):
             pass
 
         return {}
@@ -782,13 +783,13 @@ Generate the work plan as JSON."""
                 json_start = content.find("{")
                 json_end = content.rfind("}") + 1
                 json_str = content[json_start:json_end]
-                plan = eval(json_str)  # Safe here since we control the prompt
+                plan = json.loads(json_str)
 
                 # Validate required fields
                 required = ["title", "approach", "steps", "success_criteria"]
                 if all(field in plan for field in required):
                     return plan
-        except (SyntaxError, NameError, ValueError):
+        except (json.JSONDecodeError, ValueError):
             pass
 
         return None
@@ -1009,7 +1010,8 @@ Return your review in JSON format."""
             if "{" in content and "}" in content:
                 json_start = content.find("{")
                 json_end = content.rfind("}") + 1
-                review_data = eval(content[json_start:json_end])
+                json_str = content[json_start:json_end]
+                review_data = json.loads(json_str)
 
                 return {
                     "success": True,
@@ -1092,7 +1094,8 @@ Please revise the approach to address the review feedback. Return JSON."""
             if "{" in content and "}" in content:
                 json_start = content.find("{")
                 json_end = content.rfind("}") + 1
-                revision = eval(content[json_start:json_end])
+                json_str = content[json_start:json_end]
+                revision = json.loads(json_str)
 
                 return {"success": True, "revision": revision}
 

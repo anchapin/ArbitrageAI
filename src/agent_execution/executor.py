@@ -566,7 +566,8 @@ Return ONLY the Python code, no markdown."""
                         try:
                             json_start = log.text.find("{")
                             json_end = log.text.rfind("}") + 1
-                            result_data = eval(log.text[json_start:json_end])
+                            json_str = log.text[json_start:json_end]
+                            result_data = json.loads(json_str)
                             if result_data.get("success"):
                                 return {
                                     "success": True,
@@ -574,7 +575,7 @@ Return ONLY the Python code, no markdown."""
                                     "output_format": OutputFormat.XLSX,
                                     "message": "Excel spreadsheet generated",
                                 }
-                        except Exception:
+                        except (json.JSONDecodeError, Exception):
                             pass
 
             return {
@@ -1042,7 +1043,8 @@ Return ONLY valid JSON, no markdown formatting, no explanations."""
                         try:
                             json_start = log.text.find("{")
                             json_end = log.text.rfind("}") + 1
-                            result_data = eval(log.text[json_start:json_end])
+                            json_str = log.text[json_start:json_end]
+                            result_data = json.loads(json_str)
                             if result_data.get("success"):
                                 return {
                                     "success": True,
@@ -1051,7 +1053,7 @@ Return ONLY valid JSON, no markdown formatting, no explanations."""
                                     "message": f"{output_format.upper()} document generated using template",
                                     "generation_method": "template_json",
                                 }
-                        except Exception:
+                        except (json.JSONDecodeError, Exception):
                             pass
 
             return {
@@ -1332,7 +1334,8 @@ Return ONLY Python code, no markdown."""
                     try:
                         json_start = log.text.find("{")
                         json_end = log.text.rfind("}") + 1
-                        result_data = eval(log.text[json_start:json_end])
+                        json_str = log.text[json_start:json_end]
+                        result_data = json.loads(json_str)
                         if result_data.get("success"):
                             return {
                                 "success": True,
@@ -1341,7 +1344,7 @@ Return ONLY Python code, no markdown."""
                                 "document_type": "document",
                                 "message": f"{self.output_format.upper()} document generated",
                             }
-                    except Exception:
+                    except (json.JSONDecodeError, Exception):
                         pass
 
         return {
@@ -1841,7 +1844,8 @@ Return ONLY Python code, no markdown."""
                     try:
                         json_start = log.text.find("{")
                         json_end = log.text.rfind("}") + 1
-                        result_data = eval(log.text[json_start:json_end])
+                        json_str = log.text[json_start:json_end]
+                        result_data = json.loads(json_str)
                         if result_data.get("success"):
                             return {
                                 "success": True,
@@ -1851,7 +1855,7 @@ Return ONLY Python code, no markdown."""
                                 "report_type": report_type,
                                 "message": "Report generated",
                             }
-                    except Exception:
+                    except (json.JSONDecodeError, Exception):
                         pass
 
         return {
@@ -2102,7 +2106,7 @@ Return your review in JSON format."""
                 json_start = response.find("{")
                 json_end = response.rfind("}") + 1
                 json_str = response[json_start:json_end]
-                review_data = eval(json_str)  # Safe here since we control the prompt
+                review_data = json.loads(json_str)
 
                 return {
                     "approved": review_data.get("approved", True),
@@ -2110,7 +2114,7 @@ Return your review in JSON format."""
                     "issues": review_data.get("issues", []),
                     "success": True,
                 }
-        except (SyntaxError, ValueError, NameError):
+        except (json.JSONDecodeError, ValueError):
             pass
 
         # Default to approved if parsing fails
@@ -2818,9 +2822,7 @@ def _parse_sandbox_result(result, chart_type: str) -> dict:
                         json_start = log.text.find("{")
                         json_end = log.text.rfind("}") + 1
                         json_str = log.text[json_start:json_end]
-                        result_data = eval(
-                            json_str
-                        )  # Safe here since we generated the code
+                        result_data = json.loads(json_str)
 
                         return {
                             "success": result_data.get("success", True),
@@ -2828,7 +2830,7 @@ def _parse_sandbox_result(result, chart_type: str) -> dict:
                             "chart_type": result_data.get("chart_type", chart_type),
                             "message": "Visualization generated successfully",
                         }
-                except (SyntaxError, ValueError, NameError):
+                except (json.JSONDecodeError, ValueError):
                     continue
 
     # Try to get image from artifacts

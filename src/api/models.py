@@ -1767,6 +1767,14 @@ class VirtualWallet(Base):
         budget_cap_cents = self.budget_cap_cents or 0
         budget_spent_cents = self.budget_spent_cents or 0
 
+        # Safely calculate budget remaining and percentage
+        budget_remaining_cents = max(0, budget_cap_cents - budget_spent_cents)
+        budget_percentage_used = (
+            (budget_spent_cents / budget_cap_cents * 100)
+            if budget_cap_cents > 0
+            else 0
+        )
+
         return {
             "id": self.id,
             "balance_dollars": balance_cents / 100,
@@ -1780,11 +1788,9 @@ class VirtualWallet(Base):
             "budget_reset_period": self.budget_reset_period,
             "budget_spent_dollars": budget_spent_cents / 100,
             "budget_spent_cents": budget_spent_cents,
-            "budget_remaining_dollars": (budget_cap_cents - budget_spent_cents) / 100,
-            "budget_remaining_cents": budget_cap_cents - budget_spent_cents,
-            "budget_percentage_used": (budget_spent_cents / budget_cap_cents * 100)
-            if budget_cap_cents > 0
-            else 0,
+            "budget_remaining_dollars": budget_remaining_cents / 100,
+            "budget_remaining_cents": budget_remaining_cents,
+            "budget_percentage_used": budget_percentage_used,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
         }

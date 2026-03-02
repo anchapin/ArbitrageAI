@@ -741,42 +741,354 @@ class WebSocketManager:
         return True
     
     async def _validate_task_access(self, client_id: str, task_id: str) -> bool:
-        """Validate that a client has access to a task."""
-        # This would typically check database permissions
-        # For now, we'll implement a simple check
-        session = self.client_sessions.get(client_id, {})
-        session.get("user_id")
+        """
+        Validate that a client has access to a task.
         
-        # TODO: Implement proper task ownership validation
-        # This should query the database to check if user_id owns task_id
-        return True  # Simplified for now
+        Args:
+            client_id: The client identifier
+            task_id: The task identifier to validate access for
+            
+        Returns:
+            bool: True if client has access, False otherwise
+        """
+        from sqlalchemy import create_engine
+        from sqlalchemy.orm import Session
+        
+        session_data = self.client_sessions.get(client_id, {})
+        user_id = session_data.get("user_id")
+        
+        if not user_id:
+            logger.warning(f"No user_id found in session for client {client_id}")
+            return False
+        
+        try:
+            # Create database session
+            engine = create_engine(self.config.DATABASE_URL)
+            
+            with Session(engine) as db:
+                # Import Task model here to avoid circular imports
+                from .models import Task
+                
+                # Query task by ID and verify ownership
+                task = db.query(Task).filter(
+                    Task.id == task_id,
+                    Task.client_id == user_id
+                ).first()
+                
+                if task:
+                    logger.debug(f"Client {client_id} has access to task {task_id}")
+                    return True
+                else:
+                    logger.warning(
+                        f"Client {client_id} (user: {user_id}) attempted "
+                        f"to access unauthorized task {task_id}"
+                    )
+                    return False
+                    
+        except Exception as e:
+            logger.error(f"Error validating task access: {e}")
+            # Fail closed - deny access on error
+            return False
     
     async def _pause_task(self, task_id: str, params: Dict[str, Any]) -> Dict[str, Any]:
-        """Pause a task (placeholder implementation)."""
-        # TODO: Implement actual task pausing logic
-        # This would integrate with the task execution system
-        return {
-            "success": True,
-            "message": f"Task {task_id} paused successfully"
-        }
+        """
+        Pause a task execution.
+        
+        Args:
+            task_id: The task identifier to pause
+            params: Additional parameters (e.g., reason for pause)
+            
+        Returns:
+            Dict containing success status and message
+        """
+        from sqlalchemy import create_engine
+        from sqlalchemy.orm import Session
+        
+        try:
+            engine = create_engine(self.config.DATABASE_URL)
+            
+            with Session(engine) as db:
+                from .models import Task, TaskStatus
+                
+                # Query the task
+                task = db.query(Task).filter(Task.id == task_id).first()
+                
+                if not task:
+                    return {
+                        "success": False,
+                        "message": f"Task {task_id} not found",
+                        "error_code": "TASK_NOT_FOUND"
+                    }
+                
+                # Check if task can be paused
+                if task.status not in [TaskStatus.PLANNING, TaskStatus.PROCESSING]:
+                    return {
+                        "success": False,
+                        "message": f"Task cannot be paused in status: {task.status}",
+                        "error_code": "INVALID_STATUS_FOR_PAUSE"
+                    }
+                
+                # Update task status to indicate paused state
+                # Store the original status to resume later
+                previous_status = task.status.value
+                task.status = TaskStatus.PENDING  # Return to pending state
+                task.metadata = task.metadata or {}
+                task.metadata["paused_at"] = datetime.now().isoformat()
+                task.metadata["previous_status"] = previous_status
+                task.metadata["pause_reason"] = params.get("reason", "User requested")
+                
+                db.commit()
+                
+                logger.info(f"Task {task_id} paused successfully (previous status: {previous_status})")
+                
+                # Send WebSocket notification to subscribers
+                await self._send_pause_notification(task_id, previous_status)
+                
+                return {
+                    "success": True,
+                    "message": f"Task {task_id} paused successfully",
+                    "previous_status": previous_status,
+                    "paused_at": task.metadata["paused_at"]
+                }
+                
+        except Exception as e:
+            logger.error(f"Error pausing task {task_id}: {e}")
+            return {
+                "success": False,
+                "message": f"Failed to pause task: {str(e)}",
+                "error_code": "PAUSE_ERROR"
+            }
+    
+    async def _send_pause_notification(self, task_id: str, previous_status: str):
+        """Send pause notification to task subscribers."""
+        if task_id in self.task_subscriptions:
+            message = WebSocketMessage(
+                type=WebSocketMessageType.TASK_STATUS_UPDATE,
+                timestamp=time.time(),
+                data={
+                    "task_id": task_id,
+                    "status": "PAUSED",
+                    "previous_status": previous_status,
+                    "message": "Task paused by user",
+                    "paused_at": datetime.now().isoformat()
+                }
+            )
+            
+            for client_id in self.task_subscriptions[task_id]:
+                await self.send_message(client_id, message)
     
     async def _cancel_task(self, task_id: str, params: Dict[str, Any]) -> Dict[str, Any]:
-        """Cancel a task (placeholder implementation)."""
-        # TODO: Implement actual task cancellation logic
-        # This would integrate with the task execution system
-        return {
-            "success": True,
-            "message": f"Task {task_id} cancelled successfully"
-        }
+        """
+        Cancel a task execution.
+        
+        Args:
+            task_id: The task identifier to cancel
+            params: Additional parameters (e.g., cancellation reason)
+            
+        Returns:
+            Dict containing success status and message
+        """
+        from sqlalchemy import create_engine
+        from sqlalchemy.orm import Session
+        
+        try:
+            engine = create_engine(self.config.DATABASE_URL)
+            
+            with Session(engine) as db:
+                from .models import Task, TaskStatus
+                
+                # Query the task
+                task = db.query(Task).filter(Task.id == task_id).first()
+                
+                if not task:
+                    return {
+                        "success": False,
+                        "message": f"Task {task_id} not found",
+                        "error_code": "TASK_NOT_FOUND"
+                    }
+                
+                # Check if task can be cancelled
+                cancellable_statuses = [
+                    TaskStatus.PENDING,
+                    TaskStatus.PLANNING,
+                    TaskStatus.PROCESSING,
+                    TaskStatus.REVIEW_REQUIRED
+                ]
+                
+                if task.status not in cancellable_statuses:
+                    return {
+                        "success": False,
+                        "message": f"Task cannot be cancelled in status: {task.status}",
+                        "error_code": "INVALID_STATUS_FOR_CANCEL"
+                    }
+                
+                # Store previous state for audit
+                previous_status = task.status.value
+                cancellation_reason = params.get("reason", "User requested cancellation")
+                
+                # Update task status to FAILED with cancellation metadata
+                task.status = TaskStatus.FAILED
+                task.metadata = task.metadata or {}
+                task.metadata["cancelled_at"] = datetime.now().isoformat()
+                task.metadata["previous_status"] = previous_status
+                task.metadata["cancellation_reason"] = cancellation_reason
+                task.metadata["cancelled_by"] = "user"
+                task.error_message = f"Task cancelled: {cancellation_reason}"
+                
+                db.commit()
+                
+                logger.info(f"Task {task_id} cancelled successfully (previous status: {previous_status})")
+                
+                # Send WebSocket notification to subscribers
+                await self._send_cancel_notification(task_id, previous_status, cancellation_reason)
+                
+                return {
+                    "success": True,
+                    "message": f"Task {task_id} cancelled successfully",
+                    "previous_status": previous_status,
+                    "cancelled_at": task.metadata["cancelled_at"],
+                    "cancellation_reason": cancellation_reason
+                }
+                
+        except Exception as e:
+            logger.error(f"Error cancelling task {task_id}: {e}")
+            return {
+                "success": False,
+                "message": f"Failed to cancel task: {str(e)}",
+                "error_code": "CANCEL_ERROR"
+            }
+    
+    async def _send_cancel_notification(
+        self, 
+        task_id: str, 
+        previous_status: str, 
+        cancellation_reason: str
+    ):
+        """Send cancellation notification to task subscribers."""
+        if task_id in self.task_subscriptions:
+            message = WebSocketMessage(
+                type=WebSocketMessageType.TASK_STATUS_UPDATE,
+                timestamp=time.time(),
+                data={
+                    "task_id": task_id,
+                    "status": "CANCELLED",
+                    "previous_status": previous_status,
+                    "message": "Task cancelled by user",
+                    "cancellation_reason": cancellation_reason,
+                    "cancelled_at": datetime.now().isoformat()
+                }
+            )
+            
+            for client_id in self.task_subscriptions[task_id]:
+                await self.send_message(client_id, message)
     
     async def _prioritize_task(self, task_id: str, params: Dict[str, Any]) -> Dict[str, Any]:
-        """Prioritize a task (placeholder implementation)."""
-        # TODO: Implement actual task prioritization logic
-        # This would integrate with the task scheduler
-        return {
-            "success": True,
-            "message": f"Task {task_id} prioritized successfully"
-        }
+        """
+        Prioritize a task in the execution queue.
+        
+        Args:
+            task_id: The task identifier to prioritize
+            params: Additional parameters (e.g., priority level, reason)
+            
+        Returns:
+            Dict containing success status and message
+        """
+        from sqlalchemy import create_engine
+        from sqlalchemy.orm import Session
+        
+        try:
+            engine = create_engine(self.config.DATABASE_URL)
+            
+            with Session(engine) as db:
+                from .models import Task, TaskStatus
+                
+                # Query the task
+                task = db.query(Task).filter(Task.id == task_id).first()
+                
+                if not task:
+                    return {
+                        "success": False,
+                        "message": f"Task {task_id} not found",
+                        "error_code": "TASK_NOT_FOUND"
+                    }
+                
+                # Check if task can be prioritized
+                prioritizable_statuses = [
+                    TaskStatus.PENDING,
+                    TaskStatus.PLANNING,
+                    TaskStatus.PROCESSING
+                ]
+                
+                if task.status not in prioritizable_statuses:
+                    return {
+                        "success": False,
+                        "message": f"Task cannot be prioritized in status: {task.status}",
+                        "error_code": "INVALID_STATUS_FOR_PRIORITY"
+                    }
+                
+                # Get priority level (1-10, where 10 is highest)
+                priority_level = params.get("priority", 5)
+                priority_level = max(1, min(10, priority_level))  # Clamp between 1-10
+                
+                # Update task priority in metadata
+                task.metadata = task.metadata or {}
+                previous_priority = task.metadata.get("priority", 5)
+                task.metadata["priority"] = priority_level
+                task.metadata["priority_updated_at"] = datetime.now().isoformat()
+                task.metadata["priority_reason"] = params.get("reason", "User requested")
+                
+                db.commit()
+                
+                logger.info(
+                    f"Task {task_id} priority updated: {previous_priority} -> {priority_level}"
+                )
+                
+                # Send WebSocket notification to subscribers
+                await self._send_priority_notification(
+                    task_id, 
+                    previous_priority, 
+                    priority_level
+                )
+                
+                return {
+                    "success": True,
+                    "message": f"Task {task_id} priority updated to {priority_level}",
+                    "previous_priority": previous_priority,
+                    "new_priority": priority_level,
+                    "priority_updated_at": task.metadata["priority_updated_at"]
+                }
+                
+        except Exception as e:
+            logger.error(f"Error updating task priority {task_id}: {e}")
+            return {
+                "success": False,
+                "message": f"Failed to update task priority: {str(e)}",
+                "error_code": "PRIORITY_ERROR"
+            }
+    
+    async def _send_priority_notification(
+        self, 
+        task_id: str, 
+        previous_priority: int, 
+        new_priority: int
+    ):
+        """Send priority update notification to task subscribers."""
+        if task_id in self.task_subscriptions:
+            message = WebSocketMessage(
+                type=WebSocketMessageType.TASK_PROGRESS_UPDATE,
+                timestamp=time.time(),
+                data={
+                    "task_id": task_id,
+                    "priority_updated": True,
+                    "previous_priority": previous_priority,
+                    "new_priority": new_priority,
+                    "message": f"Task priority changed to {new_priority}",
+                    "updated_at": datetime.now().isoformat()
+                }
+            )
+            
+            for client_id in self.task_subscriptions[task_id]:
+                await self.send_message(client_id, message)
     
     def get_connection_count(self) -> int:
         """Get the number of active connections."""

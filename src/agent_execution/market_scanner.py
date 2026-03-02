@@ -612,19 +612,22 @@ Evaluate this job posting and return JSON."""
             # Extract JSON from response
             json_match = re.search(r"\{[\s\S]*\}", response_content)
             if json_match:
-                eval_data = eval(json_match.group(0))
+                try:
+                    eval_data = json.loads(json_match.group(0))
 
-                # Validate and clamp bid amount
-                bid_amount = eval_data.get("bid_amount", 50)
-                bid_amount = max(MIN_BID_AMOUNT, min(MAX_BID_AMOUNT, bid_amount))
+                    # Validate and clamp bid amount
+                    bid_amount = eval_data.get("bid_amount", 50)
+                    bid_amount = max(MIN_BID_AMOUNT, min(MAX_BID_AMOUNT, bid_amount))
 
-                return EvaluationResult(
-                    is_suitable=eval_data.get("is_suitable", False),
-                    bid_amount=bid_amount,
-                    reasoning=eval_data.get("reasoning", "Evaluation completed"),
-                    task_id=task_id,
-                    confidence=eval_data.get("confidence", 0.5),
-                )
+                    return EvaluationResult(
+                        is_suitable=eval_data.get("is_suitable", False),
+                        bid_amount=bid_amount,
+                        reasoning=eval_data.get("reasoning", "Evaluation completed"),
+                        task_id=task_id,
+                        confidence=eval_data.get("confidence", 0.5),
+                    )
+                except (json.JSONDecodeError, ValueError) as e:
+                    logger.warning(f"Failed to parse JSON response: {e}")
 
             # If JSON parsing fails, use fallback
             logger.warning("Failed to parse LLM response, using fallback evaluation")

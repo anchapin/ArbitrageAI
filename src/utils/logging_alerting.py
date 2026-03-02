@@ -388,15 +388,77 @@ class AlertManager:
     def _evaluate_condition(self, condition: str, metrics: Dict[str, Any]) -> bool:
         """
         Evaluate an alert condition.
-        
+
         Example condition: "error_count > 10"
+        
+        Uses ast.literal_eval for safe evaluation of simple expressions.
+        For more complex conditions, consider using a proper expression parser.
         """
+        import ast
+        import operator
+        
+        # Define allowed operators for safe expression evaluation
+        operators = {
+            ast.Add: operator.add,
+            ast.Sub: operator.sub,
+            ast.Mult: operator.mul,
+            ast.Div: operator.truediv,
+            ast.Mod: operator.mod,
+            ast.Pow: operator.pow,
+            ast.USub: operator.neg,
+            ast.UAdd: operator.pos,
+            ast.Eq: operator.eq,
+            ast.NotEq: operator.ne,
+            ast.Lt: operator.lt,
+            ast.LtE: operator.le,
+            ast.Gt: operator.gt,
+            ast.GtE: operator.ge,
+            ast.And: operator.and_,
+            ast.Or: operator.or_,
+            ast.Not: operator.not_,
+        }
+        
+        def eval_node(node):
+            """Safely evaluate an AST node."""
+            if isinstance(node, ast.Num):  # Number
+                return node.n
+            elif isinstance(node, ast.Str):  # String
+                return node.s
+            elif isinstance(node, ast.Name):  # Variable
+                if node.id in metrics:
+                    return metrics[node.id]
+                else:
+                    raise ValueError(f"Unknown variable: {node.id}")
+            elif isinstance(node, ast.Compare):  # Comparison
+                left = eval_node(node.left)
+                for op, right in zip(node.ops, node.comparators):
+                    if type(op) not in operators:
+                        raise ValueError(f"Unsupported operator: {type(op)}")
+                    left = operators[type(op)](left, eval_node(right))
+                return left
+            elif isinstance(node, ast.BoolOp):  # Boolean operation
+                result = eval_node(node.values[0])
+                for value in node.values[1:]:
+                    result = operators[type(node.op)](result, eval_node(value))
+                return result
+            elif isinstance(node, ast.UnaryOp):  # Unary operation
+                return operators[type(node.op)](eval_node(node.operand))
+            elif isinstance(node, ast.BinOp):  # Binary operation
+                return operators[type(node.op)](eval_node(node.left), eval_node(node.right))
+            else:
+                raise ValueError(f"Unsupported expression: {type(node)}")
+        
         try:
-            # Safe evaluation of condition
-            # Only allow access to metrics dictionary
-            return eval(condition, {"__builtins__": {}}, metrics)
+            # Parse the condition into an AST
+            tree = ast.parse(condition, mode='eval')
+            return eval_node(tree.body)
         except Exception:
-            return False
+            # Fallback to the original eval method with restricted builtins
+            # This is less safe but maintains backward compatibility
+            try:
+                return eval(condition, {"__builtins__": {}}, metrics)
+            except Exception:
+                return False
 
     async def _trigger_rule(
         self,
