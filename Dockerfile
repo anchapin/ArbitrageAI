@@ -10,7 +10,7 @@
 # -----------------------------------------------------------------------------
 # Stage 1: Dependencies Builder
 # -----------------------------------------------------------------------------
-FROM python:3.10-slim as builder
+FROM python:3.14-slim as builder
 
 WORKDIR /app
 
@@ -33,7 +33,7 @@ RUN pip install --no-cache-dir --user -r requirements.txt
 # -----------------------------------------------------------------------------
 # Stage 2: Production Runtime
 # -----------------------------------------------------------------------------
-FROM python:3.10-slim as production
+FROM python:3.14-slim as production
 
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1 \
