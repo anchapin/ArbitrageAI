@@ -1,5 +1,5 @@
 """
-Cost Tracking and ROI Analysis
+Cost Tracking and ROI Analysis.
 
 Tracks costs of fine-tuning and inference to calculate ROI.
 """
@@ -8,8 +8,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 import json
 import logging
-import os
-import pathlib
+from pathlib import Path
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -51,22 +50,18 @@ class CostTracker:
             tracker_path: Path to cost tracking file
         """
         if tracker_path is None:
-            data_dir = os.path.join(
-                pathlib.Path(pathlib.Path(pathlib.Path(__file__).parent).parent).parent,
-                "data",
-                "fine_tuning",
-            )
-            os.makedirs(data_dir, exist_ok=True)
-            tracker_path = os.path.join(data_dir, "cost_tracking.json")
+            data_dir = Path(__file__).parent.parent.parent / "data" / "fine_tuning"
+            data_dir.mkdir(parents=True, exist_ok=True)
+            tracker_path = data_dir / "cost_tracking.json"
 
         self.tracker_path = tracker_path
         self.costs: dict[str, Any] = self._load_costs()
 
     def _load_costs(self) -> dict[str, Any]:
         """Load cost tracking data."""
-        if pathlib.Path(self.tracker_path).exists():
+        if Path(self.tracker_path).exists():
             try:
-                with open(self.tracker_path) as f:
+                with open(self.tracker_path, encoding="utf-8") as f:
                     return json.load(f)
             except Exception as e:
                 logger.warning(f"Failed to load costs: {e}")
@@ -75,7 +70,7 @@ class CostTracker:
 
     def _save_costs(self) -> None:
         """Save cost tracking data."""
-        with open(self.tracker_path, "w") as f:
+        with open(self.tracker_path, "w", encoding="utf-8") as f:
             json.dump(self.costs, f, indent=2)
 
     def record_training_job(
@@ -286,7 +281,7 @@ class CostTracker:
             Cost summary dictionary
         """
         training_costs = {}
-        for job_id, job in self.costs["jobs"].items():
+        for job in self.costs["jobs"].values():
             model_name = job.get("model_name", "unknown")
             if model_name not in training_costs:
                 training_costs[model_name] = 0.0
@@ -317,6 +312,6 @@ class CostTracker:
         Args:
             filepath: Path to export
         """
-        with open(filepath, "w") as f:
+        with open(filepath, "w", encoding="utf-8") as f:
             json.dump(self.costs, f, indent=2)
         logger.info(f"Exported cost tracking data to {filepath}")

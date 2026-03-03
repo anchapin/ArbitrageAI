@@ -1,5 +1,5 @@
 """
-URL Circuit Breaker for Market Scanner
+URL Circuit Breaker for Market Scanner.
 
 Prevents repeated requests to failing marketplace URLs.
 
@@ -140,7 +140,7 @@ _url_circuit_breaker: URLCircuitBreaker | None = None
 
 def get_url_circuit_breaker() -> URLCircuitBreaker:
     """Get or create the global URLCircuitBreaker instance."""
-    global _url_circuit_breaker
+    global _url_circuit_breaker  # noqa: PLW0603
     if _url_circuit_breaker is None:
         _url_circuit_breaker = URLCircuitBreaker()
     return _url_circuit_breaker

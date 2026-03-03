@@ -1,5 +1,5 @@
 """
-Model Registry and Versioning
+Model Registry and Versioning.
 
 Tracks fine-tuned models, their versions, performance metrics, and deployment status.
 """
@@ -9,8 +9,7 @@ from datetime import datetime, timezone
 from enum import Enum
 import json
 import logging
-import os
-import pathlib
+from pathlib import Path
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -64,22 +63,18 @@ class ModelRegistry:
             registry_path: Path to registry file
         """
         if registry_path is None:
-            data_dir = os.path.join(
-                pathlib.Path(pathlib.Path(pathlib.Path(__file__).parent).parent).parent,
-                "data",
-                "fine_tuning",
-            )
-            os.makedirs(data_dir, exist_ok=True)
-            registry_path = os.path.join(data_dir, "model_registry.json")
+            data_dir = Path(__file__).parent.parent.parent / "data" / "fine_tuning"
+            data_dir.mkdir(parents=True, exist_ok=True)
+            registry_path = data_dir / "model_registry.json"
 
         self.registry_path = registry_path
         self.models: dict[str, list[dict[str, Any]]] = self._load_registry()
 
     def _load_registry(self) -> dict[str, list[dict[str, Any]]]:
         """Load registry from file."""
-        if pathlib.Path(self.registry_path).exists():
+        if Path(self.registry_path).exists():
             try:
-                with open(self.registry_path) as f:
+                with open(self.registry_path, encoding="utf-8") as f:
                     return json.load(f)
             except Exception as e:
                 logger.warning(f"Failed to load registry: {e}")
@@ -88,7 +83,7 @@ class ModelRegistry:
 
     def _save_registry(self) -> None:
         """Save registry to file."""
-        with open(self.registry_path, "w") as f:
+        with open(self.registry_path, "w", encoding="utf-8") as f:
             json.dump(self.models, f, indent=2)
 
     def register_model(
@@ -290,7 +285,7 @@ class ModelRegistry:
         Args:
             filepath: Path to export
         """
-        with open(filepath, "w") as f:
+        with open(filepath, "w", encoding="utf-8") as f:
             json.dump(self.models, f, indent=2)
         logger.info(f"Exported model registry to {filepath}")
 

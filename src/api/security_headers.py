@@ -1,5 +1,5 @@
 """
-Security Headers Middleware for FastAPI
+Security Headers Middleware for FastAPI.
 
 Issue #149: Add security headers middleware to FastAPI application
 
@@ -30,8 +30,8 @@ from collections.abc import Callable
 from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
 
-from ..config.config_manager import ConfigManager
-from ..utils.logger import get_logger
+from src.config.config_manager import ConfigManager
+from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
 
@@ -39,14 +39,14 @@ logger = get_logger(__name__)
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     """
     Middleware to add security headers to all HTTP responses.
-    
+
     This middleware implements defense-in-depth by adding multiple
     layers of security through HTTP response headers.
-    
+
     Example:
         from fastapi import FastAPI
         from src.api.security_headers import SecurityHeadersMiddleware
-        
+
         app = FastAPI()
         app.add_middleware(SecurityHeadersMiddleware)
     """
@@ -74,7 +74,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     ):
         """
         Initialize security headers middleware.
-        
+
         Args:
             app: FastAPI application
             hsts_max_age: Max age for HSTS in seconds
@@ -117,18 +117,17 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
         """
         Process request and add security headers to response.
-        
+
         Args:
             request: Incoming HTTP request
             call_next: Next middleware/handler in chain
-            
+
         Returns:
             Response with security headers added
         """
         try:
             response = await call_next(request)
-            response = self._add_security_headers(response, request)
-            return response
+            return self._add_security_headers(response, request)
         except Exception as e:
             logger.error(f"Security headers middleware error: {e}", exc_info=True)
             # Don't block requests on middleware errors
@@ -137,11 +136,11 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     def _add_security_headers(self, response: Response, request: Request) -> Response:
         """
         Add security headers to response.
-        
+
         Args:
             response: HTTP response
             request: Original HTTP request
-            
+
         Returns:
             Response with security headers
         """
@@ -228,10 +227,10 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     def _build_csp_policy(self, request: Request) -> str:
         """
         Build Content-Security-Policy header value.
-        
+
         Args:
             request: HTTP request for context
-            
+
         Returns:
             CSP policy string
         """
@@ -267,13 +266,13 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     def _is_cacheable_endpoint(self, path: str) -> bool:
         """
         Check if endpoint should be cached.
-        
+
         Static assets and public endpoints can be cached.
         API endpoints with sensitive data should not be cached.
-        
+
         Args:
             path: URL path
-            
+
         Returns:
             True if cacheable, False otherwise
         """
@@ -292,10 +291,10 @@ def create_security_headers_middleware(
 ) -> SecurityHeadersMiddleware:
     """
     Factory function to create security headers middleware with config-based settings.
-    
+
     Args:
         is_development: Whether running in development mode
-        
+
     Returns:
         Configured SecurityHeadersMiddleware instance
     """
@@ -335,18 +334,18 @@ def create_security_headers_middleware(
 def setup_security_headers(app, is_development: bool = False):
     """
     Setup security headers middleware for FastAPI application.
-    
+
     Usage:
         from fastapi import FastAPI
         from src.api.security_headers import setup_security_headers
-        
+
         app = FastAPI()
         setup_security_headers(app, is_development=True)
-    
+
     Args:
         app: FastAPI application
         is_development: Whether running in development mode
     """
-    middleware = create_security_headers_middleware(is_development)
+    create_security_headers_middleware(is_development)
     app.add_middleware(SecurityHeadersMiddleware)
     logger.info("Security headers middleware added to application")

@@ -1,5 +1,5 @@
 """
-Bid Lock Manager Factory
+Bid Lock Manager Factory.
 
 Smart factory that chooses between Redis and in-memory implementations
 based on environment configuration and availability.
@@ -88,7 +88,7 @@ async def get_bid_lock_manager() -> Union["RedisBidLockManager", "BidLockManager
     Returns:
         Global BidLockManager (Redis or in-memory)
     """
-    global _bid_lock_manager
+    global _bid_lock_manager  # noqa: PLW0603
     if _bid_lock_manager is None:
         _bid_lock_manager = await create_bid_lock_manager()
     return _bid_lock_manager
@@ -107,14 +107,14 @@ async def init_bid_lock_manager(
     Returns:
         Initialized global BidLockManager
     """
-    global _bid_lock_manager
+    global _bid_lock_manager  # noqa: PLW0603
     _bid_lock_manager = await create_bid_lock_manager(use_redis=use_redis, ttl=ttl)
     return _bid_lock_manager
 
 
 async def reset_bid_lock_manager() -> None:
     """Reset the global BidLockManager (for testing)."""
-    global _bid_lock_manager
+    global _bid_lock_manager  # noqa: PLW0603
     if _bid_lock_manager is not None:
         try:
             await _bid_lock_manager.cleanup_all()

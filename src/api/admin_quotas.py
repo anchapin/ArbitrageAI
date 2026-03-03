@@ -108,7 +108,7 @@ class UsageAnalyticsResponse(BaseModel):
 @router.get("/quotas/{user_id}", response_model=UserQuotaResponse)
 def get_user_quota(
     user_id: str,
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db),  # noqa: B008
 ):
     """Get quota configuration for a user."""
     quota = db.query(UserQuota).filter(UserQuota.user_id == user_id).first()
@@ -121,7 +121,7 @@ def get_user_quota(
 def update_user_quota(
     user_id: str,
     update: UserQuotaUpdate,
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db),  # noqa: B008
 ):
     """Update quota configuration for a user."""
     quota = db.query(UserQuota).filter(UserQuota.user_id == user_id).first()
@@ -160,7 +160,7 @@ def update_user_quota(
     if update.override_quota is not None:
         quota.override_quota = update.override_quota
 
-    quota.updated_at = datetime.utcnow()
+    quota.updated_at = datetime.now(timezone.utc)
     db.commit()
     db.refresh(quota)
     return quota.to_dict()
@@ -170,7 +170,7 @@ def update_user_quota(
 def set_quota_override(
     user_id: str,
     override: QuotaOverride,
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db),  # noqa: B008
 ):
     """Set admin override for rate limit or quota."""
     quota = db.query(UserQuota).filter(UserQuota.user_id == user_id).first()
@@ -184,7 +184,7 @@ def set_quota_override(
     else:
         raise HTTPException(status_code=400, detail="Invalid override type")
 
-    quota.updated_at = datetime.utcnow()
+    quota.updated_at = datetime.now(timezone.utc)
     db.commit()
     db.refresh(quota)
 
@@ -200,7 +200,7 @@ def set_quota_override(
 def get_user_usage(
     user_id: str,
     billing_month: str | None = Query(None, description="YYYY-MM format"),
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db),  # noqa: B008
 ):
     """Get quota usage for a user."""
     if not billing_month:
@@ -221,7 +221,7 @@ def get_user_usage(
 def get_user_usage_history(
     user_id: str,
     limit: int = Query(12, ge=1, le=100, description="Number of months to retrieve"),
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db),  # noqa: B008
 ):
     """Get quota usage history for a user."""
     usages = db.query(QuotaUsage).filter(
@@ -236,10 +236,10 @@ def get_rate_limit_logs(
     user_id: str | None = Query(None),
     hours: int = Query(24, ge=1, le=720, description="Hours to retrieve"),
     limit: int = Query(100, ge=1, le=1000),
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db),  # noqa: B008
 ):
     """Get rate limit logs."""
-    cutoff_time = datetime.utcnow() - timedelta(hours=hours)
+    cutoff_time = datetime.now(timezone.utc) - timedelta(hours=hours)
 
     query = db.query(RateLimitLog).filter(
         RateLimitLog.timestamp >= cutoff_time,
@@ -255,7 +255,7 @@ def get_rate_limit_logs(
 
 @router.get("/analytics", response_model=UsageAnalyticsResponse)
 def get_usage_analytics(
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db),  # noqa: B008
 ):
     """Get overall usage analytics."""
     # Get current billing month
@@ -271,7 +271,7 @@ def get_usage_analytics(
     ).count()
 
     # Rate limit violations last 24h
-    cutoff_time = datetime.utcnow() - timedelta(hours=24)
+    cutoff_time = datetime.now(timezone.utc) - timedelta(hours=24)
     rate_limit_violations_24h = db.query(RateLimitLog).filter(
         RateLimitLog.exceeded,
         RateLimitLog.timestamp >= cutoff_time,

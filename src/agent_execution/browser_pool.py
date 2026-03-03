@@ -1,5 +1,5 @@
 """
-Browser Connection Pool for Playwright
+Browser Connection Pool for Playwright.
 
 Manages browser instances and page allocation with proper resource cleanup.
 
@@ -257,7 +257,7 @@ _browser_pool: BrowserPool | None = None
 
 def get_browser_pool(max_browsers: int = 3) -> BrowserPool:
     """Get or create the global BrowserPool instance."""
-    global _browser_pool
+    global _browser_pool  # noqa: PLW0603
     if _browser_pool is None:
         _browser_pool = BrowserPool(max_browsers=max_browsers)
     return _browser_pool
@@ -265,7 +265,7 @@ def get_browser_pool(max_browsers: int = 3) -> BrowserPool:
 
 async def init_browser_pool(max_browsers: int = 3) -> BrowserPool:
     """Initialize the global BrowserPool."""
-    global _browser_pool
+    global _browser_pool  # noqa: PLW0603
     _browser_pool = BrowserPool(max_browsers=max_browsers)
     await _browser_pool.start()
     return _browser_pool

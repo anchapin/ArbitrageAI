@@ -1,5 +1,5 @@
 """
-Distillation Dataset Manager
+Distillation Dataset Manager.
 
 This module manages the curated dataset of high-quality examples for fine-tuning.
 It provides utilities for filtering, validating, and preparing data for training.
@@ -14,7 +14,7 @@ from collections.abc import Callable
 from datetime import datetime, timezone
 import json
 import logging
-import os
+from pathlib import Path
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -80,7 +80,7 @@ class DistillationDatasetManager:
         examples = []
 
         try:
-            with open(filepath) as f:
+            with open(filepath, encoding="utf-8") as f:
                 for line in f:
                     if line.strip():
                         try:
@@ -116,13 +116,9 @@ class DistillationDatasetManager:
         Returns:
             Tuple of (is_valid, issues_list)
         """
-        issues = []
-
         # Check required fields
         required_fields = ["prompt", "response", "domain", "task_type"]
-        for field in required_fields:
-            if field not in example or not example[field]:
-                issues.append(f"Missing required field: {field}")
+        issues = [f"Missing required field: {field}" for field in required_fields if field not in example or not example[field]]
 
         # Check prompt is not empty
         if "prompt" in example and len(example["prompt"]) < 10:
@@ -217,8 +213,8 @@ class DistillationDatasetManager:
         """
         if output_path is None:
             timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
-            output_path = os.path.join(
-                DISTILLATION_DIR, f"unsloth_train_{timestamp}.json",
+            output_path = str(
+                DISTILLATION_DIR / f"unsloth_train_{timestamp}.json",
             )
 
         # Load examples
@@ -231,7 +227,7 @@ class DistillationDatasetManager:
         ]
 
         # Write to file
-        with open(output_path, "w") as f:
+        with open(output_path, "w", encoding="utf-8") as f:
             json.dump(training_data, f, indent=2)
 
         return output_path
@@ -255,15 +251,15 @@ class DistillationDatasetManager:
         """
         if output_path is None:
             timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
-            output_path = os.path.join(
-                DISTILLATION_DIR, f"ollama_train_{timestamp}.jsonl",
+            output_path = str(
+                DISTILLATION_DIR / f"ollama_train_{timestamp}.jsonl",
             )
 
         # Load examples
         examples = self.load_examples(domain=domain, min_rating=min_rating)
 
         # Convert to Ollama format (JSONL with prompt/completion)
-        with open(output_path, "w") as f:
+        with open(output_path, "w", encoding="utf-8") as f:
             for ex in examples:
                 ollama_example = {"prompt": ex["prompt"], "completion": ex["response"]}
                 f.write(json.dumps(ollama_example) + "\n")
@@ -291,9 +287,9 @@ class DistillationDatasetManager:
             "curated_by_task_type": self._count_by_field(curated, "task_type"),
             "curated_by_rating": self._count_by_field(curated, "rating"),
             "avg_response_length": self._avg_field(
-                curated, "response", lambda x: len(x),
+                curated, "response", len,
             ),
-            "avg_prompt_length": self._avg_field(curated, "prompt", lambda x: len(x)),
+            "avg_prompt_length": self._avg_field(curated, "prompt", len),
         }
 
     def _count_by_field(self, examples: list[dict], field: str) -> dict:
@@ -340,7 +336,7 @@ class DistillationDatasetManager:
 
         # Write deduplicated data
         output_path = output_path or self.curated_file
-        with open(output_path, "w") as f:
+        with open(output_path, "w", encoding="utf-8") as f:
             for ex in unique_examples:
                 f.write(json.dumps(ex) + "\n")
 

@@ -1,5 +1,5 @@
 """
-Migration: Add Unique Constraints to Domain Models (Issue #33)
+Migration: Add Unique Constraints to Domain Models (Issue #33).
 
 This migration adds unique constraints to critical fields in the database
 to prevent duplicate data and maintain data integrity.

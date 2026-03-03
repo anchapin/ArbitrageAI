@@ -1,5 +1,5 @@
 """
-Virtual Wallet Module for Financial Control
+Virtual Wallet Module for Financial Control.
 
 Tracks seed money, operational budget, and revenue from completed tasks.
 Enforces budget caps and provides financial visibility for human oversight.
@@ -14,13 +14,13 @@ Features:
 - Integration with Telegram notifications for low budget alerts
 """
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
-from ..api.database import SessionLocal
-from ..api.models import VirtualWallet as VirtualWalletModel
-from ..config.config_manager import ConfigManager
-from ..utils.logger import get_logger
+from src.api.database import SessionLocal
+from src.api.models import VirtualWallet as VirtualWalletModel
+from src.config.config_manager import ConfigManager
+from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
 
@@ -30,7 +30,7 @@ VirtualWallet = VirtualWalletModel
 
 class VirtualWalletManager:
     """
-    Virtual Wallet Manager
+    Virtual Wallet Manager.
 
     Manages wallet operations including balance tracking, budget enforcement,
     and automatic budget resets. Provides API for financial control.
@@ -70,7 +70,7 @@ class VirtualWalletManager:
             balance_cents=initial_seed_cents,
             budget_cap_cents=budget_cap_cents,
             budget_reset_period=reset_period,
-            budget_start_at=datetime.utcnow(),
+            budget_start_at=datetime.now(timezone.utc),
         )
 
         db.add(wallet)
@@ -128,7 +128,7 @@ class VirtualWalletManager:
             wallet.balance_cents -= amount_cents
             wallet.total_spent_cents += amount_cents
             wallet.budget_spent_cents += amount_cents
-            wallet.updated_at = datetime.utcnow()
+            wallet.updated_at = datetime.now(timezone.utc)
 
             db.commit()
             self._wallet = wallet
@@ -173,7 +173,7 @@ class VirtualWalletManager:
             # Add to balance and total earned
             wallet.balance_cents += amount_cents
             wallet.total_earned_cents += amount_cents
-            wallet.updated_at = datetime.utcnow()
+            wallet.updated_at = datetime.now(timezone.utc)
 
             db.commit()
             self._wallet = wallet
@@ -274,7 +274,7 @@ class VirtualWalletManager:
                 return False
 
             wallet.balance_cents += amount_cents
-            wallet.updated_at = datetime.utcnow()
+            wallet.updated_at = datetime.now(timezone.utc)
 
             db.commit()
             self._wallet = wallet
@@ -321,10 +321,10 @@ class VirtualWalletManager:
 
             # Reset budget tracking when cap changes
             wallet.budget_spent_cents = 0
-            wallet.budget_start_at = datetime.utcnow()
+            wallet.budget_start_at = datetime.now(timezone.utc)
             wallet.low_budget_alert_sent = False
             wallet.critical_budget_alert_sent = False
-            wallet.updated_at = datetime.utcnow()
+            wallet.updated_at = datetime.now(timezone.utc)
 
             db.commit()
             self._wallet = wallet
@@ -345,7 +345,7 @@ class VirtualWalletManager:
 
     def _reset_budget_if_needed(self, db, wallet: VirtualWallet):
         """Reset budget tracking if reset period has elapsed."""
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
 
         # Calculate when budget should reset
         reset_delta = None
@@ -383,12 +383,12 @@ class VirtualWalletManager:
             and not wallet.low_budget_alert_sent
         ):
             wallet.low_budget_alert_sent = True
-            wallet.updated_at = datetime.utcnow()
+            wallet.updated_at = datetime.now(timezone.utc)
             db.commit()
 
             # Send Telegram notification
             try:
-                from ..utils.notifications import TelegramNotifier
+                from src.utils.notifications import TelegramNotifier
 
                 notifier = TelegramNotifier()
                 notifier.send_alert(
@@ -408,12 +408,12 @@ class VirtualWalletManager:
             and not wallet.critical_budget_alert_sent
         ):
             wallet.critical_budget_alert_sent = True
-            wallet.updated_at = datetime.utcnow()
+            wallet.updated_at = datetime.now(timezone.utc)
             db.commit()
 
             # Send Telegram notification
             try:
-                from ..utils.notifications import TelegramNotifier
+                from src.utils.notifications import TelegramNotifier
 
                 notifier = TelegramNotifier()
                 notifier.send_alert(
@@ -434,7 +434,7 @@ _wallet_manager_instance: VirtualWalletManager | None = None
 
 def get_virtual_wallet() -> VirtualWalletManager:
     """Get or create global Virtual Wallet Manager singleton."""
-    global _wallet_manager_instance
+    global _wallet_manager_instance  # noqa: PLW0603
 
     if _wallet_manager_instance is None:
         _wallet_manager_instance = VirtualWalletManager()
@@ -444,5 +444,5 @@ def get_virtual_wallet() -> VirtualWalletManager:
 
 def reset_virtual_wallet():
     """Reset virtual wallet singleton (useful for testing)."""
-    global _wallet_manager_instance
+    global _wallet_manager_instance  # noqa: PLW0603
     _wallet_manager_instance = None

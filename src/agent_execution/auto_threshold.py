@@ -1,5 +1,5 @@
 """
-Auto-Threshold Increase Module
+Auto-Threshold Increase Module.
 
 Implements automatic threshold increase when the agent consistently
 performs well. Evaluates performance periodically and creates
@@ -14,17 +14,17 @@ Features:
 - Logging of all auto-increase attempts
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum as PyEnum
 from typing import Any
 
 from sqlalchemy.orm import Session
 
-from ..agent_execution.confidence_tracker import ConfidenceEntry
-from ..api.database import SessionLocal
-from ..api.models import ThresholdPetition
-from ..config.config_manager import ConfigManager
-from ..utils.logger import get_logger
+from src.agent_execution.confidence_tracker import ConfidenceEntry
+from src.api.database import SessionLocal
+from src.api.models import ThresholdPetition
+from src.config.config_manager import ConfigManager
+from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
 
@@ -41,7 +41,7 @@ class AutoThresholdStatus(PyEnum):
 
 class AutoThresholdManager:
     """
-    Auto-Threshold Increase Manager
+    Auto-Threshold Increase Manager.
 
     Evaluates agent performance periodically and creates petitions
     for threshold increases when the agent consistently performs well.
@@ -260,7 +260,7 @@ class AutoThresholdManager:
             current_streak=evaluation.get("recent_wins", 0),
             supporting_data=evaluation,
             status="PENDING",
-            created_at=datetime.utcnow(),
+            created_at=datetime.now(timezone.utc),
         )
 
         db.add(petition)
@@ -269,7 +269,7 @@ class AutoThresholdManager:
 
         # Send Telegram notification
         try:
-            from ..utils.notifications import TelegramNotifier
+            from src.utils.notifications import TelegramNotifier
 
             notifier = TelegramNotifier()
 
@@ -289,7 +289,7 @@ class AutoThresholdManager:
 
             if msg_id:
                 petition.telegram_message_id = str(msg_id)
-                petition.telegram_sent_at = datetime.utcnow()
+                petition.telegram_sent_at = datetime.now(timezone.utc)
                 db.commit()
 
             logger.info(f"Auto-threshold petition created: {petition.id}")
@@ -344,7 +344,7 @@ class AutoThresholdManager:
             # Update petition to rejected
             petition.status = "REJECTED"
             petition.human_decision = "REJECTED"
-            petition.decided_at = datetime.utcnow()
+            petition.decided_at = datetime.now(timezone.utc)
             petition.decision_reasoning = reasoning
 
             db.commit()
@@ -358,7 +358,7 @@ class AutoThresholdManager:
 
             # Send notification
             try:
-                from ..utils.notifications import TelegramNotifier
+                from src.utils.notifications import TelegramNotifier
 
                 notifier = TelegramNotifier()
                 notifier.send_alert(
@@ -387,7 +387,7 @@ _auto_threshold_manager: AutoThresholdManager | None = None
 
 def get_auto_threshold_manager() -> AutoThresholdManager:
     """Get or create global Auto-Threshold Manager singleton."""
-    global _auto_threshold_manager
+    global _auto_threshold_manager  # noqa: PLW0603
 
     if _auto_threshold_manager is None:
         _auto_threshold_manager = AutoThresholdManager()
@@ -397,5 +397,5 @@ def get_auto_threshold_manager() -> AutoThresholdManager:
 
 def reset_auto_threshold_manager():
     """Reset auto-threshold manager singleton (useful for testing)."""
-    global _auto_threshold_manager
+    global _auto_threshold_manager  # noqa: PLW0603
     _auto_threshold_manager = None

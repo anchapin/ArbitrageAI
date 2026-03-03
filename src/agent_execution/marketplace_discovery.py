@@ -1,5 +1,5 @@
 """
-Marketplace Discovery Module
+Marketplace Discovery Module.
 
 This module handles autonomous discovery and evaluation of freelance marketplaces.
 It searches for new marketplaces, tracks their performance, and maintains a curated
@@ -19,7 +19,7 @@ from dataclasses import asdict, dataclass, field
 from datetime import datetime
 import json
 import os
-import pathlib
+from pathlib import Path
 from typing import Any
 
 from dotenv import load_dotenv
@@ -62,7 +62,7 @@ if not PLAYWRIGHT_AVAILABLE:
 
 MARKETPLACES_FILE = os.environ.get(
     "MARKETPLACES_FILE",
-    os.path.join(pathlib.Path(__file__).parent, "../../data/marketplaces.json"),
+    str(Path(__file__).parent / "../../data/marketplaces.json"),
 )
 
 
@@ -170,7 +170,7 @@ class MarketplaceDiscovery:
 
     def _load_marketplaces(self) -> None:
         """Load marketplaces from JSON file."""
-        if not pathlib.Path(self.config_file).exists():
+        if not Path(self.config_file).exists():
             logger.warning(f"Marketplaces file not found: {self.config_file}")
             self.config = DiscoveryConfig(
                 search_keywords=[],
@@ -182,7 +182,7 @@ class MarketplaceDiscovery:
             return
 
         try:
-            with open(self.config_file) as f:
+            with open(self.config_file, encoding="utf-8") as f:
                 data = json.load(f)
 
             # Load config
@@ -214,7 +214,7 @@ class MarketplaceDiscovery:
             return
 
         # Ensure directory exists
-        os.makedirs(pathlib.Path(self.config_file).parent, exist_ok=True)
+        Path(self.config_file).parent.mkdir(parents=True, exist_ok=True)
 
         data = {
             "version": "1.0",
@@ -224,7 +224,7 @@ class MarketplaceDiscovery:
         }
 
         try:
-            with open(self.config_file, "w") as f:
+            with open(self.config_file, "w", encoding="utf-8") as f:
                 json.dump(data, f, indent=2)
             logger.info(f"Saved {len(self.marketplaces)} marketplaces to config")
         except Exception as e:
@@ -405,13 +405,13 @@ class MarketplaceDiscovery:
                 # Create a search prompt
                 prompt = f"""
                 Find 3-5 popular freelance marketplaces and job boards related to: "{keyword}"
-                
+
                 For each marketplace, provide:
                 1. Name
                 2. URL
                 3. Category (freelance/remote/gig/enterprise)
                 4. Brief description
-                
+
                 Format as JSON list with keys: name, url, category, description
                 """
 

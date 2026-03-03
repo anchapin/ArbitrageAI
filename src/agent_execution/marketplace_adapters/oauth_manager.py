@@ -1,5 +1,5 @@
 """
-OAuth 2.0 Manager for Marketplace Integrations
+OAuth 2.0 Manager for Marketplace Integrations.
 
 Handles OAuth authentication flow for marketplace platforms like Upwork.
 Implements OAuth 2.0 three-legged authentication with token refresh.
@@ -7,9 +7,9 @@ Implements OAuth 2.0 three-legged authentication with token refresh.
 Issue #105: Marketplace API Integration - OAuth Flow
 """
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import secrets
-from typing import Any
+from typing import Any, ClassVar
 from urllib.parse import urlencode
 
 import httpx
@@ -46,7 +46,7 @@ class OAuthToken:
         self.token_type = token_type
         self.scope = scope
         self.expires_in = expires_in
-        self.created_at = datetime.utcnow()
+        self.created_at = datetime.now(timezone.utc)
         self.expires_at = self.created_at + timedelta(seconds=expires_in)
 
     def is_expired(self, buffer_seconds: int = 60) -> bool:
@@ -59,7 +59,7 @@ class OAuthToken:
         Returns:
             True if token is expired or will expire soon
         """
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         return now >= (self.expires_at - timedelta(seconds=buffer_seconds))
 
     def to_dict(self) -> dict[str, Any]:
@@ -109,7 +109,7 @@ class OAuthManager:
     """
 
     # Platform-specific OAuth configurations
-    PLATFORM_CONFIG = {
+    PLATFORM_CONFIG: ClassVar[dict] = {
         "upwork": {
             "auth_url": "https://www.upwork.com/services/api/auth",
             "token_url": "https://www.upwork.com/api/oauth/v2/token",

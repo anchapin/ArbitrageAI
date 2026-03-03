@@ -1,5 +1,5 @@
 """
-File Parser Module
+File Parser Module.
 
 This module provides functionality for parsing different file types (CSV, Excel, PDF)
 and converting them to a standardized format for data visualization.

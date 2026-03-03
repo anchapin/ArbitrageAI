@@ -1,5 +1,5 @@
 """
-Advanced Analytics Dashboard with Predictive Insights
+Advanced Analytics Dashboard with Predictive Insights.
 
 This module provides comprehensive analytics and predictive insights for the ArbitrageAI platform.
 It includes real-time metrics, trend analysis, predictive modeling, and business intelligence features.
@@ -305,8 +305,7 @@ class KPIAnalytics(AnalyticsEngine):
         if previous_revenue == 0:
             return 0.0
 
-        growth_rate = ((current_revenue - previous_revenue) / previous_revenue) * 100
-        return growth_rate
+        return ((current_revenue - previous_revenue) / previous_revenue) * 100
 
     def _calculate_tasks_per_hour(self, time_filter: datetime) -> float:
         """Calculate average tasks per hour."""
@@ -946,7 +945,7 @@ class AnalyticsAPI:
 @task(name="get_kpis_endpoint")
 async def get_kpis(
     time_range: str = Query("24h", description="Time range: 24h, 7d, 30d, all"),
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db),  # noqa: B008
 ):
     """
     Get key performance indicators.
@@ -971,7 +970,7 @@ async def get_kpis(
 async def get_predictions(
     metric: str,
     horizon_hours: int = Query(24, description="Prediction horizon in hours"),
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db),  # noqa: B008
 ):
     """
     Get predictions for a specific metric.
@@ -997,7 +996,7 @@ async def get_predictions(
 async def get_anomalies(
     metric: str,
     time_range: str = Query("24h", description="Time range for anomaly detection"),
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db),  # noqa: B008
 ):
     """
     Get anomalies for a specific metric.
@@ -1020,7 +1019,7 @@ async def get_anomalies(
 
 @router.get("/performance", response_model=list[PerformanceMetric])
 @task(name="get_performance_endpoint")
-async def get_performance(db: Session = Depends(get_db)):
+async def get_performance(db: Session = Depends(get_db)):  # noqa: B008
     """
     Get performance metrics.
 
@@ -1042,7 +1041,7 @@ async def get_performance(db: Session = Depends(get_db)):
 @task(name="get_analytics_summary_endpoint")
 async def get_analytics_summary(
     time_range: str = Query("24h", description="Time range for analysis"),
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db),  # noqa: B008
 ):
     """
     Get comprehensive analytics summary.
@@ -1064,7 +1063,7 @@ async def get_analytics_summary(
 
 @router.get("/recommendations", response_model=list[str])
 @task(name="get_recommendations_endpoint")
-async def get_recommendations(db: Session = Depends(get_db)):
+async def get_recommendations(db: Session = Depends(get_db)):  # noqa: B008
     """
     Get actionable recommendations based on analytics.
 
@@ -1085,7 +1084,7 @@ async def get_recommendations(db: Session = Depends(get_db)):
 
 @router.get("/widgets", response_model=list[DashboardWidget])
 @task(name="get_dashboard_widgets_endpoint")
-async def get_dashboard_widgets(db: Session = Depends(get_db)):
+async def get_dashboard_widgets(db: Session = Depends(get_db)):  # noqa: B008
     """
     Get configured dashboard widgets.
 
@@ -1097,7 +1096,7 @@ async def get_dashboard_widgets(db: Session = Depends(get_db)):
     """
     # This would typically load from a configuration database
     # For now, return default widgets
-    widgets = [
+    return [
         DashboardWidget(
             id="kpi_overview",
             type="metric",
@@ -1128,15 +1127,11 @@ async def get_dashboard_widgets(db: Session = Depends(get_db)):
         ),
     ]
 
-    return widgets
-
 
 # Background tasks for analytics
 @task(name="update_analytics_cache")
 async def update_analytics_cache():
-    """
-    Background task to update analytics cache periodically.
-    """
+    """Background task to update analytics cache periodically."""
     # This would be called by a scheduler to keep analytics data fresh
     logger.info("Updating analytics cache...")
     # Implementation would depend on the scheduling system used

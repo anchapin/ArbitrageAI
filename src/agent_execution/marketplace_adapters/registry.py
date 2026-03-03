@@ -1,11 +1,11 @@
 """
-Marketplace Registry
+Marketplace Registry.
 
 Factory pattern for registering and creating marketplace adapters.
 Provides a registry to manage different marketplace implementations.
 """
 
-from typing import Any
+from typing import Any, ClassVar
 
 from src.utils.logger import get_logger
 
@@ -22,7 +22,7 @@ class MarketplaceRegistry:
     Supports dynamic registration of new marketplace implementations.
     """
 
-    _adapters: dict[str, type[MarketplaceAdapter]] = {}
+    _adapters: ClassVar[dict[str, type[MarketplaceAdapter]]] = {}
 
     @classmethod
     def register(

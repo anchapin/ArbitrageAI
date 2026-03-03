@@ -58,8 +58,7 @@ def generate_trace_id() -> str:
         A 32-character hexadecimal string (128-bit random value)
     """
     # W3C trace ID format: 32 hex characters representing 128 bits
-    trace_id = uuid.uuid4().hex  # 32 hex chars
-    return trace_id
+    return uuid.uuid4().hex  # 32 hex chars
 
 
 def generate_span_id() -> str:
@@ -71,8 +70,7 @@ def generate_span_id() -> str:
     """
     # W3C span ID format: 16 hex characters representing 64 bits
     # We use the first 16 characters of a UUID hex
-    span_id = uuid.uuid4().hex[:16]
-    return span_id
+    return uuid.uuid4().hex[:16]
 
 
 def init_trace_context(

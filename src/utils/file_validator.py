@@ -14,7 +14,7 @@ import os
 import pathlib
 import re
 
-from ..utils.logger import get_logger
+from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
 
@@ -129,11 +129,10 @@ def validate_file_extension(filename: str, allowed_types: list | None = None) ->
         raise ValueError(f"File type '{ext}' not allowed. Allowed types: {allowed}")
 
     # If specific types are required, check against them
-    if allowed_types:
-        if ext not in allowed_types:
-            raise ValueError(
-                f"File type '{ext}' not allowed for this field. Allowed: {', '.join(allowed_types)}",
-            )
+    if allowed_types and ext not in allowed_types:
+        raise ValueError(
+            f"File type '{ext}' not allowed for this field. Allowed: {', '.join(allowed_types)}",
+        )
 
     logger.info(f"File extension validated: {ext}")
     return ext
@@ -269,7 +268,7 @@ def scan_file_for_malware(file_content: bytes, filename: str) -> bool:
     # Check environment for antivirus service
     antivirus_service = os.environ.get("ANTIVIRUS_SERVICE", "mock")
 
-    if antivirus_service == "mock" or antivirus_service == "disabled":
+    if antivirus_service in {"mock", "disabled"}:
         logger.info(f"Mock antivirus scan (DISABLED): {filename}")
         return True
 
@@ -426,7 +425,7 @@ def validate_file_upload(
                 )
 
         # Step 4: Decode base64 content
-        file_content, decoded_size = decode_base64_file(file_content_base64)
+        file_content, _decoded_size = decode_base64_file(file_content_base64)
 
         # Step 5: Validate file size
         validate_file_size(file_content, max_size)

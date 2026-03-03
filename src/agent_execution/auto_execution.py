@@ -1,5 +1,5 @@
 """
-Auto-Execution Pipeline (Issue #104)
+Auto-Execution Pipeline (Issue #104).
 
 Provides automated task execution with:
 - Automatic bid placement
@@ -18,31 +18,32 @@ Features:
 
 Usage:
     from src.agent_execution.auto_execution import AutoExecutionPipeline
-    
+
     pipeline = AutoExecutionPipeline()
     await pipeline.initialize()
-    
+
     # Execute task automatically
     result = await pipeline.execute_task(task_data)
 """
 
 import asyncio
+import contextlib
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 import time
 from typing import Any
 
 from sqlalchemy.orm import Session
 
-from ..api.database import SessionLocal
-from ..api.models import Bid, BidStatus, Task, TaskStatus
-from ..utils.logger import get_logger
-from ..utils.telemetry import get_tracer
-from .confidence_tracker import get_confidence_tracker
-from .executor import TaskRouter
-from .marketplace_discovery import MarketplaceDiscovery
-from .self_adjusting_algorithm import get_self_adjusting_algorithm
+from src.api.database import SessionLocal
+from src.api.models import Bid, BidStatus, Task, TaskStatus
+from src.utils.logger import get_logger
+from src.utils.telemetry import get_tracer
+from src.agent_execution.confidence_tracker import get_confidence_tracker
+from src.agent_execution.executor import TaskRouter
+from src.agent_execution.marketplace_discovery import MarketplaceDiscovery
+from src.agent_execution.self_adjusting_algorithm import get_self_adjusting_algorithm
 
 logger = get_logger(__name__)
 
@@ -82,7 +83,7 @@ class BidDecision:
 class AutoExecutionPipeline:
     """
     Automated task execution pipeline.
-    
+
     Features:
     - Automatic marketplace scanning
     - Confidence-based bid decisions
@@ -132,12 +133,10 @@ class AutoExecutionPipeline:
         logger.info("Shutting down auto-execution pipeline")
 
         # Cancel active tasks
-        for task_id, task in list(self._active_tasks.items()):
+        for _task_id, task in list(self._active_tasks.items()):
             task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await task
-            except asyncio.CancelledError:
-                pass
 
         await self.marketplace_discovery.close()
 
@@ -150,11 +149,11 @@ class AutoExecutionPipeline:
     ) -> ExecutionResult:
         """
         Execute a marketplace opportunity.
-        
+
         Args:
             opportunity: Opportunity data from marketplace
             db: Database session
-        
+
         Returns:
             ExecutionResult: Result of execution
         """
@@ -251,18 +250,18 @@ class AutoExecutionPipeline:
     ) -> BidDecision:
         """
         Analyze an opportunity and decide whether to bid.
-        
+
         Args:
             opportunity: Opportunity data
-        
+
         Returns:
             BidDecision: Decision on whether to bid
         """
         # Extract opportunity features
-        title = opportunity.get("title", "")
-        description = opportunity.get("description", "")
+        opportunity.get("title", "")
+        opportunity.get("description", "")
         budget_cents = opportunity.get("budget_cents", 0)
-        marketplace = opportunity.get("marketplace", "unknown")
+        opportunity.get("marketplace", "unknown")
 
         # Calculate confidence score
         confidence_score = self.confidence_tracker.calculate_confidence_score(
@@ -317,7 +316,7 @@ class AutoExecutionPipeline:
     ) -> int:
         """
         Calculate optimal bid amount.
-        
+
         Strategy:
         - High confidence: Bid 70-90% of budget
         - Medium confidence: Bid 50-70% of budget
@@ -340,9 +339,7 @@ class AutoExecutionPipeline:
 
         # Apply limits
         bid_amount = min(bid_amount, self.max_bid_amount_cents)
-        bid_amount = max(bid_amount, 100)  # Minimum $1
-
-        return bid_amount
+        return max(bid_amount, 100)  # Minimum $1
 
     async def _place_bid(
         self,
@@ -352,19 +349,19 @@ class AutoExecutionPipeline:
     ) -> dict[str, Any]:
         """
         Place a bid on an opportunity.
-        
+
         Args:
             opportunity: Opportunity data
             amount_cents: Bid amount in cents
             db: Database session
-        
+
         Returns:
             Dict with bid result
         """
         try:
             # Create bid record
             bid = Bid(
-                id=f"bid_{datetime.utcnow().timestamp()}",
+                id=f"bid_{datetime.now(timezone.utc).timestamp()}",
                 task_id=None,  # Will be set if bid won
                 marketplace=opportunity.get("marketplace", "unknown"),
                 job_title=opportunity.get("title", ""),
@@ -410,12 +407,12 @@ class AutoExecutionPipeline:
     ) -> dict[str, Any]:
         """
         Execute a task after winning the bid.
-        
+
         Args:
             task_data: Task data
             bid_id: Winning bid ID
             db: Database session
-        
+
         Returns:
             Dict with execution result
         """
@@ -424,7 +421,7 @@ class AutoExecutionPipeline:
         try:
             # Create task record
             task = Task(
-                id=f"task_{datetime.utcnow().timestamp()}",
+                id=f"task_{datetime.now(timezone.utc).timestamp()}",
                 title=task_data.get("title", ""),
                 description=task_data.get("description", ""),
                 domain=task_data.get("domain", "general"),
@@ -507,12 +504,12 @@ class AutoExecutionPipeline:
     ) -> dict[str, Any]:
         """
         Execute task with retry logic.
-        
+
         Args:
             task_data: Task data
             task_id: Task ID
             domain: Task domain
-        
+
         Returns:
             Dict with execution result
         """
@@ -572,7 +569,7 @@ _auto_execution_pipeline: AutoExecutionPipeline | None = None
 
 def get_auto_execution_pipeline() -> AutoExecutionPipeline:
     """Get or create the global auto-execution pipeline."""
-    global _auto_execution_pipeline
+    global _auto_execution_pipeline  # noqa: PLW0603
     if _auto_execution_pipeline is None:
         _auto_execution_pipeline = AutoExecutionPipeline()
     return _auto_execution_pipeline
@@ -580,5 +577,5 @@ def get_auto_execution_pipeline() -> AutoExecutionPipeline:
 
 def reset_auto_execution_pipeline() -> None:
     """Reset the global pipeline instance (for testing)."""
-    global _auto_execution_pipeline
+    global _auto_execution_pipeline  # noqa: PLW0603
     _auto_execution_pipeline = None

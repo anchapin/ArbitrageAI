@@ -1,5 +1,5 @@
 """
-Async Background Job Queue
+Async Background Job Queue.
 
 Non-blocking queue for RAG enrichment and distillation tasks.
 Prevents blocking task execution on secondary systems like ChromaDB.
@@ -115,7 +115,7 @@ class BackgroundJobQueue:
         job_type: str,
         task_func: Callable,
         task_args: tuple = (),
-        task_kwargs: dict = None,
+        task_kwargs: dict | None = None,
         job_id: str | None = None,
         max_retries: int = 3,
         timeout_seconds: float | None = None,
@@ -321,7 +321,7 @@ _background_job_queue: BackgroundJobQueue | None = None
 
 def get_background_job_queue() -> BackgroundJobQueue:
     """Get or create the global BackgroundJobQueue instance."""
-    global _background_job_queue
+    global _background_job_queue  # noqa: PLW0603
     if _background_job_queue is None:
         _background_job_queue = BackgroundJobQueue()
     return _background_job_queue
@@ -329,7 +329,7 @@ def get_background_job_queue() -> BackgroundJobQueue:
 
 async def init_background_job_queue(max_workers: int = 3) -> BackgroundJobQueue:
     """Initialize the global BackgroundJobQueue with custom settings."""
-    global _background_job_queue
+    global _background_job_queue  # noqa: PLW0603
     _background_job_queue = BackgroundJobQueue(max_workers=max_workers)
     await _background_job_queue.start()
     return _background_job_queue

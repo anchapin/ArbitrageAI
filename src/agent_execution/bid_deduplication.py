@@ -1,5 +1,5 @@
 """
-Bid Deduplication and Placement Logic
+Bid Deduplication and Placement Logic.
 
 This module implements deduplication checks to prevent placing bids on
 marketplace postings where we've already placed bids.
@@ -143,7 +143,7 @@ async def mark_bid_withdrawn(db_session: Session, bid_id: str, reason: str) -> b
                 savepoint.rollback()
                 return False
 
-            if bid.status not in [BidStatus.ACTIVE, BidStatus.SUBMITTED]:
+            if bid.status not in {BidStatus.ACTIVE, BidStatus.SUBMITTED}:
                 logger.warning(
                     f"[{event_id}] Cannot withdraw bid {bid_id} with status "
                     f"{bid.status.value}",
@@ -203,7 +203,7 @@ def get_active_bids_for_posting(
         List of Bid objects with ACTIVE status
     """
     try:
-        bids = (
+        return (
             db_session.query(Bid)
             .filter(
                 Bid.job_id == posting_id,
@@ -212,8 +212,6 @@ def get_active_bids_for_posting(
             )
             .all()
         )
-
-        return bids
 
     except Exception as e:
         logger.error(
@@ -238,13 +236,11 @@ def get_bids_by_status(
         List of Bid objects
     """
     try:
-        bids = (
+        return (
             db_session.query(Bid)
             .filter(Bid.marketplace == marketplace_id, Bid.status == status)
             .all()
         )
-
-        return bids
 
     except Exception as e:
         logger.error(
@@ -260,11 +256,11 @@ async def create_bid_atomically(
     job_title: str,
     job_description: str,
     bid_amount: int,
-    proposal: str = None,
-    job_url: str = None,
-    evaluation_reasoning: str = None,
-    evaluation_confidence: int = None,
-    skills_matched: list = None,
+    proposal: str | None = None,
+    job_url: str | None = None,
+    evaluation_reasoning: str | None = None,
+    evaluation_confidence: int | None = None,
+    skills_matched: list | None = None,
 ) -> Bid | None:
     """
     Atomically create a bid, preventing duplicates via the unique constraint.

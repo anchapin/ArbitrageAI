@@ -1,11 +1,11 @@
 """
-Upwork Marketplace Adapter
+Upwork Marketplace Adapter.
 
 Implements marketplace adapter for Upwork platform.
 Handles job searching, proposal placement, and contract management.
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any
 
 import httpx
@@ -276,7 +276,7 @@ class UpworkAdapter(MarketplaceAdapter):
                 status=BidStatus.SUBMITTED,
                 amount=proposal.amount,
                 pricing_model=proposal.pricing_model,
-                submitted_at=datetime.utcnow(),
+                submitted_at=datetime.now(timezone.utc),
                 url=proposal_data.get("url"),
                 metadata=proposal_data,
             )
@@ -364,7 +364,7 @@ class UpworkAdapter(MarketplaceAdapter):
                 bid_id=bid_id,
                 job_id=proposal_data.get("job_id", ""),
                 status=BidStatus.WITHDRAWN,
-                last_updated=datetime.utcnow(),
+                last_updated=datetime.now(timezone.utc),
                 metadata=proposal_data,
             )
 

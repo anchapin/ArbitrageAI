@@ -1,5 +1,5 @@
 """
-Agent Arena Module
+Agent Arena Module.
 
 This module implements the Agent Arena competition system where two agent variants
 compete on the same task. The winner is determined by:
@@ -140,7 +140,7 @@ class ProfitCalculator:
 
         # Check for nested usage in steps
         steps = agent_result.get("steps", {})
-        for step_name, step_result in steps.items():
+        for step_result in steps.values():
             if isinstance(step_result, dict) and "usage" in step_result:
                 usage = step_result.get("usage", {})
                 total_input_tokens += usage.get("prompt_tokens", 0)
@@ -378,7 +378,7 @@ class ArenaRouter:
         api_key: str | None = None,
         task_type: str | None = None,
         output_format: str | None = None,
-        task_revenue: int = None,
+        task_revenue: int | None = None,
     ) -> dict[str, Any]:
         """
         Run the arena competition.
@@ -557,9 +557,7 @@ class ArenaLearningLogger:
         self.logger = get_logger(__name__)
 
     def log_winner(self, arena_result: dict[str, Any], task_data: dict[str, Any]):
-        """
-        Log winning example to ExperienceVectorDB and DistillationDataCollector.
-        """
+        """Log winning example to ExperienceVectorDB and DistillationDataCollector."""
         winner_key = arena_result["winner"]
         winner_data = arena_result[winner_key]
 
@@ -596,9 +594,7 @@ class ArenaLearningLogger:
             self.logger.warning(f"Failed to log to DistillationDataCollector: {e}")
 
     def log_loser(self, arena_result: dict[str, Any], task_data: dict[str, Any]):
-        """
-        Log losing example to DPO dataset for preference optimization.
-        """
+        """Log losing example to DPO dataset for preference optimization."""
         winner_key = arena_result["winner"]
         loser_key = "agent_b" if winner_key == "agent_a" else "agent_a"
 
@@ -639,10 +635,10 @@ class ArenaLearningLogger:
 
         # Append to DPO dataset
         try:
-            import os
+            from pathlib import Path
 
-            os.makedirs(pathlib.Path(self.dpo_dataset_path).parent, exist_ok=True)
-            with open(self.dpo_dataset_path, "a") as f:
+            Path(self.dpo_dataset_path).parent.mkdir(parents=True, exist_ok=True)
+            with open(self.dpo_dataset_path, "a", encoding="utf-8") as f:
                 f.write(json.dumps(dpo_example) + "\n")
             self.logger.info("Logged loser to DPO dataset")
         except Exception as e:
@@ -682,7 +678,7 @@ async def run_agent_arena(
     file_type: str | None = None,
     api_key: str | None = None,
     competition_type: CompetitionType = CompetitionType.MODEL,
-    task_revenue: int = None,
+    task_revenue: int | None = None,
     enable_learning: bool = True,
     task_data: dict[str, Any] | None = None,
 ) -> dict[str, Any]:

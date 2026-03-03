@@ -1,5 +1,5 @@
 """
-Error Hierarchy and Categorization
+Error Hierarchy and Categorization.
 
 Defines error categories for smart retry logic:
 - TransientError: Temporary failures (network, timeout, resource issues)
@@ -18,7 +18,7 @@ class AgentError(Exception):
     error_type: str = "unknown"
     retryable: bool = False
 
-    def __init__(self, message: str, original_error: Exception = None):
+    def __init__(self, message: str, original_error: Exception | None = None):
         """
         Initialize error with message and optional original error.
 
@@ -190,6 +190,6 @@ def wrap_exception(
     Returns:
         AgentError subclass instance
     """
-    error_class, exc_name = categorize_exception(exception)
+    error_class, _exc_name = categorize_exception(exception)
     message = f"{context}: {exception!s}" if context else str(exception)
     return error_class(message, original_error=exception)

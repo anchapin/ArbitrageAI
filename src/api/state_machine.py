@@ -1,11 +1,13 @@
 """
-Task State Machine Validation
+Task State Machine Validation.
 
 Prevents invalid state transitions in the refactored Task model.
 
 Issue #5: Refactor overloaded Task model using composition pattern
 """
 
+
+from typing import ClassVar
 
 from src.api.models_composition import (
     ExecutionStatus,
@@ -26,7 +28,7 @@ class TaskStateMachine:
     """
 
     # Define valid transitions from each state
-    VALID_TRANSITIONS: dict[TaskStatus, set[TaskStatus]] = {
+    VALID_TRANSITIONS: ClassVar[dict[TaskStatus, set[TaskStatus]]] = {
         TaskStatus.PENDING: {TaskStatus.PLANNING, TaskStatus.FAILED},
         TaskStatus.PLANNING: {TaskStatus.PROCESSING, TaskStatus.FAILED},
         TaskStatus.PROCESSING: {
@@ -86,7 +88,7 @@ class TaskStateMachine:
 class ExecutionStateMachine:
     """Validates execution state transitions."""
 
-    VALID_TRANSITIONS: dict[ExecutionStatus, set[ExecutionStatus]] = {
+    VALID_TRANSITIONS: ClassVar[dict[ExecutionStatus, set[ExecutionStatus]]] = {
         ExecutionStatus.PENDING: {ExecutionStatus.RUNNING, ExecutionStatus.FAILED},
         ExecutionStatus.RUNNING: {ExecutionStatus.COMPLETED, ExecutionStatus.FAILED},
         ExecutionStatus.COMPLETED: set(),  # Terminal
@@ -105,7 +107,7 @@ class ExecutionStateMachine:
 class PlanningStateMachine:
     """Validates planning state transitions."""
 
-    VALID_TRANSITIONS: dict[PlanningStatus, set[PlanningStatus]] = {
+    VALID_TRANSITIONS: ClassVar[dict[PlanningStatus, set[PlanningStatus]]] = {
         PlanningStatus.PENDING: {PlanningStatus.GENERATING},
         PlanningStatus.GENERATING: {PlanningStatus.APPROVED, PlanningStatus.REJECTED},
         PlanningStatus.APPROVED: set(),  # Terminal
@@ -124,7 +126,7 @@ class PlanningStateMachine:
 class ReviewStateMachine:
     """Validates review state transitions."""
 
-    VALID_TRANSITIONS: dict[ReviewStatus, set[ReviewStatus]] = {
+    VALID_TRANSITIONS: ClassVar[dict[ReviewStatus, set[ReviewStatus]]] = {
         ReviewStatus.PENDING: {ReviewStatus.IN_REVIEW},
         ReviewStatus.IN_REVIEW: {ReviewStatus.RESOLVED, ReviewStatus.REJECTED},
         ReviewStatus.RESOLVED: set(),  # Terminal

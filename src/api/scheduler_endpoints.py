@@ -5,7 +5,7 @@ Provides REST endpoints for scheduling tasks with cron expressions,
 managing recurring tasks, and viewing schedule analytics.
 """
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
@@ -13,16 +13,16 @@ from pydantic import BaseModel
 from sqlalchemy.exc import IntegrityError, OperationalError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ..agent_execution.scheduler import (
+from src.agent_execution.scheduler import (
     CronExpressionValidator,
     TaskScheduler,
     schedule_daily_task,
     schedule_monthly_task,
     schedule_weekly_task,
 )
-from ..api.database import get_async_db
-from ..api.models import ScheduledTask, ScheduleHistory
-from ..utils.logger import get_logger
+from src.api.database import get_async_db
+from src.api.models import ScheduledTask, ScheduleHistory
+from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
 router = APIRouter(prefix="/api/scheduler", tags=["scheduler"])
@@ -77,7 +77,7 @@ class ScheduleAnalyticsResponse(BaseModel):
 async def schedule_task(
     request: ScheduleTaskRequest,
     background_tasks: BackgroundTasks,
-    db: AsyncSession = Depends(get_async_db),
+    db: AsyncSession = Depends(get_async_db),  # noqa: B008
 ):
     """
     Schedule a new task with cron expression.
@@ -139,7 +139,7 @@ async def schedule_task(
 async def schedule_daily_task_endpoint(
     request: ScheduleTaskRequest,
     background_tasks: BackgroundTasks,
-    db: AsyncSession = Depends(get_async_db),
+    db: AsyncSession = Depends(get_async_db),  # noqa: B008
 ):
     """
     Schedule a task to run daily at a specific time.
@@ -188,7 +188,7 @@ async def schedule_weekly_task_endpoint(
     request: ScheduleTaskRequest,
     day_of_week: int = 1,  # Monday
     time_of_day: str = "09:00",
-    db: AsyncSession = Depends(get_async_db),
+    db: AsyncSession = Depends(get_async_db),  # noqa: B008
 ):
     """
     Schedule a task to run weekly on a specific day and time.
@@ -242,7 +242,7 @@ async def schedule_monthly_task_endpoint(
     request: ScheduleTaskRequest,
     day_of_month: int = 1,
     time_of_day: str = "09:00",
-    db: AsyncSession = Depends(get_async_db),
+    db: AsyncSession = Depends(get_async_db),  # noqa: B008
 ):
     """
     Schedule a task to run monthly on a specific day and time.
@@ -290,11 +290,9 @@ async def schedule_monthly_task_endpoint(
 
 @router.get("/schedules")
 async def list_schedules(
-    status: str | None = None, db: AsyncSession = Depends(get_async_db),
+    status: str | None = None, db: AsyncSession = Depends(get_async_db),  # noqa: B008
 ):
-    """
-    List all scheduled tasks, optionally filtered by status.
-    """
+    """List all scheduled tasks, optionally filtered by status."""
     scheduler = TaskScheduler(db_session=db)
 
     try:
@@ -339,10 +337,8 @@ async def list_schedules(
 
 
 @router.get("/schedules/{schedule_id}")
-async def get_schedule(schedule_id: str, db: AsyncSession = Depends(get_async_db)):
-    """
-    Get details for a specific schedule.
-    """
+async def get_schedule(schedule_id: str, db: AsyncSession = Depends(get_async_db)):  # noqa: B008
+    """Get details for a specific schedule."""
     scheduler = TaskScheduler(db_session=db)
 
     try:
@@ -399,11 +395,9 @@ async def get_schedule(schedule_id: str, db: AsyncSession = Depends(get_async_db
 async def update_schedule(
     schedule_id: str,
     request: ScheduleUpdateRequest,
-    db: AsyncSession = Depends(get_async_db),
+    db: AsyncSession = Depends(get_async_db),  # noqa: B008
 ):
-    """
-    Update an existing schedule.
-    """
+    """Update an existing schedule."""
     scheduler = TaskScheduler(db_session=db)
 
     try:
@@ -457,10 +451,8 @@ async def update_schedule(
 
 
 @router.post("/schedules/{schedule_id}/pause")
-async def pause_schedule(schedule_id: str, db: AsyncSession = Depends(get_async_db)):
-    """
-    Pause a scheduled task.
-    """
+async def pause_schedule(schedule_id: str, db: AsyncSession = Depends(get_async_db)):  # noqa: B008
+    """Pause a scheduled task."""
     scheduler = TaskScheduler(db_session=db)
 
     try:
@@ -479,10 +471,8 @@ async def pause_schedule(schedule_id: str, db: AsyncSession = Depends(get_async_
 
 
 @router.post("/schedules/{schedule_id}/resume")
-async def resume_schedule(schedule_id: str, db: AsyncSession = Depends(get_async_db)):
-    """
-    Resume a paused scheduled task.
-    """
+async def resume_schedule(schedule_id: str, db: AsyncSession = Depends(get_async_db)):  # noqa: B008
+    """Resume a paused scheduled task."""
     scheduler = TaskScheduler(db_session=db)
 
     try:
@@ -501,10 +491,8 @@ async def resume_schedule(schedule_id: str, db: AsyncSession = Depends(get_async
 
 
 @router.post("/schedules/{schedule_id}/cancel")
-async def cancel_schedule(schedule_id: str, db: AsyncSession = Depends(get_async_db)):
-    """
-    Cancel a scheduled task.
-    """
+async def cancel_schedule(schedule_id: str, db: AsyncSession = Depends(get_async_db)):  # noqa: B008
+    """Cancel a scheduled task."""
     scheduler = TaskScheduler(db_session=db)
 
     try:
@@ -524,11 +512,9 @@ async def cancel_schedule(schedule_id: str, db: AsyncSession = Depends(get_async
 
 @router.get("/schedules/{schedule_id}/analytics")
 async def get_schedule_analytics(
-    schedule_id: str, db: AsyncSession = Depends(get_async_db),
+    schedule_id: str, db: AsyncSession = Depends(get_async_db),  # noqa: B008
 ):
-    """
-    Get analytics for a specific schedule.
-    """
+    """Get analytics for a specific schedule."""
     scheduler = TaskScheduler(db_session=db)
 
     try:
@@ -553,11 +539,9 @@ async def get_schedule_history(
     schedule_id: str,
     limit: int = 50,
     offset: int = 0,
-    db: AsyncSession = Depends(get_async_db),
+    db: AsyncSession = Depends(get_async_db),  # noqa: B008
 ):
-    """
-    Get execution history for a specific schedule.
-    """
+    """Get execution history for a specific schedule."""
     try:
         # Query schedule history
         history_query = (
@@ -601,9 +585,7 @@ async def get_schedule_history(
 
 @router.get("/cron/validate")
 async def validate_cron_expression(expression: str):
-    """
-    Validate a cron expression.
-    """
+    """Validate a cron expression."""
     try:
         is_valid = CronExpressionValidator.validate_expression(expression)
 
@@ -630,9 +612,7 @@ async def validate_cron_expression(expression: str):
 
 @router.get("/cron/common")
 async def get_common_cron_expressions():
-    """
-    Get common cron expressions for reference.
-    """
+    """Get common cron expressions for reference."""
     common_expressions = {
         "daily_9am": {
             "expression": "0 9 * * *",
@@ -683,10 +663,8 @@ async def get_common_cron_expressions():
 
 
 @router.get("/status")
-async def get_scheduler_status(db: AsyncSession = Depends(get_async_db)):
-    """
-    Get scheduler status and statistics.
-    """
+async def get_scheduler_status(db: AsyncSession = Depends(get_async_db)):  # noqa: B008
+    """Get scheduler status and statistics."""
     try:
         from sqlalchemy import func, select
 
@@ -702,7 +680,7 @@ async def get_scheduler_status(db: AsyncSession = Depends(get_async_db)):
             await db.execute(select(func.count(ScheduleHistory.id)))
         ).scalar()
 
-        yesterday = datetime.utcnow() - timedelta(hours=24)
+        yesterday = datetime.now(timezone.utc) - timedelta(hours=24)
         recent_executions = (
             await db.execute(
                 select(func.count(ScheduleHistory.id)).where(
@@ -713,10 +691,10 @@ async def get_scheduler_status(db: AsyncSession = Depends(get_async_db)):
 
         return {
             "status": "running",
-            "schedule_counts": {status: count for status, count in status_counts},
+            "schedule_counts": dict(status_counts),
             "total_executions": total_executions,
             "recent_executions_24h": recent_executions,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         }
 
     except Exception as e:

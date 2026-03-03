@@ -1,5 +1,5 @@
 """
-Base Marketplace Adapter
+Base Marketplace Adapter.
 
 Defines abstract interface for all marketplace adapters.
 Provides common data models, error handling, and retry logic.

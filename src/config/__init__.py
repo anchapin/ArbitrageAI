@@ -1,5 +1,5 @@
 """
-Configuration Management
+Configuration Management.
 
 Centralized configuration loading from environment variables with defaults.
 Supports both local development and production deployments.
@@ -82,7 +82,7 @@ def get_stripe_webhook_secret() -> str:
 
 def is_debug() -> bool:
     """Check if debug mode is enabled."""
-    return os.getenv("DEBUG", "false").lower() in ("true", "1", "yes")
+    return os.getenv("DEBUG", "false").lower() in {"true", "1", "yes"}
 
 
 def get_log_level() -> str:
@@ -115,7 +115,7 @@ def should_use_redis_locks() -> bool:
     # Explicit override
     use_redis = os.getenv("USE_REDIS_LOCKS")
     if use_redis is not None:
-        return use_redis.lower() in ("true", "1", "yes")
+        return use_redis.lower() in {"true", "1", "yes"}
 
     # Check if REDIS_URL or Redis config is available
     if os.getenv("REDIS_URL"):
@@ -185,7 +185,7 @@ def validate_urls() -> None:
         if not url:
             raise ValueError(f"{name} is not configured")
 
-        if not (url.startswith("http://") or url.startswith("https://")):
+        if not (url.startswith(("http://", "https://"))):
             raise ValueError(
                 f"{name}={url} is invalid. Must start with http:// or https://",
             )
@@ -274,7 +274,7 @@ def validate_critical_env_vars() -> None:
         "ENABLE_DISTILLATION_CAPTURE",
     ]:
         value = os.getenv(flag, "").lower()
-        if value and value not in ("true", "false", "yes", "no", "1", "0"):
+        if value and value not in {"true", "false", "yes", "no", "1", "0"}:
             errors.append(f"Invalid boolean value for {flag}={value}")
 
     # Validate logging level

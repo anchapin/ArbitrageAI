@@ -1,11 +1,11 @@
 """
-PeoplePerHour Marketplace Adapter
+PeoplePerHour Marketplace Adapter.
 
 Implements marketplace adapter for PeoplePerHour platform.
 Handles project searching, offer placement, and portfolio sync.
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any
 
 import httpx
@@ -146,7 +146,7 @@ class PeoplePerHourAdapter(MarketplaceAdapter):
                 # Determine pricing model
                 pricing_model = PricingModel.FIXED
                 project_type = project.get("type", "").lower()
-                if project_type in ["hourly", "time_material"]:
+                if project_type in {"hourly", "time_material"}:
                     pricing_model = PricingModel.HOURLY
 
                 result = SearchResult(
@@ -204,7 +204,7 @@ class PeoplePerHourAdapter(MarketplaceAdapter):
             # Determine pricing model
             pricing_model = PricingModel.FIXED
             project_type = project.get("type", "").lower()
-            if project_type in ["hourly", "time_material"]:
+            if project_type in {"hourly", "time_material"}:
                 pricing_model = PricingModel.HOURLY
 
             return SearchResult(
@@ -274,7 +274,7 @@ class PeoplePerHourAdapter(MarketplaceAdapter):
                 status=BidStatus.SUBMITTED,
                 amount=proposal.amount,
                 pricing_model=proposal.pricing_model,
-                submitted_at=datetime.utcnow(),
+                submitted_at=datetime.now(timezone.utc),
                 url=offer.get("url"),
                 metadata=offer,
             )
@@ -359,7 +359,7 @@ class PeoplePerHourAdapter(MarketplaceAdapter):
                 bid_id=bid_id,
                 job_id=offer.get("project_id", ""),
                 status=BidStatus.WITHDRAWN,
-                last_updated=datetime.utcnow(),
+                last_updated=datetime.now(timezone.utc),
                 metadata=offer,
             )
 

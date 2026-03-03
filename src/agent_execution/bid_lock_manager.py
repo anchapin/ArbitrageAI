@@ -1,5 +1,5 @@
 """
-Distributed Lock Manager for Bid Placement
+Distributed Lock Manager for Bid Placement.
 
 This module implements a database-backed distributed lock mechanism to prevent
 race conditions when multiple scanner instances attempt to place bids on the
@@ -317,7 +317,7 @@ _bid_lock_manager: BidLockManager | None = None
 
 def get_bid_lock_manager() -> BidLockManager:
     """Get or create the global BidLockManager instance."""
-    global _bid_lock_manager
+    global _bid_lock_manager  # noqa: PLW0603
     if _bid_lock_manager is None:
         _bid_lock_manager = BidLockManager(ttl=300)  # 5 minute TTL
     return _bid_lock_manager
@@ -325,6 +325,6 @@ def get_bid_lock_manager() -> BidLockManager:
 
 def init_bid_lock_manager(ttl: int = 300) -> BidLockManager:
     """Initialize the global BidLockManager with custom TTL."""
-    global _bid_lock_manager
+    global _bid_lock_manager  # noqa: PLW0603
     _bid_lock_manager = BidLockManager(ttl=ttl)
     return _bid_lock_manager

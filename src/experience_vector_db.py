@@ -1,5 +1,5 @@
 """
-Experience Vector Database (RAG for Few-Shot Learning)
+Experience Vector Database (RAG for Few-Shot Learning).
 
 This module provides a vector database for storing and retrieving successful task experiences.
 When a task is marked as COMPLETED and approved, the user_request and final successful code
@@ -16,8 +16,7 @@ Features:
 from dataclasses import dataclass
 import json
 import logging
-import os
-import pathlib
+from pathlib import Path
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -47,12 +46,11 @@ except ImportError:
 # =============================================================================
 
 # Project root for data storage
-PROJECT_ROOT = pathlib.Path(pathlib.Path(__file__).resolve()).parent
-PROJECT_ROOT = pathlib.Path(PROJECT_ROOT).parent  # Go up one level to project root
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
 # Default paths
-DEFAULT_DATA_DIR = os.path.join(PROJECT_ROOT, "data")
-DEFAULT_CHROMA_DIR = os.path.join(DEFAULT_DATA_DIR, "experience_db")
+DEFAULT_DATA_DIR = PROJECT_ROOT / "data"
+DEFAULT_CHROMA_DIR = DEFAULT_DATA_DIR / "experience_db"
 
 # Embedding model - using a lightweight model for speed
 DEFAULT_EMBEDDING_MODEL = "all-MiniLM-L6-v2"
@@ -189,7 +187,7 @@ class ExperienceVectorDB:
         """Initialize ChromaDB client and collection."""
         try:
             # Create persist directory if it doesn't exist
-            os.makedirs(self.persist_directory, exist_ok=True)
+            Path(self.persist_directory).mkdir(parents=True, exist_ok=True)
 
             # Initialize ChromaDB client with persistence
             self._chroma_client = chromadb.Client(
@@ -447,9 +445,7 @@ class ExperienceVectorDB:
         few_shot_section += "Use the examples above as reference when generating code for the new request.\n"
 
         # Combine base prompt with examples
-        enhanced_prompt = base_system_prompt + few_shot_section
-
-        return enhanced_prompt
+        return base_system_prompt + few_shot_section
 
     def get_experience_stats(self) -> dict[str, Any]:
         """
@@ -519,7 +515,7 @@ def get_experience_db() -> ExperienceVectorDB:
     Returns:
         The global ExperienceVectorDB instance
     """
-    global _experience_db
+    global _experience_db  # noqa: PLW0603
 
     if _experience_db is None:
         try:

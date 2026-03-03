@@ -1,5 +1,5 @@
 """
-Disaster Recovery and Backup Strategy
+Disaster Recovery and Backup Strategy.
 
 This module provides comprehensive disaster recovery and backup capabilities for the ArbitrageAI platform.
 It includes automated backups, point-in-time recovery, data validation, and recovery orchestration.
@@ -587,7 +587,7 @@ class BackupManager:
         """Store backup metadata."""
         try:
             metadata_file = self.backup_dir / f"{metadata.backup_id}_metadata.json"
-            with open(metadata_file, "w") as f:
+            with open(metadata_file, "w", encoding="utf-8") as f:
                 json.dump(asdict(metadata), f, default=str, indent=2)
 
             # Also store in Redis for quick access if available
@@ -633,7 +633,7 @@ class BackupManager:
 
             for metadata_file in metadata_files:
                 try:
-                    with open(metadata_file) as f:
+                    with open(metadata_file, encoding="utf-8") as f:
                         metadata_dict = json.load(f)
                         if metadata_dict.get("backup_type") == backup_type.value:
                             backup_time = datetime.fromisoformat(
@@ -668,7 +668,7 @@ class BackupManager:
             # Clean up metadata files
             for metadata_file in self.backup_dir.glob("*_metadata.json"):
                 try:
-                    with open(metadata_file) as f:
+                    with open(metadata_file, encoding="utf-8") as f:
                         metadata = json.load(f)
                         backup_date = datetime.fromisoformat(metadata["timestamp"])
                         if backup_date < cutoff_date:
@@ -731,7 +731,7 @@ class BackupManager:
             metadata_files = list(self.backup_dir.glob("*_metadata.json"))
             for metadata_file in metadata_files:
                 try:
-                    with open(metadata_file) as f:
+                    with open(metadata_file, encoding="utf-8") as f:
                         metadata_dict = json.load(f)
                         backup_id = metadata_dict["backup_id"]
 
@@ -832,7 +832,7 @@ class BackupManager:
             # Check file system
             metadata_file = self.backup_dir / f"{backup_id}_metadata.json"
             if metadata_file.exists():
-                with open(metadata_file) as f:
+                with open(metadata_file, encoding="utf-8") as f:
                     return BackupMetadata(**json.load(f))
 
             return None
@@ -965,7 +965,7 @@ class RecoveryManager:
                 if not recovery_op.error_message:
                     recovery_op.error_message = str(e)
                 return recovery_op
-            recovery_op = RecoveryOperation(
+            return RecoveryOperation(
                 operation_id=operation_id,
                 plan_id=plan_id,
                 status=RecoveryStatus.FAILED,
@@ -977,7 +977,6 @@ class RecoveryManager:
                 error_message=str(e),
                 validation_results={},
             )
-            return recovery_op
 
     async def _execute_recovery_steps(
         self,

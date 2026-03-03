@@ -1,5 +1,5 @@
 """
-Local Docker Sandbox - Drop-in replacement for E2B Code Interpreter
+Local Docker Sandbox - Drop-in replacement for E2B Code Interpreter.
 
 This module provides functionality for executing Python code in secure,
 ephemeral Docker containers. It serves as a cost-free alternative to E2B.
@@ -20,6 +20,7 @@ Usage:
 from dataclasses import dataclass
 import logging
 import os
+from pathlib import Path
 import tempfile
 
 logger = logging.getLogger(__name__)
@@ -223,7 +224,7 @@ class LocalDockerSandbox:
         try:
             for filename in os.listdir(host_dir):
                 if filename in output_files:
-                    filepath = os.path.join(host_dir, filename)
+                    filepath = Path(host_dir) / filename
                     try:
                         with open(filepath, "rb") as f:
                             data = f.read()
@@ -273,8 +274,8 @@ class LocalDockerSandbox:
         # Use context manager for automatic cleanup
         with tempfile.TemporaryDirectory() as host_dir:
             # Write Python script to host directory
-            script_path = os.path.join(host_dir, "script.py")
-            with open(script_path, "w") as f:
+            script_path = Path(host_dir) / "script.py"
+            with open(script_path, "w", encoding="utf-8") as f:
                 f.write(code)
 
             # Run container with the script

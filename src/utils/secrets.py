@@ -1,5 +1,5 @@
 """
-Secure Secret Management Module
+Secure Secret Management Module.
 
 Provides secure generation and storage of cryptographic secrets.
 Used for JWT secrets, API keys, and other sensitive configuration values.
@@ -42,7 +42,7 @@ INSECURE_DEFAULTS = {
 def generate_secure_secret() -> str:
     """
     Generate a cryptographically secure random secret.
-    
+
     Returns:
         str: 256-bit (64 character hex) secure random secret
     """
@@ -52,10 +52,10 @@ def generate_secure_secret() -> str:
 def _load_secrets() -> dict[str, str]:
     """
     Load secrets from secure file.
-    
+
     Returns:
         Dict containing loaded secrets
-        
+
     Raises:
         FileNotFoundError: If secrets file doesn't exist
         PermissionError: If file permissions are incorrect
@@ -72,7 +72,7 @@ def _load_secrets() -> dict[str, str]:
         )
         SECRETS_FILE.chmod(0o600)
 
-    with open(SECRETS_FILE) as f:
+    with open(SECRETS_FILE, encoding="utf-8") as f:
         secrets_dict = json.load(f)
 
     logger.info(f"Loaded {len(secrets_dict)} secrets from secure storage")
@@ -82,10 +82,10 @@ def _load_secrets() -> dict[str, str]:
 def _save_secrets(secrets_dict: dict[str, str]) -> None:
     """
     Save secrets to secure file with restricted permissions.
-    
+
     Args:
         secrets_dict: Dictionary of secrets to save
-        
+
     Security:
         - Creates parent directories if needed
         - Sets file permissions to 0o600 (owner read/write only)
@@ -95,7 +95,7 @@ def _save_secrets(secrets_dict: dict[str, str]) -> None:
     SECRETS_FILE.parent.mkdir(parents=True, exist_ok=True)
 
     # Write secrets to file
-    with open(SECRETS_FILE, "w") as f:
+    with open(SECRETS_FILE, "w", encoding="utf-8") as f:
         json.dump(secrets_dict, f, indent=2)
 
     # Set secure permissions (owner read/write only)
@@ -108,13 +108,13 @@ def _save_secrets(secrets_dict: dict[str, str]) -> None:
 def load_or_create_secrets() -> dict[str, str]:
     """
     Load existing secrets or create new ones if they don't exist.
-    
+
     This function should be called during application startup to ensure
     all required secrets are available.
-    
+
     Returns:
         Dict containing all required secrets
-        
+
     Secrets Generated:
         - JWT_SECRET_KEY: For JWT token signing
         - CLIENT_AUTH_SECRET: For client authentication
@@ -140,13 +140,13 @@ def load_or_create_secrets() -> dict[str, str]:
 def is_insecure_default(value: str) -> bool:
     """
     Check if a value appears to be an insecure default.
-    
+
     Args:
         value: The secret value to check
-        
+
     Returns:
         True if the value appears to be an insecure default
-        
+
     Checks:
         - Empty or None values
         - Common insecure patterns
@@ -168,20 +168,17 @@ def is_insecure_default(value: str) -> bool:
         return True
 
     # Check for common weak patterns
-    if value in ["secret", "password", "admin", "12345678"]:
-        return True
-
-    return False
+    return value in {"secret", "password", "admin", "12345678"}
 
 
 def validate_secret_security(value: str, name: str) -> tuple[bool, str]:
     """
     Validate that a secret meets security requirements.
-    
+
     Args:
         value: The secret value to validate
         name: Name of the secret (for error messages)
-        
+
     Returns:
         Tuple of (is_valid, error_message)
     """

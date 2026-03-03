@@ -1,5 +1,5 @@
 """
-Logging and Alerting System (Issue #103)
+Logging and Alerting System (Issue #103).
 
 Provides comprehensive logging and alerting capabilities:
 - Structured logging with multiple levels
@@ -18,10 +18,10 @@ Features:
 
 Usage:
     from src.utils.logging_alerting import get_logger, AlertManager
-    
+
     logger = get_logger(__name__)
     logger.info("Task started", extra={"task_id": "123"})
-    
+
     alert_manager = AlertManager()
     await alert_manager.send_alert("High Error Rate", "error_rate", {"rate": 0.15})
 """
@@ -30,7 +30,7 @@ import ast
 import asyncio
 from collections import defaultdict
 from dataclasses import asdict, dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 import json
 import logging
@@ -75,7 +75,7 @@ class Alert:
 
     def __post_init__(self):
         if not self.timestamp:
-            self.timestamp = datetime.utcnow().isoformat()
+            self.timestamp = datetime.now(timezone.utc).isoformat()
 
 
 @dataclass
@@ -93,7 +93,7 @@ class AlertRule:
 class StructuredLogger:
     """
     Structured logger with JSON formatting and context support.
-    
+
     Features:
     - JSON structured logging
     - Context injection
@@ -151,7 +151,7 @@ class StructuredLogger:
         class JSONFormatter(logging.Formatter):
             def format(self, record):
                 log_data = {
-                    "timestamp": datetime.utcnow().isoformat(),
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
                     "level": record.levelname,
                     "logger": record.name,
                     "message": record.getMessage(),
@@ -225,7 +225,7 @@ class StructuredLogger:
 class AlertManager:
     """
     Alert management system with rule-based triggering.
-    
+
     Features:
     - Rule-based alert triggering
     - Multiple notification channels
@@ -271,7 +271,7 @@ class AlertManager:
     ) -> None:
         """
         Send an alert.
-        
+
         Args:
             name: Alert name
             severity: Alert severity
@@ -345,7 +345,7 @@ class AlertManager:
                             {"title": k, "value": str(v), "short": True}
                             for k, v in alert.metadata.items()
                         ],
-                        "ts": int(datetime.utcnow().timestamp()),
+                        "ts": int(datetime.now(timezone.utc).timestamp()),
                     },
                 ],
             }
@@ -365,7 +365,7 @@ class AlertManager:
     def check_rules(self, metrics: dict[str, Any]) -> None:
         """
         Check alert rules against current metrics.
-        
+
         Args:
             metrics: Current system metrics
         """
@@ -375,7 +375,7 @@ class AlertManager:
 
             # Check cooldown
             if rule.last_triggered:
-                elapsed = (datetime.utcnow() - rule.last_triggered).total_seconds()
+                elapsed = (datetime.now(timezone.utc) - rule.last_triggered).total_seconds()
                 if elapsed < rule.cooldown_seconds:
                     continue
 
@@ -383,14 +383,14 @@ class AlertManager:
             if self._evaluate_condition(rule.condition, metrics):
                 # Trigger alert
                 asyncio.create_task(self._trigger_rule(rule, metrics))
-                rule.last_triggered = datetime.utcnow()
+                rule.last_triggered = datetime.now(timezone.utc)
 
     def _evaluate_condition(self, condition: str, metrics: dict[str, Any]) -> bool:
         """
         Evaluate an alert condition.
 
         Example condition: "error_count > 10"
-        
+
         Uses ast.literal_eval for safe evaluation of simple expressions.
         For more complex conditions, consider using a proper expression parser.
         """
@@ -493,7 +493,7 @@ class AlertManager:
 class LogAnalyzer:
     """
     Log analysis and metrics extraction.
-    
+
     Features:
     - Log parsing and filtering
     - Metrics extraction
@@ -512,7 +512,7 @@ class LogAnalyzer:
             return []
 
         logs = []
-        with open(log_path) as f:
+        with open(log_path, encoding="utf-8") as f:
             for line in f:
                 try:
                     log_data = json.loads(line.strip())
@@ -560,12 +560,12 @@ class LogAnalyzer:
     ) -> list[str]:
         """
         Detect anomalies in metrics compared to baseline.
-        
+
         Args:
             metrics: Current metrics
             baseline: Baseline metrics
             threshold: Standard deviations for anomaly detection
-        
+
         Returns:
             List of anomaly descriptions
         """
@@ -620,7 +620,7 @@ def get_logger(
 
 def get_alert_manager() -> AlertManager:
     """Get or create the alert manager."""
-    global _alert_manager
+    global _alert_manager  # noqa: PLW0603
     if _alert_manager is None:
         _alert_manager = AlertManager(
             webhook_url=os.getenv("ALERT_WEBHOOK_URL"),
@@ -631,6 +631,6 @@ def get_alert_manager() -> AlertManager:
 
 def reset_logging_instances() -> None:
     """Reset global logging instances (for testing)."""
-    global _loggers, _alert_manager
+    global _loggers, _alert_manager  # noqa: PLW0603
     _loggers.clear()
     _alert_manager = None

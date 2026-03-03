@@ -1,5 +1,5 @@
 """
-Telegram Notifications Module
+Telegram Notifications Module.
 
 Provides Telegram notification functionality for urgent alerts and human-in-the-loop requests.
 Uses httpx for async HTTP requests to the Telegram Bot API.
@@ -21,10 +21,10 @@ import os
 
 import httpx
 
-from ..config import get_telegram_api_url
+from src.config import get_telegram_api_url
 
 # Import logging module
-from .logger import get_logger
+from src.utils.logger import get_logger
 
 # Retry configuration for Telegram notifications
 MAX_NOTIFICATION_RETRIES = 3
@@ -206,7 +206,7 @@ def get_notifier() -> TelegramNotifier:
     Returns:
         The TelegramNotifier instance
     """
-    global _notifier
+    global _notifier  # noqa: PLW0603
     if _notifier is None:
         _notifier = TelegramNotifier()
     return _notifier

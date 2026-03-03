@@ -1,5 +1,5 @@
 """
-Confidence Tracker Module for Autonomy
+Confidence Tracker Module for Autonomy.
 
 Measures agent's performance and recommends bid thresholds based on
 historical win rates, profit margins, and risk factors.
@@ -13,12 +13,12 @@ Features:
 - Self-adjusting algorithm for continuous improvement
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any
 
-from ..api.database import SessionLocal
-from ..api.models import ConfidenceEntry as ConfidenceEntryModel
-from ..utils.logger import get_logger
+from src.api.database import SessionLocal
+from src.api.models import ConfidenceEntry as ConfidenceEntryModel
+from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
 
@@ -28,7 +28,7 @@ ConfidenceEntry = ConfidenceEntryModel
 
 class ConfidenceTracker:
     """
-    Confidence Tracker for Bid Threshold Optimization
+    Confidence Tracker for Bid Threshold Optimization.
 
     Calculates confidence scores based on historical performance and
     recommends optimal bid thresholds for maximum profitability.
@@ -111,7 +111,7 @@ class ConfidenceTracker:
                 win_streak_before=self.current_streak_wins,
                 loss_streak_before=self.current_streak_losses,
                 strategy_type=strategy_type,
-                created_at=datetime.utcnow(),
+                created_at=datetime.now(timezone.utc),
             )
 
             db.add(entry)
@@ -270,9 +270,7 @@ class ConfidenceTracker:
             return 0
 
         mean = sum(profits) / len(profits)
-        variance = sum((p - mean) ** 2 for p in profits) / len(profits)
-
-        return variance
+        return sum((p - mean) ** 2 for p in profits) / len(profits)
 
     def get_recommended_threshold(self) -> dict[str, Any]:
         """
@@ -478,7 +476,7 @@ _confidence_tracker_instance: ConfidenceTracker | None = None
 
 def get_confidence_tracker() -> ConfidenceTracker:
     """Get or create global Confidence Tracker singleton."""
-    global _confidence_tracker_instance
+    global _confidence_tracker_instance  # noqa: PLW0603
 
     if _confidence_tracker_instance is None:
         _confidence_tracker_instance = ConfidenceTracker()
@@ -488,5 +486,5 @@ def get_confidence_tracker() -> ConfidenceTracker:
 
 def reset_confidence_tracker():
     """Reset confidence tracker singleton (useful for testing)."""
-    global _confidence_tracker_instance
+    global _confidence_tracker_instance  # noqa: PLW0603
     _confidence_tracker_instance = None

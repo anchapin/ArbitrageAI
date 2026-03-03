@@ -1,5 +1,5 @@
 """
-Fine-Tuned Model Evaluator
+Fine-Tuned Model Evaluator.
 
 Evaluates model performance on test sets and compares metrics.
 """
@@ -307,6 +307,6 @@ class ModelEvaluator:
             filepath: Path to save results
         """
         results_data = [asdict(r) for r in self.results]
-        with open(filepath, "w") as f:
+        with open(filepath, "w", encoding="utf-8") as f:
             json.dump(results_data, f, indent=2)
         logger.info(f"Exported {len(self.results)} evaluation results to {filepath}")

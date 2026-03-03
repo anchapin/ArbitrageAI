@@ -1,5 +1,5 @@
 """
-Async RAG Service for Decoupled Vector DB
+Async RAG Service for Decoupled Vector DB.
 
 Refactored RAG layer that doesn't block task execution.
 Implements async queries, circuit breaker pattern, and background processing.
@@ -328,7 +328,7 @@ _async_rag_service: AsyncRAGService | None = None
 
 def get_async_rag_service(vector_db: ExperienceVectorDB) -> AsyncRAGService:
     """Get or create the global AsyncRAGService instance."""
-    global _async_rag_service
+    global _async_rag_service  # noqa: PLW0603
     if _async_rag_service is None:
         _async_rag_service = AsyncRAGService(vector_db=vector_db)
     return _async_rag_service

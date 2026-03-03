@@ -1,5 +1,5 @@
 import os
-import pathlib
+from pathlib import Path
 
 from sqlalchemy import create_engine
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
@@ -9,9 +9,9 @@ from .models import Base
 
 # Get the database URL from environment variable or use default SQLite path
 # Use absolute path to ensure data directory is at project root
-PROJECT_ROOT = pathlib.Path(pathlib.Path(pathlib.Path(pathlib.Path(__file__).resolve()).parent).parent).parent
+PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 DATABASE_URL = os.getenv(
-    "DATABASE_URL", f"sqlite:///{os.path.join(PROJECT_ROOT, 'data', 'tasks.db')}",
+    "DATABASE_URL", f"sqlite:///{PROJECT_ROOT / 'data' / 'tasks.db'}",
 )
 
 # Create engine based on database type

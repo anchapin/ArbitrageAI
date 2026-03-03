@@ -1,5 +1,5 @@
 """
-Refactored Task Model Using Composition Pattern
+Refactored Task Model Using Composition Pattern.
 
 Decompose the monolithic Task model into focused entities:
 - Task: Core task information only
@@ -34,7 +34,7 @@ Base = declarative_base()
 
 
 # ============================================================================
-# ENUMS (existing, reused)
+# ENUMS (existing, reused)  # noqa: ERA001
 # ============================================================================
 
 

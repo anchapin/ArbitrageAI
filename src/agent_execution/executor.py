@@ -1,5 +1,5 @@
 """
-E2B Code Interpreter Executor
+E2B Code Interpreter Executor.
 
 This module provides functionality for executing code in secure sandboxes
 using the E2B Code Interpreter SDK. It takes user's CSV data and generates
@@ -19,7 +19,7 @@ from datetime import datetime
 import json
 import os
 import re
-from typing import Any
+from typing import Any, ClassVar
 
 # Import error categorization (Issue #37)
 
@@ -165,14 +165,14 @@ class TaskRouter:
     """
 
     # Default output formats by domain
-    DOMAIN_DEFAULT_FORMAT = {
+    DOMAIN_DEFAULT_FORMAT: ClassVar[dict] = {
         "legal": OutputFormat.DOCX,
         "accounting": OutputFormat.XLSX,
         "data_analysis": OutputFormat.IMAGE,
     }
 
     # Keywords to detect task type from user request
-    DOCUMENT_KEYWORDS = [
+    DOCUMENT_KEYWORDS: ClassVar[list] = [
         "document",
         "report",
         "brief",
@@ -187,7 +187,7 @@ class TaskRouter:
         "generate document",
     ]
 
-    SPREADSHEET_KEYWORDS = [
+    SPREADSHEET_KEYWORDS: ClassVar[list] = [
         "spreadsheet",
         "excel",
         "workbook",
@@ -199,7 +199,7 @@ class TaskRouter:
         "xlsx",
     ]
 
-    VISUALIZATION_KEYWORDS = [
+    VISUALIZATION_KEYWORDS: ClassVar[list] = [
         "chart",
         "graph",
         "visualize",
@@ -2241,9 +2241,7 @@ Return your review in JSON format."""
 
             # Parse the LLM response
             response_content = result["content"].strip()
-            review_result = self._parse_review_response(response_content)
-
-            return review_result
+            return self._parse_review_response(response_content)
 
         except (ValueError, TypeError) as e:
             logger.error(f"Artifact review validation error: {e}", exc_info=True)
@@ -2569,13 +2567,12 @@ class AIResponseGenerator:
                 )
 
             # Fall back to synchronous query if no prefetched examples
-            enhanced_prompt = build_few_shot_system_prompt(
+            return build_few_shot_system_prompt(
                 base_system_prompt=base_system_prompt,
                 user_request=user_request,
                 domain=domain,
                 top_k=2,
             )
-            return enhanced_prompt
         except (ValueError, TypeError) as e:
             # If few-shot fails, fall back to base prompt
             logger.warning(f"Few-shot prompt validation error: {e}", exc_info=True)
@@ -3168,7 +3165,7 @@ def _get_llm_for_task(domain: str | None) -> LLMService:
     domain_lower = (domain or "").lower().strip()
 
     # Legal and Accounting require high accuracy - use cloud models
-    if domain_lower in ["legal", "accounting"]:
+    if domain_lower in {"legal", "accounting"}:
         logger.info(f"Using cloud model for {domain} task (high accuracy required)")
         return LLMService.for_complex_task()
 
@@ -3638,9 +3635,6 @@ Item E,125,Cat3"""
     logger.info("\n" + "=" * 50)
 
     # Note: This will fail without a valid E2B API key
-    # Uncomment below to test with valid API key
-    # result = execute_data_visualization(sample_csv, "Create a bar chart")
-    # logger.info(result)
 
     logger.info("\nTo test with a real sandbox, provide a valid E2B_API_KEY")
     logger.info("or set the E2B_API_KEY environment variable.")

@@ -1,8 +1,7 @@
 from datetime import datetime, timezone
 import json
 import logging
-import os
-import pathlib
+from pathlib import Path
 
 # Setup basic logging for the logger itself
 logging.basicConfig(level=logging.INFO)
@@ -20,7 +19,7 @@ class ExperienceLogger:
         self.dataset_path = dataset_path
 
         # Ensure the data directory exists
-        os.makedirs(pathlib.Path(self.dataset_path).parent, exist_ok=True)
+        Path(self.dataset_path).parent.mkdir(parents=True, exist_ok=True)
 
     def log_success(self, task) -> bool:
         """

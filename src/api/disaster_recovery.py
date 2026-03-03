@@ -1,5 +1,5 @@
 """
-Disaster Recovery API Endpoints
+Disaster Recovery API Endpoints.
 
 This module provides REST API endpoints for disaster recovery operations,
 including backup management, recovery operations, and disaster recovery workflows.
@@ -518,8 +518,7 @@ class DisasterRecoveryAPI:
             Test results
         """
         try:
-            test_results = await self.recovery_manager.test_recovery_plan(plan_id)
-            return test_results
+            return await self.recovery_manager.test_recovery_plan(plan_id)
 
         except HTTPException:
             raise
@@ -577,10 +576,7 @@ class DisasterRecoveryAPI:
             List of recovery plans
         """
         try:
-            plans = []
-            for plan_id, plan in self.recovery_manager.recovery_plans.items():
-                plans.append(
-                    RecoveryPlanResponse(
+            return [RecoveryPlanResponse(
                         plan_id=plan.plan_id,
                         name=plan.name,
                         description=plan.description,
@@ -590,9 +586,7 @@ class DisasterRecoveryAPI:
                         priority=plan.priority,
                         automated=plan.automated,
                         test_frequency=plan.test_frequency,
-                    ),
-                )
-            return plans
+                    ) for plan in self.recovery_manager.recovery_plans.values()]
 
         except (ValueError, TypeError, KeyError) as e:
             logger.error(f"Data error getting recovery plans: {e}", exc_info=True)
@@ -636,7 +630,7 @@ disaster_recovery_api = DisasterRecoveryAPI(Config())
 # API endpoints
 @router.post("/backups", response_model=BackupResponse)
 @task(name="create_backup_api")
-async def create_backup_endpoint(request: BackupRequest, db: Session = Depends(get_db)):
+async def create_backup_endpoint(request: BackupRequest, db: Session = Depends(get_db)):  # noqa: B008
     """
     Create a backup of the specified type.
 
@@ -659,7 +653,7 @@ async def list_backups_endpoint(
         50, ge=1, le=100, description="Maximum number of backups to return",
     ),
     offset: int = Query(0, ge=0, description="Offset for pagination"),
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db),  # noqa: B008
 ):
     """
     List available backups.
@@ -675,7 +669,7 @@ async def list_backups_endpoint(
 
 @router.get("/backups/{backup_id}", response_model=BackupMetadata)
 @task(name="get_backup_details_api")
-async def get_backup_details_endpoint(backup_id: str, db: Session = Depends(get_db)):
+async def get_backup_details_endpoint(backup_id: str, db: Session = Depends(get_db)):  # noqa: B008
     """
     Get details for a specific backup.
 
@@ -686,7 +680,7 @@ async def get_backup_details_endpoint(backup_id: str, db: Session = Depends(get_
 
 @router.post("/backups/{backup_id}/validate", response_model=dict[str, Any])
 @task(name="validate_backup_api")
-async def validate_backup_endpoint(backup_id: str, db: Session = Depends(get_db)):
+async def validate_backup_endpoint(backup_id: str, db: Session = Depends(get_db)):  # noqa: B008
     """
     Validate backup integrity.
 
@@ -697,7 +691,7 @@ async def validate_backup_endpoint(backup_id: str, db: Session = Depends(get_db)
 
 @router.delete("/backups/{backup_id}", response_model=dict[str, str])
 @task(name="delete_backup_api")
-async def delete_backup_endpoint(backup_id: str, db: Session = Depends(get_db)):
+async def delete_backup_endpoint(backup_id: str, db: Session = Depends(get_db)):  # noqa: B008
     """
     Delete a backup.
 
@@ -709,7 +703,7 @@ async def delete_backup_endpoint(backup_id: str, db: Session = Depends(get_db)):
 @router.post("/recoveries", response_model=RecoveryResponse)
 @task(name="execute_recovery_api")
 async def execute_recovery_endpoint(
-    request: RecoveryRequest, db: Session = Depends(get_db),
+    request: RecoveryRequest, db: Session = Depends(get_db),  # noqa: B008
 ):
     """
     Execute recovery operation.
@@ -728,7 +722,7 @@ async def execute_recovery_endpoint(
 @router.get("/recoveries/{operation_id}", response_model=Optional[RecoveryResponse])
 @task(name="get_recovery_status_api")
 async def get_recovery_status_endpoint(
-    operation_id: str, db: Session = Depends(get_db),
+    operation_id: str, db: Session = Depends(get_db),  # noqa: B008
 ):
     """
     Get status of a recovery operation.
@@ -740,7 +734,7 @@ async def get_recovery_status_endpoint(
 
 @router.post("/recovery-plans/{plan_id}/test", response_model=dict[str, Any])
 @task(name="test_recovery_plan_api")
-async def test_recovery_plan_endpoint(plan_id: str, db: Session = Depends(get_db)):
+async def test_recovery_plan_endpoint(plan_id: str, db: Session = Depends(get_db)):  # noqa: B008
     """
     Test a recovery plan without affecting production.
 
@@ -752,7 +746,7 @@ async def test_recovery_plan_endpoint(plan_id: str, db: Session = Depends(get_db
 @router.post("/disaster-recovery", response_model=DisasterRecoveryResponse)
 @task(name="execute_disaster_recovery_api")
 async def execute_disaster_recovery_endpoint(
-    request: DisasterRecoveryRequest, db: Session = Depends(get_db),
+    request: DisasterRecoveryRequest, db: Session = Depends(get_db),  # noqa: B008
 ):
     """
     Execute complete disaster recovery workflow.
@@ -767,29 +761,23 @@ async def execute_disaster_recovery_endpoint(
 
 @router.get("/recovery-plans", response_model=list[RecoveryPlanResponse])
 @task(name="get_recovery_plans_api")
-async def get_recovery_plans_endpoint(db: Session = Depends(get_db)):
-    """
-    Get available recovery plans.
-    """
+async def get_recovery_plans_endpoint(db: Session = Depends(get_db)):  # noqa: B008
+    """Get available recovery plans."""
     return await disaster_recovery_api.get_recovery_plans()
 
 
 @router.get("/metrics", response_model=RecoveryMetricsResponse)
 @task(name="get_recovery_metrics_api")
-async def get_recovery_metrics_endpoint(db: Session = Depends(get_db)):
-    """
-    Get disaster recovery metrics.
-    """
+async def get_recovery_metrics_endpoint(db: Session = Depends(get_db)):  # noqa: B008
+    """Get disaster recovery metrics."""
     return await disaster_recovery_api.get_recovery_metrics()
 
 
 # Health check endpoint
 @router.get("/health", response_model=dict[str, str])
 @task(name="disaster_recovery_health_check")
-async def health_check_endpoint(db: Session = Depends(get_db)):
-    """
-    Health check for disaster recovery system.
-    """
+async def health_check_endpoint(db: Session = Depends(get_db)):  # noqa: B008
+    """Health check for disaster recovery system."""
     try:
         # Check backup directory
         backup_dir = Path(Config().BACKUP_DIR)

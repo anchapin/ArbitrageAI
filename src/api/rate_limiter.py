@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 class RateLimiter:
     """
     Distributed rate limiter using Redis (sliding window algorithm).
-    
+
     Tracks requests per second (RPS) with burst capacity using a sliding
     window. Each request increments a counter for the current second window.
     """
@@ -38,7 +38,7 @@ class RateLimiter:
     def __init__(self, redis_client: redis.Redis | None = None):
         """
         Initialize rate limiter.
-        
+
         Args:
             redis_client: Redis connection (or None to create default)
         """
@@ -66,17 +66,17 @@ class RateLimiter:
     ) -> tuple[bool, dict]:
         """
         Check if request is allowed within rate limits.
-        
+
         Uses sliding window algorithm:
         - Current second: increment counter
         - Check if counter > rate_limit_rps
         - Include burst capacity for spikes
-        
+
         Args:
             user_id: User identifier
             quota: UserQuota config
             override: Admin override flag
-        
+
         Returns:
             (allowed: bool, details: dict)
         """
@@ -184,7 +184,7 @@ class RateLimiter:
 class QuotaManager:
     """
     Manages monthly quota enforcement and tracking.
-    
+
     Handles:
     - Task quota enforcement
     - API call quota enforcement
@@ -315,7 +315,7 @@ class QuotaManager:
         """Increment task count for current month."""
         usage = self.get_or_create_usage(db, user_id)
         usage.task_count += 1
-        usage.updated_at = datetime.utcnow()
+        usage.updated_at = datetime.now(timezone.utc)
         db.commit()
         db.refresh(usage)
         return usage
@@ -329,7 +329,7 @@ class QuotaManager:
         """Increment API call count for current month."""
         usage = self.get_or_create_usage(db, user_id)
         usage.api_call_count += count
-        usage.updated_at = datetime.utcnow()
+        usage.updated_at = datetime.now(timezone.utc)
         db.commit()
         db.refresh(usage)
         return usage
@@ -343,7 +343,7 @@ class QuotaManager:
         """Add compute time to current month."""
         usage = self.get_or_create_usage(db, user_id)
         usage.compute_minutes_used += compute_minutes
-        usage.updated_at = datetime.utcnow()
+        usage.updated_at = datetime.now(timezone.utc)
         db.commit()
         db.refresh(usage)
         return usage
@@ -368,31 +368,31 @@ class QuotaManager:
 
         alert = None
 
-        # 80% threshold
+        # 80% threshold  # noqa: ERA001
         if max_percent >= 80 and not usage.alert_sent_at_80_percent:
-            usage.alert_sent_at_80_percent = datetime.utcnow()
+            usage.alert_sent_at_80_percent = datetime.now(timezone.utc)
             alert = {
                 "type": "quota_80_percent",
                 "user_id": user_id,
                 "usage_percentage": max_percent,
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": datetime.now(timezone.utc).isoformat(),
             }
 
-        # 100% threshold
+        # 100% threshold  # noqa: ERA001
         if max_percent >= 100:
             if not usage.alert_sent_at_100_percent:
-                usage.alert_sent_at_100_percent = datetime.utcnow()
+                usage.alert_sent_at_100_percent = datetime.now(timezone.utc)
                 usage.quota_exceeded = True
 
             alert = {
                 "type": "quota_100_percent",
                 "user_id": user_id,
                 "usage_percentage": max_percent,
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": datetime.now(timezone.utc).isoformat(),
             }
 
         if alert:
-            usage.updated_at = datetime.utcnow()
+            usage.updated_at = datetime.now(timezone.utc)
             db.commit()
 
         return alert

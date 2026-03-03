@@ -1,5 +1,5 @@
 """
-Cost Tracking Module for ROI Analysis
+Cost Tracking Module for ROI Analysis.
 
 Tracks actual costs per bid/task and calculates ROI to identify
 profitable strategies and marketplaces.
@@ -13,13 +13,13 @@ Features:
 - Store cost history in database
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum as PyEnum
 from typing import Any
 
-from ..api.database import SessionLocal
-from ..api.models import CostEntry as CostEntryModel
-from ..utils.logger import get_logger
+from src.api.database import SessionLocal
+from src.api.models import CostEntry as CostEntryModel
+from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
 
@@ -39,7 +39,7 @@ CostEntry = CostEntryModel
 
 class CostTracker:
     """
-    Cost Tracker for ROI Analysis
+    Cost Tracker for ROI Analysis.
 
     Tracks costs and revenue to calculate ROI for bids, tasks, and strategies.
     Provides insights into profitable operations and areas for optimization.
@@ -90,7 +90,7 @@ class CostTracker:
                 marketplace=marketplace,
                 strategy_type=strategy_type,
                 extra_metadata=metadata,
-                created_at=datetime.utcnow(),
+                created_at=datetime.now(timezone.utc),
             )
 
             db.add(cost_entry)
@@ -404,7 +404,7 @@ _cost_tracker_instance: CostTracker | None = None
 
 def get_cost_tracker() -> CostTracker:
     """Get or create global Cost Tracker singleton."""
-    global _cost_tracker_instance
+    global _cost_tracker_instance  # noqa: PLW0603
 
     if _cost_tracker_instance is None:
         _cost_tracker_instance = CostTracker()
@@ -414,5 +414,5 @@ def get_cost_tracker() -> CostTracker:
 
 def reset_cost_tracker():
     """Reset cost tracker singleton (useful for testing)."""
-    global _cost_tracker_instance
+    global _cost_tracker_instance  # noqa: PLW0603
     _cost_tracker_instance = None

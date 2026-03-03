@@ -27,7 +27,7 @@ import os
 
 from fastapi import HTTPException, Query
 
-from ..utils.logger import get_logger
+from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
 
@@ -48,10 +48,9 @@ def generate_client_token(email: str) -> str:
         Hex-encoded HMAC signature
     """
     normalized_email = email.strip().lower()
-    signature = hmac.new(
+    return hmac.new(
         CLIENT_AUTH_SECRET.encode(), normalized_email.encode(), hashlib.sha256,
     ).hexdigest()
-    return signature
 
 
 def verify_client_token(email: str, token: str) -> bool:

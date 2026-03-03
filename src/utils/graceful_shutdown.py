@@ -1,5 +1,5 @@
 """
-Graceful Shutdown and State Recovery System (Issue #102)
+Graceful Shutdown and State Recovery System (Issue #102).
 
 Provides graceful shutdown capabilities and state recovery for:
 - Active task execution
@@ -18,21 +18,22 @@ Features:
 
 Usage:
     from src.utils.graceful_shutdown import GracefulShutdownManager
-    
+
     shutdown_manager = GracefulShutdownManager()
     await shutdown_manager.initialize()
-    
+
     # Register shutdown handlers
     shutdown_manager.register_handler("task_execution", cleanup_tasks)
-    
+
     # On shutdown signal
     await shutdown_manager.shutdown()
 """
 
 import asyncio
 from collections.abc import Awaitable, Callable
+import contextlib
 from dataclasses import asdict, dataclass
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from enum import Enum
 import json
 from pathlib import Path
@@ -77,7 +78,7 @@ class ShutdownStateData:
 class GracefulShutdownManager:
     """
     Manages graceful shutdown and state recovery.
-    
+
     Features:
     - Signal handling for SIGTERM and SIGINT
     - State persistence to disk
@@ -145,7 +146,7 @@ class GracefulShutdownManager:
     ) -> None:
         """
         Register a shutdown handler.
-        
+
         Args:
             name: Handler name
             handler: Async function to call on shutdown
@@ -163,7 +164,7 @@ class GracefulShutdownManager:
         """Register an active task for tracking."""
         self.active_tasks[task_id] = {
             **task_data,
-            "started_at": datetime.utcnow().isoformat(),
+            "started_at": datetime.now(timezone.utc).isoformat(),
         }
         logger.debug(f"Registered active task: {task_id}")
 
@@ -177,7 +178,7 @@ class GracefulShutdownManager:
         """Register a WebSocket connection for tracking."""
         self.websocket_connections[connection_id] = {
             **connection_data,
-            "connected_at": datetime.utcnow().isoformat(),
+            "connected_at": datetime.now(timezone.utc).isoformat(),
         }
 
     def unregister_websocket(self, connection_id: str) -> None:
@@ -188,7 +189,7 @@ class GracefulShutdownManager:
     async def shutdown(self, reason: ShutdownReason = ShutdownReason.SIGNAL) -> None:
         """
         Perform graceful shutdown.
-        
+
         Args:
             reason: Reason for shutdown
         """
@@ -217,7 +218,7 @@ class GracefulShutdownManager:
 
             # Wait for all handlers with overall timeout
             if shutdown_tasks:
-                done, pending = await asyncio.wait(
+                _done, pending = await asyncio.wait(
                     shutdown_tasks,
                     timeout=self.shutdown_timeout,
                     return_when=asyncio.ALL_COMPLETED,
@@ -226,10 +227,8 @@ class GracefulShutdownManager:
                 # Cancel pending tasks
                 for task in pending:
                     task.cancel()
-                    try:
+                    with contextlib.suppress(asyncio.CancelledError):
                         await task
-                    except asyncio.CancelledError:
-                        pass
 
             # Close WebSocket connections
             await self._close_websockets()
@@ -269,7 +268,7 @@ class GracefulShutdownManager:
             pending_jobs=self.pending_jobs,
             scheduled_tasks=[],  # Would be populated from scheduler
             websocket_connections=list(self.websocket_connections.values()),
-            timestamp=datetime.utcnow().isoformat(),
+            timestamp=datetime.now(timezone.utc).isoformat(),
             shutdown_reason=self.shutdown_reason.value if self.shutdown_reason else None,
         )
 
@@ -291,7 +290,7 @@ class GracefulShutdownManager:
         try:
             # Check state file age
             mtime = datetime.fromtimestamp(state_file.stat().st_mtime)
-            age = datetime.utcnow() - mtime
+            age = datetime.now(timezone.utc) - mtime
 
             if age > timedelta(hours=self.max_state_age_hours):
                 logger.info(f"State file too old ({age}), skipping recovery")
@@ -317,7 +316,7 @@ class GracefulShutdownManager:
     async def _recover_task(self, task_data: dict[str, Any]) -> None:
         """
         Recover a task from previous state.
-        
+
         Override this method to implement custom task recovery logic.
         """
         logger.info(f"Recovering task: {task_data.get('id', 'unknown')}")
@@ -390,7 +389,7 @@ _shutdown_manager: GracefulShutdownManager | None = None
 
 def get_shutdown_manager() -> GracefulShutdownManager:
     """Get or create the global shutdown manager instance."""
-    global _shutdown_manager
+    global _shutdown_manager  # noqa: PLW0603
     if _shutdown_manager is None:
         _shutdown_manager = GracefulShutdownManager()
     return _shutdown_manager
@@ -398,5 +397,5 @@ def get_shutdown_manager() -> GracefulShutdownManager:
 
 def reset_shutdown_manager() -> None:
     """Reset the global shutdown manager (for testing)."""
-    global _shutdown_manager
+    global _shutdown_manager  # noqa: PLW0603
     _shutdown_manager = None

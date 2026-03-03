@@ -1,5 +1,5 @@
 """
-OpenAI Fine-Tuning Integration
+OpenAI Fine-Tuning Integration.
 
 Handles fine-tuning with OpenAI's API for gpt-3.5-turbo and gpt-4o-mini.
 """
@@ -7,7 +7,7 @@ Handles fine-tuning with OpenAI's API for gpt-3.5-turbo and gpt-4o-mini.
 import logging
 import os
 import pathlib
-from typing import Any
+from typing import Any, ClassVar
 
 from openai import OpenAI
 
@@ -29,7 +29,7 @@ class OpenAIFineTuner:
     - Cancel jobs
     """
 
-    SUPPORTED_MODELS = ["gpt-3.5-turbo", "gpt-4o-mini"]
+    SUPPORTED_MODELS: ClassVar[list] = ["gpt-3.5-turbo", "gpt-4o-mini"]
 
     def __init__(self, api_key: str | None = None):
         """

@@ -11,6 +11,7 @@ from collections.abc import Callable
 import logging
 import os
 import time
+from typing import ClassVar
 
 from fastapi import Request
 from fastapi.responses import JSONResponse
@@ -29,7 +30,7 @@ _quota_manager = None
 
 def get_rate_limiter():
     """Get or create global rate limiter."""
-    global _rate_limiter
+    global _rate_limiter  # noqa: PLW0603
     if _rate_limiter is None:
         # Disable rate limiting for tests
         if os.getenv("DISABLE_RATE_LIMITING") == "true":
@@ -59,7 +60,7 @@ def get_rate_limiter():
 
 def get_quota_manager():
     """Get or create global quota manager."""
-    global _quota_manager
+    global _quota_manager  # noqa: PLW0603
     if _quota_manager is None:
         _quota_manager = QuotaManager()
     return _quota_manager
@@ -80,7 +81,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
     """
 
     # Endpoints that bypass rate limiting
-    BYPASS_ENDPOINTS = {
+    BYPASS_ENDPOINTS: ClassVar[set] = {
         "/health",
         "/docs",
         "/openapi.json",

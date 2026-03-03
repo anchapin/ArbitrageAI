@@ -1,5 +1,5 @@
 """
-Intelligent Task Categorization and Auto-Routing System
+Intelligent Task Categorization and Auto-Routing System.
 
 This module provides ML-based task classification and automatic routing
 to optimize task distribution and improve success rates. It uses machine
@@ -18,8 +18,7 @@ import asyncio
 from collections import Counter, defaultdict
 from dataclasses import asdict, dataclass
 from datetime import datetime
-import os
-import pathlib
+from pathlib import Path
 import pickle
 from typing import Any
 
@@ -116,12 +115,12 @@ class TaskClassifier:
 
     def _get_default_model_path(self) -> str:
         """Get default model storage path."""
-        return os.path.join(pathlib.Path(__file__).parent, "models", "task_classifier.pkl")
+        return str(Path(__file__).parent / "models" / "task_classifier.pkl")
 
     def _load_models(self):
         """Load pre-trained models from disk."""
         try:
-            if pathlib.Path(self.model_path).exists():
+            if Path(self.model_path).exists():
                 with open(self.model_path, "rb") as f:
                     models = pickle.load(f)
                     self.text_classifier = models.get("classifier")
@@ -144,7 +143,7 @@ class TaskClassifier:
     def _save_models(self):
         """Save trained models to disk."""
         try:
-            os.makedirs(pathlib.Path(self.model_path).parent, exist_ok=True)
+            Path(self.model_path).parent.mkdir(parents=True, exist_ok=True)
             models = {
                 "classifier": self.text_classifier,
                 "clustering": self.clustering_model,
@@ -197,17 +196,13 @@ class TaskClassifier:
             text_features = self.vectorizer.transform(text_data)
 
         # Numerical features
-        numerical_features = []
-        for profile in task_profiles:
-            numerical_features.append(
-                [
+        numerical_features = [[
                     profile.complexity_score,
                     profile.estimated_time,
                     profile.success_rate,
                     profile.retry_count,
                     profile.review_attempts,
-                ],
-            )
+                ] for profile in task_profiles]
 
         numerical_features = np.array(numerical_features)
 
@@ -418,9 +413,7 @@ class TaskClassifier:
 
 
 class PerformanceTracker:
-    """
-    Tracks and analyzes task execution performance for continuous improvement.
-    """
+    """Tracks and analyzes task execution performance for continuous improvement."""
 
     def __init__(self, db_session=None):
         """
@@ -811,7 +804,7 @@ class IntelligentRouter:
             score += 0.1
 
         # Domain complexity
-        if domain.lower() in ["legal", "accounting"]:
+        if domain.lower() in {"legal", "accounting"}:
             score += 0.4
         else:
             score += 0.2
@@ -883,7 +876,7 @@ class IntelligentRouter:
             base_rate -= 0.03
 
         # Adjust based on output format
-        if output_format in ["docx", "xlsx"]:
+        if output_format in {"docx", "xlsx"}:
             base_rate -= 0.02
 
         return max(0.0, min(1.0, base_rate))
@@ -1265,7 +1258,7 @@ class IntelligentRouter:
         from src.agent_execution.executor import execute_data_visualization
 
         result = execute_data_visualization(
-            csv_data="\n".join([",".join(task_profile.csv_headers)] + ["sample,data"]),
+            csv_data="\n".join([",".join(task_profile.csv_headers), "sample,data"]),
             user_request=task_profile.user_request,
             llm_service=llm_service,
             domain=task_profile.domain,
@@ -1291,7 +1284,7 @@ class IntelligentRouter:
 
         result = generator.generate_document(
             user_request=task_profile.user_request,
-            csv_data="\n".join([",".join(task_profile.csv_headers)] + ["sample,data"]),
+            csv_data="\n".join([",".join(task_profile.csv_headers), "sample,data"]),
             **kwargs,
         )
 
@@ -1310,7 +1303,7 @@ class IntelligentRouter:
         result = execute_task(
             domain=task_profile.domain,
             user_request=task_profile.user_request,
-            csv_data="\n".join([",".join(task_profile.csv_headers)] + ["sample,data"]),
+            csv_data="\n".join([",".join(task_profile.csv_headers), "sample,data"]),
             task_type=TaskType.SPREADSHEET,
             output_format=OutputFormat.XLSX,
             llm_service=llm_service,
@@ -1334,7 +1327,7 @@ class IntelligentRouter:
 
         result = generator.generate_report(
             user_request=task_profile.user_request,
-            csv_data="\n".join([",".join(task_profile.csv_headers)] + ["sample,data"]),
+            csv_data="\n".join([",".join(task_profile.csv_headers), "sample,data"]),
             **kwargs,
         )
 
@@ -1349,7 +1342,7 @@ class IntelligentRouter:
         result = self.task_router.route(
             domain=task_profile.domain,
             user_request=task_profile.user_request,
-            csv_data="\n".join([",".join(task_profile.csv_headers)] + ["sample,data"]),
+            csv_data="\n".join([",".join(task_profile.csv_headers), "sample,data"]),
             task_type=task_profile.task_type,
             output_format=task_profile.output_format,
             **kwargs,
@@ -1544,7 +1537,7 @@ def get_intelligent_router(
     Returns:
         IntelligentRouter instance
     """
-    global _intelligent_router_instance
+    global _intelligent_router_instance  # noqa: PLW0603
     if _intelligent_router_instance is None:
         _intelligent_router_instance = IntelligentRouter(db_session, model_path)
     return _intelligent_router_instance

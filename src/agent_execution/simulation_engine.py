@@ -1,6 +1,6 @@
 """
 
-Simulation Engine Module for Training Mode
+Simulation Engine Module for Training Mode.
 
 Provides functionality to track hypothetical bids and calculate simulation profits
 when the system operates in training mode without making real financial commitments.
@@ -21,7 +21,7 @@ When TRAINING_MODE is enabled:
 """
 
 import asyncio
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Optional
 import uuid
 
@@ -47,7 +47,7 @@ logger = get_logger(__name__)
 
 class SimulationEngine:
     """
-    Simulation Engine for Tracking Hypothetical Bids
+    Simulation Engine for Tracking Hypothetical Bids.
 
     Manages simulation bids made during training mode when no real financial
     commitment is made. Provides tools for analyzing bidding strategies
@@ -113,7 +113,7 @@ class SimulationEngine:
                 outcome_reasoning=outcome_reasoning,
                 job_marketplace=job_marketplace,
                 skills_matched=skills_matched,
-                created_at=datetime.utcnow(),
+                created_at=datetime.now(timezone.utc),
             )
 
             db.add(simulation_bid)
@@ -351,7 +351,7 @@ class SimulationEngine:
         )
 
         # Add strategy details
-        summary = {
+        return {
             "strategy_type": strategy_type,
             "win_rate_percentage": stats["win_rate_percentage"],
             "total_profit_dollars": stats["total_profit_dollars"],
@@ -362,8 +362,6 @@ class SimulationEngine:
             "average_bid_dollars": stats["average_bid_dollars"],
             "average_bid_cents": stats["average_bid_cents"],
         }
-
-        return summary
 
     def get_recent_simulations(
         self, limit: int = 100, date_filter: dict[str, str] | None = None,
@@ -418,7 +416,7 @@ def get_simulation_engine() -> SimulationEngine:
     Returns:
         SimulationEngine: Global instance of the simulation engine
     """
-    global _sim_engine_instance
+    global _sim_engine_instance  # noqa: PLW0603
 
     if _sim_engine_instance is None:
         _sim_engine_instance = SimulationEngine()
@@ -428,7 +426,7 @@ def get_simulation_engine() -> SimulationEngine:
 
 def reset_simulation_engine():
     """Reset the simulation engine singleton (useful for testing)."""
-    global _sim_engine_instance
+    global _sim_engine_instance  # noqa: PLW0603
     _sim_engine_instance = None
 
 

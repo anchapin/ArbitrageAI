@@ -1,5 +1,5 @@
 """
-Health Check and Monitoring System (Issue #101)
+Health Check and Monitoring System (Issue #101).
 
 Provides comprehensive health monitoring for all system components including:
 - Database connectivity
@@ -11,14 +11,14 @@ Provides comprehensive health monitoring for all system components including:
 
 Usage:
     from src.utils.health_check import HealthMonitor
-    
+
     monitor = HealthMonitor()
     health = await monitor.check_all()
 """
 
 import asyncio
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 import time
 from typing import Any
@@ -27,8 +27,8 @@ import aiohttp
 import psutil
 from sqlalchemy import text
 
-from ..api.database import SessionLocal
-from .logger import get_logger
+from src.api.database import SessionLocal
+from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
 
@@ -67,7 +67,7 @@ class HealthCheckResult:
 
     def __post_init__(self):
         if not self.timestamp:
-            self.timestamp = datetime.utcnow().isoformat()
+            self.timestamp = datetime.now(timezone.utc).isoformat()
 
 
 @dataclass
@@ -84,7 +84,7 @@ class SystemHealth:
 class HealthMonitor:
     """
     Comprehensive health monitoring system.
-    
+
     Features:
     - Multi-service health checking
     - Response time tracking
@@ -112,11 +112,11 @@ class HealthMonitor:
     async def check_all(self) -> SystemHealth:
         """
         Perform comprehensive health check on all services.
-        
+
         Returns:
             SystemHealth: Overall system health status
         """
-        start = time.time()
+        time.time()
 
         # Run all health checks concurrently
         tasks = [
@@ -152,7 +152,7 @@ class HealthMonitor:
 
         return SystemHealth(
             status=overall_status,
-            timestamp=datetime.utcnow().isoformat(),
+            timestamp=datetime.now(timezone.utc).isoformat(),
             checks=health_checks,
             system_metrics=system_metrics,
             uptime_seconds=time.time() - self.start_time,
@@ -393,7 +393,7 @@ class HealthMonitor:
     async def check_scheduler(self) -> HealthCheckResult:
         """Check scheduler service health."""
         try:
-            from ..agent_execution.scheduler import TaskScheduler
+            from src.agent_execution.scheduler import TaskScheduler
 
             db = SessionLocal()
             try:
@@ -507,7 +507,7 @@ class HealthMonitor:
     ) -> HealthStatus:
         """
         Calculate overall system health status.
-        
+
         Rules:
         - If any critical service is UNHEALTHY -> UNHEALTHY
         - If any service is DEGRADED -> DEGRADED
@@ -540,7 +540,7 @@ class HealthMonitor:
     async def get_status_page(self) -> str:
         """
         Generate HTML status page.
-        
+
         Returns:
             str: HTML status page
         """
@@ -585,7 +585,7 @@ class HealthMonitor:
 
         overall_color = status_colors.get(health.status, "#6c757d")
 
-        html = f"""
+        return f"""
         <!DOCTYPE html>
         <html>
         <head>
@@ -660,12 +660,12 @@ class HealthMonitor:
                 <h1>System Health: {health.status.value.upper()}</h1>
                 <p>Last updated: {health.timestamp}</p>
             </div>
-            
+
             <h2>Service Health Checks</h2>
             {checks_html}
-            
+
             {system_metrics_html}
-            
+
             <div class="uptime">
                 <p>Uptime: {health.uptime_seconds / 3600:.2f} hours</p>
                 <p>Version: {health.version}</p>
@@ -674,8 +674,6 @@ class HealthMonitor:
         </html>
         """
 
-        return html
-
 
 # Global health monitor instance
 _health_monitor: HealthMonitor | None = None
@@ -683,7 +681,7 @@ _health_monitor: HealthMonitor | None = None
 
 def get_health_monitor() -> HealthMonitor:
     """Get or create the global health monitor instance."""
-    global _health_monitor
+    global _health_monitor  # noqa: PLW0603
     if _health_monitor is None:
         import os
 

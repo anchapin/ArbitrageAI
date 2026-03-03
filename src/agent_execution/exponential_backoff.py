@@ -1,5 +1,5 @@
 """
-Exponential Backoff Retry Strategy
+Exponential Backoff Retry Strategy.
 
 Implements exponential backoff for retrying failed operations.
 
@@ -63,7 +63,7 @@ class ExponentialBackoff:
         # Add jitter (±25%)
         if self.jitter:
             jitter_factor = 0.75 + random.random() * 0.5  # 0.75 to 1.25
-            delay = delay * jitter_factor
+            delay *= jitter_factor
 
         logger.debug(f"Exponential backoff: waiting {delay:.2f}s (retry {retry_count})")
         await asyncio.sleep(delay)

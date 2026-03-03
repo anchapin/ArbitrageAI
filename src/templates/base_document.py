@@ -1,5 +1,5 @@
 """
-Base Document Template
+Base Document Template.
 
 This is the foundational template for generating Word documents using python-docx.
 It provides a pre-tested Python script that:
@@ -296,29 +296,29 @@ output_format = "{output_format}"
 def generate_document():
     # Parse CSV
     df = pd.read_csv(io.StringIO(csv_data))
-    
+
     # Create document
     doc = Document()
-    
+
     # Set margins
     for section in doc.sections:
         section.top_margin = Inches(1.0)
         section.bottom_margin = Inches(1.0)
         section.left_margin = Inches(1.0)
         section.right_margin = Inches(1.0)
-    
+
     content = CONTENT_JSON
-    
+
     # Title
     if "title" in content:
         heading = doc.add_heading(content["title"], level=0)
         heading.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    
+
     # Subtitle
     if "subtitle" in content:
         para = doc.add_paragraph(content["subtitle"])
         para.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    
+
     # Sections
     sections = content.get("sections", [])
     for section in sections:
@@ -326,7 +326,7 @@ def generate_document():
         if "heading" in section:
             level = section.get("level", 1)
             doc.add_heading(section["heading"], level=level)
-        
+
         # Section content
         if "content" in section:
             if isinstance(section["content"], list):
@@ -342,7 +342,7 @@ def generate_document():
                         doc.add_paragraph(str(item))
             else:
                 doc.add_paragraph(str(section["content"]))
-        
+
         # Data table
         if "table" in section:
             table_data = section["table"]
@@ -351,22 +351,22 @@ def generate_document():
                     headers = list(table_data[0].keys())
                     table = doc.add_table(rows=len(table_data) + 1, cols=len(headers))
                     table.style = "Table Grid"
-                    
+
                     # Headers
                     for i, h in enumerate(headers):
                         table.rows[0].cells[i].text = h
                         table.rows[0].cells[i].paragraphs[0].runs[0].font.bold = True
-                    
+
                     # Data rows
                     for row_idx, row in enumerate(table_data):
                         for col_idx, header in enumerate(headers):
                             if col_idx < len(table.rows[row_idx + 1].cells):
                                 table.rows[row_idx + 1].cells[col_idx].text = str(row.get(header, ""))
-    
+
     # Save
     output_filename = f"output.{{output_format}}"
     doc.save(output_filename)
-    
+
     return output_filename
 
 if __name__ == "__main__":
@@ -399,8 +399,6 @@ def get_template_code(
     # Actually, we need to be careful here - let's use f-string differently
 
     # Use a different approach - build the template with placeholders
-    template = BASE_DOCUMENT_TEMPLATE_CODE.replace("{content_json}", content_str)
+    template = BASE_DOCUMENT_TEMPLATE_CODE.replace(f"{content_json}", content_str)
     template = template.replace("{csv_data}", csv_data)
-    template = template.replace("{output_format}", output_format)
-
-    return template
+    return template.replace("{output_format}", output_format)

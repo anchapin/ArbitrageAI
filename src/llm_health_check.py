@@ -1,5 +1,5 @@
 """
-LLM Service Health Check & Circuit Breaker
+LLM Service Health Check & Circuit Breaker.
 
 Implements active health checks and circuit breaker pattern for LLM routing.
 This prevents wasting 90+ seconds on unavailable Ollama instances.
@@ -80,7 +80,7 @@ class ExponentialBackoff:
         if attempt < 0:
             return 0
 
-        # Exponential: initial_delay * (base ^ attempt)
+        # Exponential: initial_delay * (base ^ attempt)  # noqa: ERA001
         delay = self.initial_delay_ms * (self.base**attempt)
         # Cap at max
         delay = min(delay, self.max_delay_ms)
@@ -285,7 +285,7 @@ _global_health_checker: LLMHealthChecker | None = None
 
 def get_health_checker() -> LLMHealthChecker:
     """Get or create global health checker."""
-    global _global_health_checker
+    global _global_health_checker  # noqa: PLW0603
     if _global_health_checker is None:
         _global_health_checker = LLMHealthChecker(check_interval_seconds=30)
     return _global_health_checker

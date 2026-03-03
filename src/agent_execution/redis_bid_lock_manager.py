@@ -1,5 +1,5 @@
 """
-Redis-Based Distributed Lock Manager for Bid Placement
+Redis-Based Distributed Lock Manager for Bid Placement.
 
 This module implements a Redis-backed distributed lock mechanism to prevent
 race conditions when multiple scanner instances attempt to place bids on the
@@ -140,7 +140,7 @@ class RedisBidLockManager:
         while True:
             try:
                 # Try atomic SET with NX (only set if key doesn't exist)
-                # EX = expiration in seconds (auto-cleanup)
+                # EX = expiration in seconds (auto-cleanup)  # noqa: ERA001
                 acquired = await redis_client.set(
                     lock_key,
                     holder_id,
@@ -341,7 +341,7 @@ _bid_lock_manager: RedisBidLockManager | None = None
 
 async def get_bid_lock_manager() -> RedisBidLockManager:
     """Get or create the global RedisBidLockManager instance."""
-    global _bid_lock_manager
+    global _bid_lock_manager  # noqa: PLW0603
     if _bid_lock_manager is None:
         _bid_lock_manager = RedisBidLockManager(ttl=300)  # 5 minute TTL
         # Verify connection on first access
@@ -354,7 +354,7 @@ async def init_bid_lock_manager(
     redis_url: str | None = None, ttl: int = 300,
 ) -> RedisBidLockManager:
     """Initialize the global RedisBidLockManager with custom settings."""
-    global _bid_lock_manager
+    global _bid_lock_manager  # noqa: PLW0603
     _bid_lock_manager = RedisBidLockManager(redis_url=redis_url, ttl=ttl)
     if not await _bid_lock_manager.health_check():
         raise RuntimeError("Failed to connect to Redis")

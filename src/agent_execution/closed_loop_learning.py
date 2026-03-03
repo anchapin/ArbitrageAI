@@ -1,5 +1,5 @@
 """
-Closed-Loop Learning System
+Closed-Loop Learning System.
 
 Implements continuous learning from completed job results.
 After each job completion:
@@ -12,15 +12,15 @@ After each job completion:
 Issue #106: [PHASE 5.3] CLOSED-LOOP LEARNING SYSTEM
 """
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from enum import Enum as PyEnum
 from typing import Any
 
-from ..api.database import SessionLocal
-from ..api.models import LearningEntry
-from ..utils.logger import get_logger
-from .confidence_tracker import ConfidenceTracker
-from .self_adjusting_algorithm import AdjustmentReason, SelfAdjustingConfidenceAlgorithm
+from src.api.database import SessionLocal
+from src.api.models import LearningEntry
+from src.utils.logger import get_logger
+from src.agent_execution.confidence_tracker import ConfidenceTracker
+from src.agent_execution.self_adjusting_algorithm import AdjustmentReason, SelfAdjustingConfidenceAlgorithm
 
 logger = get_logger(__name__)
 
@@ -47,7 +47,7 @@ class StrategyAdjustmentType(PyEnum):
 
 class ClosedLoopLearningSystem:
     """
-    Closed-Loop Learning System
+    Closed-Loop Learning System.
 
     Continuously learns from completed jobs to improve bidding strategy:
 
@@ -354,7 +354,7 @@ class ClosedLoopLearningSystem:
         db = SessionLocal()
         try:
             # Get entries from past week
-            week_ago = datetime.utcnow() - timedelta(days=7)
+            week_ago = datetime.now(timezone.utc) - timedelta(days=7)
 
             entries = (
                 db.query(LearningEntry)
@@ -456,7 +456,7 @@ class ClosedLoopLearningSystem:
 
             review_entry = LearningEntry(
                 id=str(uuid.uuid4()),
-                task_id=f"weekly_review_{datetime.utcnow().strftime('%Y-%m-%d')}",
+                task_id=f"weekly_review_{datetime.now(timezone.utc).strftime('%Y-%m-%d')}",
                 event_type=LearningEventType.WEEKLY_REVIEW.value,
                 marketplace="all",
                 extra_data={
@@ -470,7 +470,7 @@ class ClosedLoopLearningSystem:
             db.add(review_entry)
             db.commit()
 
-            self._last_weekly_review = datetime.utcnow()
+            self._last_weekly_review = datetime.now(timezone.utc)
 
             logger.info(
                 f"Weekly review completed - {len(entries)} jobs analyzed, "
@@ -479,7 +479,7 @@ class ClosedLoopLearningSystem:
 
             return {
                 "status": "success",
-                "review_date": datetime.utcnow().isoformat(),
+                "review_date": datetime.now(timezone.utc).isoformat(),
                 "total_jobs_analyzed": len(entries),
                 "marketplace_performance": marketplace_stats,
                 "strategy_performance": strategy_stats,
@@ -537,7 +537,7 @@ class ClosedLoopLearningSystem:
                     # Record adjustment
                     entry = LearningEntry(
                         id=str(id),
-                        task_id=f"adjustment_{marketplace}_{datetime.utcnow().strftime('%Y-%m-%d')}",
+                        task_id=f"adjustment_{marketplace}_{datetime.now(timezone.utc).strftime('%Y-%m-%d')}",
                         event_type=LearningEventType.STRATEGY_ADJUSTED.value,
                         marketplace=marketplace,
                         strategy_type=strategy_type,
@@ -556,7 +556,7 @@ class ClosedLoopLearningSystem:
 
     def _maybe_trigger_weekly_review(self) -> None:
         """Trigger weekly review if enough time has passed."""
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
 
         # Check if 7 days have passed since last review
         if (
@@ -606,7 +606,7 @@ _learning_system_instance: ClosedLoopLearningSystem | None = None
 
 def get_learning_system() -> ClosedLoopLearningSystem:
     """Get or create global learning system singleton."""
-    global _learning_system_instance
+    global _learning_system_instance  # noqa: PLW0603
 
     if _learning_system_instance is None:
         _learning_system_instance = ClosedLoopLearningSystem()
@@ -616,5 +616,5 @@ def get_learning_system() -> ClosedLoopLearningSystem:
 
 def reset_learning_system():
     """Reset learning system singleton (useful for testing)."""
-    global _learning_system_instance
+    global _learning_system_instance  # noqa: PLW0603
     _learning_system_instance = None

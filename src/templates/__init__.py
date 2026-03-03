@@ -1,5 +1,5 @@
 """
-Template Library for Zero-Shot Document Generation
+Template Library for Zero-Shot Document Generation.
 
 This module provides pre-tested Python script templates for standard deliverables.
 Instead of asking the LLM to generate Python code from scratch, the system
@@ -29,6 +29,8 @@ Usage:
     result = template.generate(content_json, csv_data)
 """
 
+from typing import ClassVar
+
 from src.templates.base_document import BaseDocumentTemplate
 from src.templates.financial_summary import FinancialSummaryTemplate
 from src.templates.legal_contract import LegalContractTemplate
@@ -37,7 +39,7 @@ from src.templates.legal_contract import LegalContractTemplate
 class TemplateRegistry:
     """Registry for all document templates."""
 
-    _templates = {
+    _templates: ClassVar[dict] = {
         "base": BaseDocumentTemplate,
         "legal_contract": LegalContractTemplate,
         "financial_summary": FinancialSummaryTemplate,

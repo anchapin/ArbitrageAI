@@ -7,12 +7,12 @@ Provides validation and audit logging for configuration changes.
 import logging
 import os
 import sys
-from typing import Any, Optional
+from typing import Any, ClassVar, Optional
 
 # Import logger
 try:
-    from ..utils.logger import get_logger
-    from ..utils.secrets import (
+    from src.utils.logger import get_logger
+    from src.utils.secrets import (
         is_insecure_default,
         load_or_create_secrets,
         validate_secret_security,
@@ -34,10 +34,10 @@ class ConfigManager:
     """
 
     _instance: Optional["ConfigManager"] = None
-    _config_cache: dict[str, Any] = {}
+    _config_cache: ClassVar[dict[str, Any]] = {}
 
     # DEFAULT CONFIGURATION VALUES (Match tests/test_config_manager.py)
-    _DEFAULTS = {
+    _DEFAULTS: ClassVar[dict[str, Any]] = {
         # LLM Routing
         "MIN_CLOUD_REVENUE": 3000,
         "CLOUD_GPT4O_OUTPUT_COST": 1000,
@@ -149,7 +149,7 @@ class ConfigManager:
     def _load_secure_secrets(self):
         """
         Load secure secrets from secure storage or environment variables.
-        
+
         This method:
         1. Attempts to load secrets from secure file storage
         2. Falls back to environment variables if not found
@@ -174,11 +174,8 @@ class ConfigManager:
 
             # Check if critical secrets are set in environment
             critical_secrets = ["JWT_SECRET_KEY", "CLIENT_AUTH_SECRET"]
-            missing = []
 
-            for secret in critical_secrets:
-                if secret not in os.environ:
-                    missing.append(secret)
+            missing = [secret for secret in critical_secrets if secret not in os.environ]
 
             if missing:
                 logger.warning(
@@ -201,7 +198,7 @@ class ConfigManager:
         else:
             try:
                 if isinstance(default_val, bool):
-                    val = str(env_val).lower() in ("true", "1", "yes")
+                    val = str(env_val).lower() in {"true", "1", "yes"}
                 elif isinstance(default_val, int):
                     val = int(env_val)
                 elif isinstance(default_val, float):
@@ -257,16 +254,16 @@ class ConfigManager:
 
     def to_dict(self) -> dict[str, Any]:
         """Convert all configuration to dictionary."""
-        return {key: getattr(self, key) for key in self._DEFAULTS.keys()}
+        return {key: getattr(self, key) for key in self._DEFAULTS}
 
     @staticmethod
     def validate_production_configuration() -> None:
         """
         Validate production configuration and fail fast on insecure defaults.
-        
+
         This function should be called during application startup,
         before any sensitive operations are performed.
-        
+
         Raises:
             SystemExit: If critical security requirements are not met
         """

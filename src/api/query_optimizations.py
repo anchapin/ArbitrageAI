@@ -1,5 +1,5 @@
 """
-Query Optimization Helpers for Issue #38
+Query Optimization Helpers for Issue #38.
 
 Provides optimized query builders with proper indexes and eager loading
 to prevent N+1 query problems and improve database performance.

@@ -1,11 +1,11 @@
 """
-Fiverr Marketplace Adapter
+Fiverr Marketplace Adapter.
 
 Implements marketplace adapter for Fiverr platform.
 Handles gig searching, offer placement, and inbox management.
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any
 
 import httpx
@@ -255,7 +255,7 @@ class FiverrAdapter(MarketplaceAdapter):
                 status=BidStatus.SUBMITTED,
                 amount=proposal.amount,
                 pricing_model=proposal.pricing_model,
-                submitted_at=datetime.utcnow(),
+                submitted_at=datetime.now(timezone.utc),
                 url=offer.get("url"),
                 metadata=offer,
             )
@@ -340,7 +340,7 @@ class FiverrAdapter(MarketplaceAdapter):
                 bid_id=bid_id,
                 job_id=offer.get("gig_id", ""),
                 status=BidStatus.WITHDRAWN,
-                last_updated=datetime.utcnow(),
+                last_updated=datetime.now(timezone.utc),
                 metadata=offer,
             )
 

@@ -1,5 +1,5 @@
 """
-Research & Planning Module
+Research & Planning Module.
 
 This module implements the "Research & Plan" step for the autonomy workflow:
 1. Agent analyzes uploaded files (PDF/Excel) to extract context
@@ -549,16 +549,9 @@ class ContextExtractor:
 
     def _extract_basic_insights(self, df) -> list[str]:
         """Extract basic statistical insights from the data."""
-        insights = []
-
         # Numeric column statistics
         numeric_cols = df.select_dtypes(include=["number"]).columns
-        for col in numeric_cols:
-            insights.append(
-                f"{col}: min={df[col].min()}, max={df[col].max()}, mean={df[col].mean():.2f}",
-            )
-
-        return insights
+        return [f"{col}: min={df[col].min()}, max={df[col].max()}, mean={df[col].mean():.2f}" for col in numeric_cols]
 
     def _enhance_with_llm(
         self, context: dict[str, Any], domain: str | None,
@@ -774,8 +767,7 @@ Generate the work plan as JSON."""
         insights = context.get("key_insights", [])
         if insights:
             parts.append("Key Insights:")
-            for insight in insights[:5]:
-                parts.append(f"  - {insight}")
+            parts.extend(f"  - {insight}" for insight in insights[:5])
 
         return "\n".join(parts) if parts else "No context available"
 
@@ -854,7 +846,7 @@ class PlanExecutor:
 
         try:
             # Determine execution approach based on output format
-            if output_format in ["docx", "pdf"]:
+            if output_format in {"docx", "pdf"}:
                 # Use TaskRouter for document generation
                 router = TaskRouter(llm_service=self.llm)
                 result = router.route(
@@ -909,7 +901,7 @@ class PlanExecutor:
     def _infer_task_type(self, plan: dict[str, Any]) -> str:
         """Infer task type from work plan."""
         recommended = plan.get("recommended_chart_type", "")
-        if recommended in ["bar", "line", "pie", "scatter", "histogram"]:
+        if recommended in {"bar", "line", "pie", "scatter", "histogram"}:
             return "visualization"
         if recommended == "table":
             return "spreadsheet"
@@ -920,7 +912,7 @@ class PlanExecutor:
     def _infer_output_format(self, plan: dict[str, Any]) -> str:
         """Infer output format from work plan."""
         output_format = plan.get("output_format", "")
-        if output_format in ["image", "docx", "xlsx", "pdf"]:
+        if output_format in {"image", "docx", "xlsx", "pdf"}:
             return output_format
         return "image"
 
@@ -1131,7 +1123,7 @@ def _get_llm_for_task(domain: str | None) -> LLMService:
     domain_lower = (domain or "").lower().strip()
 
     # Legal and Accounting require high accuracy - use cloud models
-    if domain_lower in ["legal", "accounting"]:
+    if domain_lower in {"legal", "accounting"}:
         logger.info(f"Using cloud model for {domain} task (high accuracy required)")
         return LLMService.for_complex_task()
 

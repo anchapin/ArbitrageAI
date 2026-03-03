@@ -1,5 +1,5 @@
 """
-Self-Adjusting Confidence Algorithm
+Self-Adjusting Confidence Algorithm.
 
 Implements adaptive confidence calculation that learns and improves over time
 based on performance patterns.
@@ -14,13 +14,13 @@ Features:
 - Performance improvement tracking
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Any
 
-from ..api.database import SessionLocal
-from ..api.models import ConfidenceAdjustment, ConfidenceEntry
-from ..utils.logger import get_logger
+from src.api.database import SessionLocal
+from src.api.models import ConfidenceAdjustment, ConfidenceEntry
+from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
 
@@ -51,7 +51,7 @@ class ConservatismLevel(Enum):
 
 class SelfAdjustingConfidenceAlgorithm:
     """
-    Self-Adjusting Confidence Algorithm
+    Self-Adjusting Confidence Algorithm.
 
     Automatically adjusts confidence calculation parameters based on
     performance patterns to optimize profitability.
@@ -216,9 +216,7 @@ class SelfAdjustingConfidenceAlgorithm:
 
         profits = [e.profit_cents for e in profitable_wins]
         mean = sum(profits) / len(profits)
-        variance = sum((p - mean) ** 2 for p in profits) / len(profits)
-
-        return variance
+        return sum((p - mean) ** 2 for p in profits) / len(profits)
 
     def adjust_conservatism(
         self,
@@ -309,13 +307,13 @@ class SelfAdjustingConfidenceAlgorithm:
 
             # Create adjustment record
             adjustment_record = ConfidenceAdjustment(
-                id=str(hash(f"{datetime.utcnow().isoformat()}{self.total_adjustments}")),
+                id=str(hash(f"{datetime.now(timezone.utc).isoformat()}{self.total_adjustments}")),
                 old_conservatism=old_conservatism,
                 new_conservatism=self.current_conservatism,
                 adjustment_reason=reason.value,
                 total_adjustments=self.total_adjustments,
                 is_manual_override=manual_override,
-                created_at=datetime.utcnow(),
+                created_at=datetime.now(timezone.utc),
             )
 
             db.add(adjustment_record)
@@ -323,7 +321,7 @@ class SelfAdjustingConfidenceAlgorithm:
 
             # Store in history
             adjustment_info = {
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": datetime.now(timezone.utc).isoformat(),
                 "old_conservatism": old_conservatism,
                 "new_conservatism": self.current_conservatism,
                 "reason": reason.value,
@@ -384,7 +382,7 @@ class SelfAdjustingConfidenceAlgorithm:
             "win_rate": wins / len(recent_entries),
             "avg_profit": avg_profit,
             "total_bids": len(recent_entries),
-            "updated_at": datetime.utcnow().isoformat(),
+            "updated_at": datetime.now(timezone.utc).isoformat(),
         }
 
     def get_adjusted_threshold(self, base_threshold: int) -> int:
@@ -493,9 +491,9 @@ class SelfAdjustingConfidenceAlgorithm:
                 "total_adjustments": len(adjustments),
                 "current_win_rate": self.performance_baseline.get("win_rate", 0),
                 "current_avg_profit": self.performance_baseline.get("avg_profit", 0),
-                "algorithm_age_days": (datetime.utcnow() - start_time).days if start_time else 0,
+                "algorithm_age_days": (datetime.now(timezone.utc) - start_time).days if start_time else 0,
                 "adjustments_per_day": len(adjustments)
-                / max((datetime.utcnow() - start_time).days, 1)
+                / max((datetime.now(timezone.utc) - start_time).days, 1)
                 if start_time
                 else 0,
             }
@@ -566,7 +564,7 @@ _algorithm_instance: SelfAdjustingConfidenceAlgorithm | None = None
 
 def get_self_adjusting_algorithm() -> SelfAdjustingConfidenceAlgorithm:
     """Get or create global Self-Adjusting Algorithm singleton."""
-    global _algorithm_instance
+    global _algorithm_instance  # noqa: PLW0603
 
     if _algorithm_instance is None:
         _algorithm_instance = SelfAdjustingConfidenceAlgorithm()
@@ -576,5 +574,5 @@ def get_self_adjusting_algorithm() -> SelfAdjustingConfidenceAlgorithm:
 
 def reset_self_adjusting_algorithm():
     """Reset algorithm singleton (useful for testing)."""
-    global _algorithm_instance
+    global _algorithm_instance  # noqa: PLW0603
     _algorithm_instance = None

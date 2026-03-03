@@ -1,5 +1,5 @@
 """
-Market Scanner Module
+Market Scanner Module.
 
 This module provides functionality to scan freelance marketplaces for potential tasks.
 It uses Playwright to navigate to marketplace URLs and evaluates job postings
@@ -17,7 +17,7 @@ from dataclasses import dataclass
 from datetime import datetime
 import json
 import os
-import pathlib
+from pathlib import Path
 import re
 from typing import Any
 
@@ -28,12 +28,12 @@ from dotenv import load_dotenv
 from src.utils.logger import get_logger
 
 # Import database and models for bidding (Issue #19 Integration)
-from ..api.database import SessionLocal
-from ..api.models import BidStatus
+from src.api.database import SessionLocal
+from src.api.models import BidStatus
 
 # Import ConfigManager for centralized configuration
-from ..config.config_manager import ConfigManager
-from .bid_deduplication import create_bid_atomically, should_bid
+from src.config.config_manager import ConfigManager
+from src.agent_execution.bid_deduplication import create_bid_atomically, should_bid
 
 # Import distributed locking and deduplication (Issue #19 Integration)
 from .bid_lock_manager_factory import get_bid_lock_manager
@@ -46,7 +46,7 @@ from .marketplace_adapters.registry import MarketplaceRegistry
 
 # Import LLM service for local inference
 try:
-    from ..llm_service import LLMService
+    from src.llm_service import LLMService
 
     LLM_SERVICE_AVAILABLE = True
 except ImportError:
@@ -82,7 +82,7 @@ if not PLAYWRIGHT_AVAILABLE:
 # Marketplace URLs configuration
 MARKETPLACES_FILE = os.environ.get(
     "MARKETPLACES_FILE",
-    os.path.join(pathlib.Path(__file__).parent, "../../data/marketplaces.json"),
+    str(Path(__file__).parent / "../../data/marketplaces.json"),
 )
 DEFAULT_MARKETPLACE_URL = "https://example.com/freelance-jobs"
 
@@ -241,14 +241,14 @@ class MarketScanner:
     def _load_marketplaces_from_config(self) -> None:
         """Load active marketplace URLs from the marketplaces.json config file."""
         try:
-            if not pathlib.Path(MARKETPLACES_FILE).exists():
+            if not Path(MARKETPLACES_FILE).exists():
                 logger.warning(
                     f"Marketplaces config file not found: {MARKETPLACES_FILE}",
                 )
                 self.marketplace_urls = [DEFAULT_MARKETPLACE_URL]
                 return
 
-            with open(MARKETPLACES_FILE) as f:
+            with open(MARKETPLACES_FILE, encoding="utf-8") as f:
                 data = json.load(f)
 
             # Extract active marketplace URLs

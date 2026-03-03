@@ -1,5 +1,5 @@
 """
-Advanced Task Scheduling System
+Advanced Task Scheduling System.
 
 Implements cron expression parsing, recurring tasks, and intelligent scheduling
 for ArbitrageAI. Supports both one-time and recurring task scheduling with
@@ -38,9 +38,9 @@ import pytz
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
-from ..api.models import ScheduledTask, ScheduleHistory
-from ..utils.logger import get_logger
-from .errors import SchedulingError
+from src.api.models import ScheduledTask, ScheduleHistory
+from src.utils.logger import get_logger
+from src.agent_execution.errors import SchedulingError
 
 logger = get_logger(__name__)
 
@@ -122,7 +122,7 @@ class CronExpressionValidator:
         # For custom expressions, provide a basic description
         parts = expression.split()
         if len(parts) == 5:
-            minute, hour, day, month, dow = parts
+            _minute, _hour, _day, _month, _dow = parts
             return f"Cron expression: {expression}"
         return f"Custom cron: {expression}"
 
@@ -149,10 +149,9 @@ class IntelligentScheduler:
         if base_time.weekday() >= 5:
             # Move to Monday morning
             days_until_monday = (7 - base_time.weekday()) % 7 or 7
-            next_time = base_time.replace(
+            return base_time.replace(
                 hour=6, minute=0, second=0, microsecond=0,
             ) + timedelta(days=days_until_monday)
-            return next_time
 
         # Check if during peak hours (9 AM to 5 PM)
         hour = base_time.hour
@@ -597,7 +596,7 @@ class TaskScheduler:
         task_data: dict[str, Any],
         schedule_type: str,
         title: str,
-        description: str = None,
+        description: str | None = None,
         domain: str = "general",
     ) -> dict[str, Any]:
         """Create common schedule configurations."""
@@ -648,8 +647,8 @@ async def schedule_daily_task(
     scheduler: TaskScheduler,
     task_data: dict[str, Any],
     time_of_day: str = "09:00",
-    title: str = None,
-    description: str = None,
+    title: str | None = None,
+    description: str | None = None,
     domain: str = "general",
     **kwargs,
 ) -> str:
@@ -672,8 +671,8 @@ async def schedule_weekly_task(
     task_data: dict[str, Any],
     day_of_week: int = 1,  # 0=Monday, 6=Sunday
     time_of_day: str = "09:00",
-    title: str = None,
-    description: str = None,
+    title: str | None = None,
+    description: str | None = None,
     domain: str = "general",
     **kwargs,
 ) -> str:
@@ -696,8 +695,8 @@ async def schedule_monthly_task(
     task_data: dict[str, Any],
     day_of_month: int = 1,
     time_of_day: str = "09:00",
-    title: str = None,
-    description: str = None,
+    title: str | None = None,
+    description: str | None = None,
     domain: str = "general",
     **kwargs,
 ) -> str:

@@ -89,7 +89,7 @@ class ArenaCompetitionStatus(PyEnum):
 
 class ClientProfile(Base):
     """
-    Client Preference Memory (Pillar 2.5 Gap)
+    Client Preference Memory (Pillar 2.5 Gap).
 
     Stores client preferences extracted from previous review feedback.
     This allows the agent to remember preferences like "Blue charts" or
@@ -487,7 +487,7 @@ class Task(Base):
                 (
                     o
                     for o in self.outputs
-                    if o.output_type in (OutputType.DOCUMENT, OutputType.PDF)
+                    if o.output_type in {OutputType.DOCUMENT, OutputType.PDF}
                 ),
                 None,
             )
@@ -504,7 +504,7 @@ class Task(Base):
             (
                 o
                 for o in self.outputs
-                if o.output_type in (OutputType.DOCUMENT, OutputType.PDF)
+                if o.output_type in {OutputType.DOCUMENT, OutputType.PDF}
             ),
             None,
         )
@@ -817,7 +817,7 @@ class BidStatus(PyEnum):
 
 class Bid(Base):
     """
-    Bid Model for Autonomous Job Scanning
+    Bid Model for Autonomous Job Scanning.
 
     Stores bids made on freelance marketplace jobs.
     Used to track which jobs have already been bid on to avoid duplicates.
@@ -917,7 +917,7 @@ class Bid(Base):
 
 class ArenaCompetition(Base):
     """
-    Agent Arena Competition Model
+    Agent Arena Competition Model.
 
     Stores the results of A/B competitions between agent variants.
     Used for tracking which agent configurations perform better
@@ -1068,7 +1068,7 @@ class EscalationLog(Base):
     )  # Error message if notification failed
 
     # Idempotency key (prevents duplicate notifications on retry)
-    # Format: "task_id_escalation_reason"
+    # Format: "task_id_escalation_reason"  # noqa: ERA001
     # Unique constraint is enforced via __table_args__ (Issue #33)
     idempotency_key = Column(String, nullable=False, index=True)
 
@@ -1390,7 +1390,7 @@ class ScheduleHistory(Base):
 
 class SimulationBid(Base):
     """
-    Simulation Bid Model for Training Mode
+    Simulation Bid Model for Training Mode.
 
     Tracks hypothetical bids made during training mode when no real
     financial commitment is made. Used for analysis, strategy comparison,
@@ -1468,7 +1468,7 @@ class SimulationBid(Base):
 
 class ThresholdPetition(Base):
     """
-    Threshold Petition Model for Human Oversight
+    Threshold Petition Model for Human Oversight.
 
     Stores petitions for bid threshold increases that require human approval.
     Enables weekly review of agent performance and threshold adjustments.
@@ -1540,7 +1540,7 @@ class ThresholdPetition(Base):
 
 class CostEntry(Base):
     """
-    Cost Entry Database Model
+    Cost Entry Database Model.
 
     Stores individual cost entries for tracking financial operations
     and calculating ROI.
@@ -1613,7 +1613,7 @@ class CostEntry(Base):
 
 class ConfidenceEntry(Base):
     """
-    Confidence Entry Database Model
+    Confidence Entry Database Model.
 
     Stores bid history with outcomes for confidence calculation.
     Tracks win rates, profit margins, and streak information.
@@ -1683,7 +1683,7 @@ class ConfidenceEntry(Base):
 
 class ConfidenceAdjustment(Base):
     """
-    Confidence Adjustment Database Model
+    Confidence Adjustment Database Model.
 
     Tracks all adjustments made by the self-adjusting confidence algorithm
     for audit and human review purposes.
@@ -1728,7 +1728,7 @@ class ConfidenceAdjustment(Base):
 
 class VirtualWallet(Base):
     """
-    Virtual Wallet Database Model
+    Virtual Wallet Database Model.
 
     Stores wallet state including balance, spending, and budget configuration.
     Persists wallet state across restarts.
@@ -1805,7 +1805,7 @@ class VirtualWallet(Base):
 
 class WebhookSecret(Base):
     """
-    Webhook Secret Model for Stripe
+    Webhook Secret Model for Stripe.
 
     Stores Stripe webhook signing secrets for verifying webhook events.
     Multiple secrets can be stored for different environments or rotating keys.
@@ -1837,7 +1837,7 @@ class WebhookSecret(Base):
 
 class LearningEntry(Base):
     """
-    Learning Entry Database Model
+    Learning Entry Database Model.
 
     Stores learning data from completed jobs for analysis and strategy improvement.
     Used by the Closed-Loop Learning System (Issue #106).

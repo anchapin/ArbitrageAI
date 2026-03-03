@@ -1,5 +1,5 @@
 """
-Fine-Tuning CLI Tool
+Fine-Tuning CLI Tool.
 
 Command-line interface for managing fine-tuning pipeline.
 """
@@ -174,7 +174,7 @@ class FineTuningCLI:
         latencies = []
 
         try:
-            with open(test_file) as f:
+            with open(test_file, encoding="utf-8") as f:
                 for line in f:
                     data = json.loads(line)
                     predictions.append(data.get("prediction", ""))

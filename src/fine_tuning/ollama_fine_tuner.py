@@ -1,6 +1,6 @@
 # ruff: noqa: F821
 """
-Ollama Fine-Tuning Integration
+Ollama Fine-Tuning Integration.
 
 Handles fine-tuning with local Ollama models using Unsloth.
 """
@@ -8,8 +8,7 @@ Handles fine-tuning with local Ollama models using Unsloth.
 from datetime import datetime, timezone
 import json
 import logging
-import os
-import pathlib
+from pathlib import Path
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -39,12 +38,10 @@ class OllamaFineTuner:
             ollama_base_url: Base URL for Ollama service
         """
         self.ollama_base_url = ollama_base_url
-        self.output_dir = os.path.join(
-            pathlib.Path(pathlib.Path(pathlib.Path(__file__).parent).parent).parent,
-            "data",
-            "ollama_finetuning",
+        self.output_dir = (
+            Path(__file__).parent.parent.parent / "data" / "ollama_finetuning"
         )
-        os.makedirs(self.output_dir, exist_ok=True)
+        Path(self.output_dir).mkdir(parents=True, exist_ok=True)
 
     def prepare_dataset_for_unsloth(
         self, examples: list[dict[str, Any]], output_path: str | None = None,
@@ -61,7 +58,7 @@ class OllamaFineTuner:
         """
         if output_path is None:
             timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
-            output_path = os.path.join(self.output_dir, f"unsloth_dataset_{timestamp}.json")
+            output_path = str(Path(self.output_dir) / f"unsloth_dataset_{timestamp}.json")
 
         # Convert to Alpaca format for Unsloth
         training_data = [
@@ -73,7 +70,7 @@ class OllamaFineTuner:
             for ex in examples
         ]
 
-        with open(output_path, "w") as f:
+        with open(output_path, "w", encoding="utf-8") as f:
             json.dump(training_data, f, indent=2)
 
         logger.info(f"Prepared Unsloth dataset: {output_path} ({len(training_data)} examples)")
@@ -112,10 +109,8 @@ class OllamaFineTuner:
             "created_at": datetime.now(timezone.utc).isoformat(),
         }
 
-        config_path = os.path.join(
-            self.output_dir, f"{output_model_name}_config.json",
-        )
-        with open(config_path, "w") as f:
+        config_path = Path(self.output_dir) / f"{output_model_name}_config.json"
+        with open(config_path, "w", encoding="utf-8") as f:
             json.dump(config, f, indent=2)
 
         logger.info(f"Created fine-tuning config: {config_path}")
@@ -148,8 +143,8 @@ class OllamaFineTuner:
         """
         if output_path is None:
             timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
-            output_path = os.path.join(
-                self.output_dir, f"finetune_{output_model_name}_{timestamp}.py",
+            output_path = str(
+                Path(self.output_dir) / f"finetune_{output_model_name}_{timestamp}.py",
             )
 
         script = f'''#!/usr/bin/env python3
@@ -254,7 +249,7 @@ tokenizer.save_pretrained(f"./models/{{OUTPUT_MODEL_NAME}}/final")
 logger.info(f"Fine-tuning complete! Model saved to ./models/{{OUTPUT_MODEL_NAME}}/final")
 '''
 
-        with open(output_path, "w") as f:
+        with open(output_path, "w", encoding="utf-8") as f:
             f.write(script)
 
         # Make script executable
@@ -329,7 +324,7 @@ logger.info(f"Fine-tuning complete! Model saved to ./models/{{OUTPUT_MODEL_NAME}
             Path to Modelfile
         """
         if output_path is None:
-            output_path = os.path.join(self.output_dir, f"Modelfile_{model_name}")
+            output_path = str(Path(self.output_dir) / f"Modelfile_{model_name}")
 
         modelfile = f"""FROM {model_path}
 
@@ -340,7 +335,7 @@ PARAMETER model_name {model_name}
         if system_prompt:
             modelfile += f'\nSYSTEM "{system_prompt}"\n'
 
-        with open(output_path, "w") as f:
+        with open(output_path, "w", encoding="utf-8") as f:
             f.write(modelfile)
 
         logger.info(f"Created Ollama Modelfile: {output_path}")

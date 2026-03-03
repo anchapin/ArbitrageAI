@@ -1,5 +1,5 @@
 """
-Dataset Builder for Fine-Tuning
+Dataset Builder for Fine-Tuning.
 
 Prepares training data from task history and distillation data.
 Supports multiple formats and quality filtering.
@@ -8,8 +8,7 @@ Supports multiple formats and quality filtering.
 from datetime import datetime, timezone
 import json
 import logging
-import os
-import pathlib
+from pathlib import Path
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -34,12 +33,10 @@ class DatasetBuilder:
         Args:
             output_dir: Directory to save datasets
         """
-        self.output_dir = output_dir or os.path.join(
-            pathlib.Path(pathlib.Path(pathlib.Path(__file__).parent).parent).parent,
-            "data",
-            "fine_tuning",
+        self.output_dir = output_dir or (
+            Path(__file__).parent.parent.parent / "data" / "fine_tuning"
         )
-        os.makedirs(self.output_dir, exist_ok=True)
+        Path(self.output_dir).mkdir(parents=True, exist_ok=True)
 
     def build_from_distillation(
         self,
@@ -61,7 +58,7 @@ class DatasetBuilder:
             List of training examples
         """
         try:
-            from ..distillation.data_collector import DistillationDataCollector
+            from src.distillation.data_collector import DistillationDataCollector
 
             collector = DistillationDataCollector()
             examples = collector.get_curated_examples(
@@ -96,12 +93,9 @@ class DatasetBuilder:
         invalid_examples = []
 
         for ex in examples:
-            issues = []
 
             # Check required fields
-            for field in required_fields:
-                if field not in ex or not ex[field]:
-                    issues.append(f"Missing {field}")
+            issues = [f"Missing {field}" for field in required_fields if field not in ex or not ex[field]]
 
             # Check minimum lengths
             prompt = ex.get("prompt", "")
@@ -135,17 +129,12 @@ class DatasetBuilder:
         Returns:
             Examples in OpenAI format
         """
-        formatted = []
-        for ex in examples:
-            formatted.append(
-                {
+        return [{
                     "messages": [
                         {"role": "user", "content": ex.get("prompt", "")},
                         {"role": "assistant", "content": ex.get("response", "")},
                     ],
-                },
-            )
-        return formatted
+                } for ex in examples]
 
     def to_alpaca_format(self, examples: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """
@@ -220,13 +209,13 @@ class DatasetBuilder:
         else:
             raise ValueError(f"Unknown format: {format}")
 
-        filepath = os.path.join(self.output_dir, f"{filename}{ext}")
+        filepath = Path(self.output_dir) / f"{filename}{ext}"
 
         if ext == ".json":
-            with open(filepath, "w") as f:
+            with open(filepath, "w", encoding="utf-8") as f:
                 json.dump(formatted, f, indent=2)
         else:  # JSONL format
-            with open(filepath, "w") as f:
+            with open(filepath, "w", encoding="utf-8") as f:
                 for item in formatted:
                     f.write(json.dumps(item) + "\n")
 

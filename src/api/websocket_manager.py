@@ -1,5 +1,5 @@
 """
-WebSocket Manager for Real-Time Task Updates and Notifications
+WebSocket Manager for Real-Time Task Updates and Notifications.
 
 Implements WebSocket support for real-time task status updates, live notifications,
 and interactive task monitoring. Provides connection pooling, heartbeat mechanism,
@@ -23,7 +23,7 @@ Usage:
 
 import asyncio
 from dataclasses import asdict, dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum as PyEnum
 import json
 import time
@@ -34,8 +34,8 @@ from fastapi.websockets import WebSocketState
 import jwt
 from sqlalchemy.exc import IntegrityError, OperationalError
 
-from ..config import Config
-from ..utils.logger import get_logger
+from src.config import Config
+from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
 
@@ -200,7 +200,7 @@ class WebSocketManager:
                 logger.info("Cleanup task cancelled")
 
         # Close all connections
-        for client_id, websocket in list(self.active_connections.items()):
+        for client_id, _websocket in list(self.active_connections.items()):
             try:
                 await self.disconnect_client(client_id)
             except (ConnectionError, BrokenPipeError) as e:
@@ -223,7 +223,7 @@ class WebSocketManager:
 
             # Validate token expiration
             exp = payload.get("exp")
-            if exp and datetime.fromtimestamp(exp) < datetime.utcnow():
+            if exp and datetime.fromtimestamp(exp) < datetime.now(timezone.utc):
                 raise WebSocketAuthError("Token expired")
 
             # Store session info
@@ -767,11 +767,11 @@ class WebSocketManager:
     async def _validate_task_access(self, client_id: str, task_id: str) -> bool:
         """
         Validate that a client has access to a task.
-        
+
         Args:
             client_id: The client identifier
             task_id: The task identifier to validate access for
-            
+
         Returns:
             bool: True if client has access, False otherwise
         """
@@ -820,11 +820,11 @@ class WebSocketManager:
     async def _pause_task(self, task_id: str, params: dict[str, Any]) -> dict[str, Any]:
         """
         Pause a task execution.
-        
+
         Args:
             task_id: The task identifier to pause
             params: Additional parameters (e.g., reason for pause)
-            
+
         Returns:
             Dict containing success status and message
         """
@@ -848,7 +848,7 @@ class WebSocketManager:
                     }
 
                 # Check if task can be paused
-                if task.status not in [TaskStatus.PLANNING, TaskStatus.PROCESSING]:
+                if task.status not in {TaskStatus.PLANNING, TaskStatus.PROCESSING}:
                     return {
                         "success": False,
                         "message": f"Task cannot be paused in status: {task.status}",
@@ -921,11 +921,11 @@ class WebSocketManager:
     async def _cancel_task(self, task_id: str, params: dict[str, Any]) -> dict[str, Any]:
         """
         Cancel a task execution.
-        
+
         Args:
             task_id: The task identifier to cancel
             params: Additional parameters (e.g., cancellation reason)
-            
+
         Returns:
             Dict containing success status and message
         """
@@ -1040,11 +1040,11 @@ class WebSocketManager:
     async def _prioritize_task(self, task_id: str, params: dict[str, Any]) -> dict[str, Any]:
         """
         Prioritize a task in the execution queue.
-        
+
         Args:
             task_id: The task identifier to prioritize
             params: Additional parameters (e.g., priority level, reason)
-            
+
         Returns:
             Dict containing success status and message
         """
@@ -1179,7 +1179,7 @@ websocket_manager: WebSocketManager | None = None
 
 def get_websocket_manager() -> WebSocketManager:
     """Get the global WebSocket manager instance."""
-    global websocket_manager
+    global websocket_manager  # noqa: PLW0603
     if websocket_manager is None:
         websocket_manager = WebSocketManager()
     return websocket_manager
@@ -1187,7 +1187,7 @@ def get_websocket_manager() -> WebSocketManager:
 
 async def init_websocket_manager():
     """Initialize the WebSocket manager."""
-    global websocket_manager
+    global websocket_manager  # noqa: PLW0603
     websocket_manager = WebSocketManager()
     await websocket_manager.start()
 

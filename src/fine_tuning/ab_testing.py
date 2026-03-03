@@ -1,5 +1,5 @@
 """
-A/B Testing Framework for Fine-Tuned Models
+A/B Testing Framework for Fine-Tuned Models.
 
 Compare fine-tuned models against base models in production.
 """
@@ -336,6 +336,6 @@ class ABTestFramework:
             filepath: Path to save results
         """
         results_data = [asdict(r) for r in self.tests.values()]
-        with open(filepath, "w") as f:
+        with open(filepath, "w", encoding="utf-8") as f:
             json.dump(results_data, f, indent=2)
         logger.info(f"Exported {len(self.tests)} A/B test results to {filepath}")

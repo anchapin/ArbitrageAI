@@ -1,5 +1,5 @@
 """
-LLM Service Module
+LLM Service Module.
 
 This module provides an OpenAI client wrapper for interacting with Large Language Models.
 It supports both cloud providers (OpenAI, Anthropic, etc.) and local inference via Ollama/llama.cpp.
@@ -26,9 +26,9 @@ from .llm_health_check import CircuitBreakerError, get_health_checker
 logger = logging.getLogger(__name__)
 
 # Load environment variables from .env file
-# Create a .env file in your project root with the following variables:
-# BASE_URL=https://api.openai.com/v1
-# API_KEY=your-api-key-here
+# Create a .env file in your project root with the following variables:  # noqa: ERA001
+# BASE_URL=https://api.openai.com/v1  # noqa: ERA001
+# API_KEY=your-api-key-here  # noqa: ERA001
 load_dotenv()
 
 
@@ -187,7 +187,7 @@ _default_model_config: ModelConfig | None = None
 
 def get_default_model_config() -> ModelConfig:
     """Get or create the default model configuration."""
-    global _default_model_config
+    global _default_model_config  # noqa: PLW0603
     if _default_model_config is None:
         _default_model_config = ModelConfig.from_env()
     return _default_model_config
@@ -195,7 +195,7 @@ def get_default_model_config() -> ModelConfig:
 
 def set_default_model_config(config: ModelConfig):
     """Set the default model configuration."""
-    global _default_model_config
+    global _default_model_config  # noqa: PLW0603
     _default_model_config = config
 
 
@@ -556,7 +556,7 @@ class LLMService:
             Configured LLMService instance
         """
         config = model_config or get_default_model_config()
-        model, base_url, api_key, is_local = config.get_model_for_task(task_type)
+        model, base_url, api_key, _is_local = config.get_model_for_task(task_type)
 
         return cls(
             base_url=base_url,
@@ -834,18 +834,18 @@ class LLMService:
 
 if __name__ == "__main__":
     # Example 1: Using cloud provider (OpenAI)
-    # Create a .env file with:
-    # BASE_URL=https://api.openai.com/v1
-    # API_KEY=your-openai-api-key
+    # Create a .env file with:  # noqa: ERA001
+    # BASE_URL=https://api.openai.com/v1  # noqa: ERA001
+    # API_KEY=your-openai-api-key  # noqa: ERA001
 
     logger.info("=" * 60)
     logger.info("LLM Service - Usage Examples")
     logger.info("=" * 60)
 
     # Example 2: Using local Ollama
-    # For local Ollama, create a .env file with:
-    # BASE_URL=http://localhost:11434/v1
-    # API_KEY=not-needed
+    # For local Ollama, create a .env file with:  # noqa: ERA001
+    # BASE_URL=http://localhost:11434/v1  # noqa: ERA001
+    # API_KEY=not-needed  # noqa: ERA001
 
     # Initialize with local Ollama
     llm = LLMService(
@@ -863,13 +863,6 @@ if __name__ == "__main__":
     logger.info("2. For local: Run 'ollama serve' and ensure model is installed")
     logger.info("3. Uncomment the completion call below to test")
     logger.info("-" * 60)
-
-    # Test the service (uncomment to test)
-    # try:
-    #     result = llm.complete("What is the capital of France?")
-    #     logger.info(f"\nResponse: {result['content']}")
-    # except Exception as e:
-    #     logger.error(f"\nError (make sure Ollama is running): {e}")
 
     logger.info("\nStreaming example:")
     logger.info("-" * 60)
