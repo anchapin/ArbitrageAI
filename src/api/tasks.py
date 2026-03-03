@@ -7,6 +7,10 @@ Handles:
 - Arena competitions
 - Admin metrics
 - System mode management
+
+Issue #193: Fix N+1 Query Problems with Eager Loading
+- Added joinedload/selectinload for Task relationships
+- Preloads execution, planning, review, arena, and outputs
 """
 
 from datetime import datetime, timezone
@@ -17,7 +21,7 @@ import time as _time
 from fastapi import BackgroundTasks, Depends, HTTPException
 from fastapi.responses import JSONResponse
 from sqlalchemy import func
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload, selectinload
 
 from src.config.config_manager import ConfigManager
 from src.utils.logger import get_logger
@@ -29,6 +33,10 @@ from .models import (
     EscalationLog,
     ReviewStatus,
     Task,
+    TaskExecution,
+    TaskPlanning,
+    TaskReview,
+    TaskOutput,
     TaskStatus,
 )
 
@@ -319,6 +327,8 @@ async def get_task(task_id: str, db: Session = Depends(get_db)):  # noqa: B008
     """
     Get task by ID.
 
+    Uses eager loading to prevent N+1 queries on relationships.
+
     Args:
         task_id: Task ID
         db: Database session
@@ -326,7 +336,18 @@ async def get_task(task_id: str, db: Session = Depends(get_db)):  # noqa: B008
     Returns:
         Task details
     """
-    task = db.query(Task).filter(Task.id == task_id).first()
+    task = (
+        db.query(Task)
+        .filter(Task.id == task_id)
+        .options(
+            joinedload(Task.execution),
+            joinedload(Task.planning),
+            joinedload(Task.review),
+            joinedload(Task.arena),
+            selectinload(Task.outputs),
+        )
+        .first()
+    )
 
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
@@ -341,6 +362,8 @@ async def get_task_by_session(
     """
     Get task ID and authentication token by Stripe checkout session ID.
 
+    Uses eager loading to prevent N+1 queries on relationships.
+
     Args:
         session_id: Stripe session ID
         db: Database session
@@ -350,7 +373,18 @@ async def get_task_by_session(
     """
     from src.utils.client_auth import generate_client_token
 
-    task = db.query(Task).filter(Task.stripe_session_id == session_id).first()
+    task = (
+        db.query(Task)
+        .filter(Task.stripe_session_id == session_id)
+        .options(
+            joinedload(Task.execution),
+            joinedload(Task.planning),
+            joinedload(Task.review),
+            joinedload(Task.arena),
+            selectinload(Task.outputs),
+        )
+        .first()
+    )
 
     if not task:
         raise HTTPException(status_code=404, detail="Task not found for this session")
@@ -415,7 +449,18 @@ async def get_secure_delivery(
         _record_ip_delivery_attempt(ip)
 
     # Validate token and get task
-    task = db.query(Task).filter(Task.id == task_id).first()
+    task = (
+        db.query(Task)
+        .filter(Task.id == task_id)
+        .options(
+            joinedload(Task.execution),
+            joinedload(Task.planning),
+            joinedload(Task.review),
+            joinedload(Task.arena),
+            selectinload(Task.outputs),
+        )
+        .first()
+    )
 
     if not task:
         _record_delivery_failure(task_id, ip)
@@ -484,7 +529,18 @@ async def run_arena_competition(
     """
     from src.agent_execution.arena import CompetitionType, run_agent_arena
 
-    task = db.query(Task).filter(Task.id == task_id).first()
+    task = (
+        db.query(Task)
+        .filter(Task.id == task_id)
+        .options(
+            joinedload(Task.execution),
+            joinedload(Task.planning),
+            joinedload(Task.review),
+            joinedload(Task.arena),
+            selectinload(Task.outputs),
+        )
+        .first()
+    )
 
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
@@ -535,6 +591,8 @@ async def get_arena_history(
     """
     Get arena competition history.
 
+    Uses eager loading to prevent N+1 queries on task relationships.
+
     Args:
         db: Database session
         limit: Number of results to return
@@ -542,9 +600,11 @@ async def get_arena_history(
     Returns:
         List of arena competitions
     """
+    from .models import Task
     competitions = (
         db.query(ArenaCompetition)
         .filter(ArenaCompetition.status == ArenaCompetitionStatus.COMPLETED)
+        .options(joinedload(ArenaCompetition.task))
         .order_by(ArenaCompetition.created_at.desc())
         .limit(limit)
         .all()
