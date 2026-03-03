@@ -1,11 +1,11 @@
 /**
- * TaskStatus.jsx - Polling Cleanup Tests
- * 
+ * TaskStatus.tsx - Polling Cleanup Tests
+ *
  * Tests to verify that polling intervals and fetch requests are properly
  * cleaned up when components unmount or dependencies change.
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi, Mock } from 'vitest';
 import { render, cleanup } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import TaskStatus from '../TaskStatus';
@@ -17,10 +17,10 @@ describe('TaskStatus - Polling Cleanup', () => {
   beforeEach(() => {
     // Clear all mocks before each test
     vi.clearAllMocks();
-    fetch.mockReset();
-    
+    (global.fetch as Mock).mockReset();
+
     // Mock successful task response
-    fetch.mockResolvedValueOnce({
+    (global.fetch as Mock).mockResolvedValueOnce({
       ok: true,
       json: async () => ({
         id: 'test-task-1',
@@ -38,7 +38,7 @@ describe('TaskStatus - Polling Cleanup', () => {
 
   it('should create AbortController for task polling', () => {
     const abortControllerSpy = vi.spyOn(window, 'AbortController');
-    
+
     const { unmount } = render(
       <BrowserRouter initialEntries={['/task-status?task_id=test-123']}>
         <TaskStatus />
@@ -46,7 +46,7 @@ describe('TaskStatus - Polling Cleanup', () => {
     );
 
     expect(abortControllerSpy).toHaveBeenCalled();
-    
+
     unmount();
     abortControllerSpy.mockRestore();
   });
@@ -54,7 +54,7 @@ describe('TaskStatus - Polling Cleanup', () => {
   it('should abort task polling on unmount', () => {
     let abortCalled = false;
     const originalAbort = AbortController.prototype.abort;
-    
+
     AbortController.prototype.abort = function() {
       abortCalled = true;
       originalAbort.call(this);
@@ -83,7 +83,7 @@ describe('TaskStatus - Polling Cleanup', () => {
     await new Promise(resolve => setTimeout(resolve, 100));
 
     // Verify fetch was called with signal option
-    expect(fetch).toHaveBeenCalledWith(
+    expect(global.fetch).toHaveBeenCalledWith(
       expect.stringContaining('test-123'),
       expect.objectContaining({
         signal: expect.any(AbortSignal)
@@ -95,9 +95,9 @@ describe('TaskStatus - Polling Cleanup', () => {
 
   it('should not set state after fetch abort on unmount', async () => {
     const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    
+
     // Mock fetch to delay completion until after unmount
-    fetch.mockImplementation(
+    (global.fetch as Mock).mockImplementation(
       () => new Promise(resolve => {
         setTimeout(() => {
           resolve({
@@ -128,23 +128,23 @@ describe('TaskStatus - Polling Cleanup', () => {
     const stateUpdateWarning = errorCalls.some(
       call => call[0]?.includes?.("Can't perform a React state update on an unmounted component")
     );
-    
+
     expect(stateUpdateWarning).toBe(false);
-    
+
     consoleErrorSpy.mockRestore();
   });
 
   it('should create new AbortController when taskId changes', () => {
     let abortCallCount = 0;
     const originalAbort = AbortController.prototype.abort;
-    
+
     AbortController.prototype.abort = function() {
       abortCallCount++;
       originalAbort.call(this);
     };
 
     // Render with initial taskId
-    fetch.mockResolvedValueOnce({
+    (global.fetch as Mock).mockResolvedValueOnce({
       ok: true,
       json: async () => ({ id: 'task-1', status: 'PAID' })
     });
@@ -158,7 +158,7 @@ describe('TaskStatus - Polling Cleanup', () => {
     const initialAbortCount = abortCallCount;
 
     // Change taskId - should abort old polling and create new one
-    fetch.mockResolvedValueOnce({
+    (global.fetch as Mock).mockResolvedValueOnce({
       ok: true,
       json: async () => ({ id: 'task-2', status: 'PAID' })
     });
@@ -179,14 +179,14 @@ describe('TaskStatus - Polling Cleanup', () => {
   it('should abort dashboard polling on unmount', () => {
     let dashboardAbortCalled = false;
     const originalAbort = AbortController.prototype.abort;
-    
+
     AbortController.prototype.abort = function() {
       dashboardAbortCalled = true;
       originalAbort.call(this);
     };
 
     // Render without taskId to show dashboard
-    fetch.mockResolvedValueOnce({
+    (global.fetch as Mock).mockResolvedValueOnce({
       ok: true,
       json: async () => ({
         stats: { total_tasks: 5, completed_tasks: 3, in_progress_tasks: 2, total_spent: 500 },
@@ -210,9 +210,9 @@ describe('TaskStatus - Polling Cleanup', () => {
 
   it('should handle AbortError gracefully without state updates', async () => {
     const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    
+
     // Mock fetch to reject with AbortError
-    fetch.mockImplementation(() => {
+    (global.fetch as Mock).mockImplementation(() => {
       return Promise.reject(new DOMException('Aborted', 'AbortError'));
     });
 
@@ -228,7 +228,7 @@ describe('TaskStatus - Polling Cleanup', () => {
     // AbortError should not be logged
     const errorCalls = consoleErrorSpy.mock.calls;
     const abortErrorLogged = errorCalls.some(
-      call => call[0]?.includes?.('AbortError') && 
+      call => call[0]?.includes?.('AbortError') &&
                !call[0]?.includes?.("Aborted")
     );
 
@@ -238,9 +238,9 @@ describe('TaskStatus - Polling Cleanup', () => {
 
   it('should not have memory leaks from multiple mount/unmount cycles', async () => {
     const mountUnmountCycles = 5;
-    
+
     for (let i = 0; i < mountUnmountCycles; i++) {
-      fetch.mockResolvedValueOnce({
+      (global.fetch as Mock).mockResolvedValueOnce({
         ok: true,
         json: async () => ({
           id: `task-${i}`,
@@ -258,21 +258,21 @@ describe('TaskStatus - Polling Cleanup', () => {
       );
 
       unmount();
-      
+
       // Small delay between cycles
       await new Promise(resolve => setTimeout(resolve, 50));
     }
 
     // Should have created one AbortController per cycle
     // Plus one for initialization = mountUnmountCycles calls
-    expect(fetch).toHaveBeenCalledTimes(mountUnmountCycles);
+    expect(global.fetch).toHaveBeenCalledTimes(mountUnmountCycles);
   });
 });
 
 describe('TaskStatus - Polling Configuration', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    fetch.mockReset();
+    (global.fetch as Mock).mockReset();
   });
 
   afterEach(() => {
@@ -280,7 +280,7 @@ describe('TaskStatus - Polling Configuration', () => {
   });
 
   it('should stop polling when task reaches terminal state', async () => {
-    fetch.mockResolvedValueOnce({
+    (global.fetch as Mock).mockResolvedValueOnce({
       ok: true,
       json: async () => ({
         id: 'test-task',
@@ -300,16 +300,16 @@ describe('TaskStatus - Polling Configuration', () => {
     await new Promise(resolve => setTimeout(resolve, 100));
 
     // Should only fetch once (no retry for completed task)
-    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(global.fetch).toHaveBeenCalledTimes(1);
 
     unmount();
   });
 
   it('should handle multiple terminal states correctly', async () => {
     const terminalStates = ['COMPLETED', 'FAILED', 'CANCELLED'];
-    
+
     for (const status of terminalStates) {
-      fetch.mockResolvedValueOnce({
+      (global.fetch as Mock).mockResolvedValueOnce({
         ok: true,
         json: async () => ({
           id: 'test-task',
@@ -331,6 +331,6 @@ describe('TaskStatus - Polling Configuration', () => {
     }
 
     // Each status should result in exactly one fetch call (no retry)
-    expect(fetch).toHaveBeenCalledTimes(terminalStates.length);
+    expect(global.fetch).toHaveBeenCalledTimes(terminalStates.length);
   });
 });

@@ -1,25 +1,26 @@
 /**
- * Success.jsx - Polling Cleanup Tests
- * 
+ * Success.tsx - Polling Cleanup Tests
+ *
  * Tests to verify that session fetch requests are properly
  * cleaned up when the component unmounts.
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi, Mock } from 'vitest';
 import { render, cleanup } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import Success from '../Success';
 
+// Mock fetch globally
 global.fetch = vi.fn();
 
 describe('Success - Session Fetch Cleanup', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    fetch.mockReset();
+    (global.fetch as Mock).mockReset();
     localStorage.clear();
-    
+
     // Mock successful response
-    fetch.mockResolvedValueOnce({
+    (global.fetch as Mock).mockResolvedValueOnce({
       ok: true,
       json: async () => ({
         task_id: 'test-task-1',
@@ -35,7 +36,7 @@ describe('Success - Session Fetch Cleanup', () => {
 
   it('should create AbortController for session fetch', () => {
     const abortControllerSpy = vi.spyOn(window, 'AbortController');
-    
+
     const { unmount } = render(
       <BrowserRouter initialEntries={['/success?session_id=test-session']}>
         <Success />
@@ -43,7 +44,7 @@ describe('Success - Session Fetch Cleanup', () => {
     );
 
     expect(abortControllerSpy).toHaveBeenCalled();
-    
+
     unmount();
     abortControllerSpy.mockRestore();
   });
@@ -51,7 +52,7 @@ describe('Success - Session Fetch Cleanup', () => {
   it('should abort session fetch on unmount', () => {
     let sessionAbortCalled = false;
     const originalAbort = AbortController.prototype.abort;
-    
+
     AbortController.prototype.abort = function() {
       sessionAbortCalled = true;
       originalAbort.call(this);
@@ -78,7 +79,7 @@ describe('Success - Session Fetch Cleanup', () => {
 
     await new Promise(resolve => setTimeout(resolve, 100));
 
-    expect(fetch).toHaveBeenCalledWith(
+    expect(global.fetch).toHaveBeenCalledWith(
       expect.stringContaining('test-session'),
       expect.objectContaining({
         signal: expect.any(AbortSignal)
@@ -90,8 +91,8 @@ describe('Success - Session Fetch Cleanup', () => {
 
   it('should not set state after fetch abort on unmount', async () => {
     const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    
-    fetch.mockImplementation(
+
+    (global.fetch as Mock).mockImplementation(
       () => new Promise(resolve => {
         setTimeout(() => {
           resolve({
@@ -121,16 +122,16 @@ describe('Success - Session Fetch Cleanup', () => {
     const stateUpdateWarning = errorCalls.some(
       call => call[0]?.includes?.("Can't perform a React state update on an unmounted component")
     );
-    
+
     expect(stateUpdateWarning).toBe(false);
-    
+
     consoleErrorSpy.mockRestore();
   });
 
   it('should handle AbortError gracefully without logging', async () => {
     const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    
-    fetch.mockImplementation(() => {
+
+    (global.fetch as Mock).mockImplementation(() => {
       return Promise.reject(new DOMException('Aborted', 'AbortError'));
     });
 
@@ -168,7 +169,7 @@ describe('Success - Session Fetch Cleanup', () => {
   });
 
   it('should not store token if email is missing', async () => {
-    fetch.mockResolvedValueOnce({
+    (global.fetch as Mock).mockResolvedValueOnce({
       ok: true,
       json: async () => ({
         task_id: 'test-task-1',
@@ -192,7 +193,7 @@ describe('Success - Session Fetch Cleanup', () => {
   });
 
   it('should handle 404 session not found error', async () => {
-    fetch.mockResolvedValueOnce({
+    (global.fetch as Mock).mockResolvedValueOnce({
       ok: false,
       status: 404
     });
@@ -206,7 +207,7 @@ describe('Success - Session Fetch Cleanup', () => {
     await new Promise(resolve => setTimeout(resolve, 100));
 
     // Should show error state, not crash
-    expect(fetch).toHaveBeenCalled();
+    expect(global.fetch).toHaveBeenCalled();
 
     unmount();
   });
@@ -221,13 +222,13 @@ describe('Success - Session Fetch Cleanup', () => {
     await new Promise(resolve => setTimeout(resolve, 100));
 
     // Should not make fetch request if session_id is missing
-    expect(fetch).not.toHaveBeenCalled();
+    expect(global.fetch).not.toHaveBeenCalled();
 
     unmount();
   });
 
   it('should not have memory leaks from multiple mount/unmount cycles', async () => {
-    fetch.mockResolvedValue({
+    (global.fetch as Mock).mockResolvedValue({
       ok: true,
       json: async () => ({
         task_id: 'test-task',
@@ -237,7 +238,7 @@ describe('Success - Session Fetch Cleanup', () => {
     });
 
     const mountUnmountCycles = 5;
-    
+
     for (let i = 0; i < mountUnmountCycles; i++) {
       const { unmount } = render(
         <BrowserRouter initialEntries={[`/success?session_id=session-${i}`]}>
@@ -247,19 +248,19 @@ describe('Success - Session Fetch Cleanup', () => {
 
       await new Promise(resolve => setTimeout(resolve, 50));
       unmount();
-      
+
       await new Promise(resolve => setTimeout(resolve, 50));
     }
 
     // Should have created one fetch per cycle
-    expect(fetch).toHaveBeenCalledTimes(mountUnmountCycles);
+    expect(global.fetch).toHaveBeenCalledTimes(mountUnmountCycles);
   });
 
   it('should immediately abort when component unmounts during fetch', async () => {
     let abortCalled = false;
     const originalAbort = AbortController.prototype.abort;
-    
-    fetch.mockImplementation(() => {
+
+    (global.fetch as Mock).mockImplementation(() => {
       return new Promise((resolve) => {
         // Simulate slow response
         const timeout = setTimeout(() => {
@@ -272,7 +273,7 @@ describe('Success - Session Fetch Cleanup', () => {
             })
           });
         }, 1000);
-        
+
         // Cleanup timeout if aborted
         const original = AbortController.prototype.abort;
         AbortController.prototype.abort = function() {
