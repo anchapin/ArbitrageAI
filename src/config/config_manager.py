@@ -206,8 +206,8 @@ class ConfigManager:
                     val = float(env_val)
                 else:
                     val = env_val
-            except (ValueError, TypeError):
-                raise ValidationError(f"{key}: Expected integer, got '{env_val}'")
+            except (ValueError, TypeError) as e:
+                raise ValidationError(f"{key}: Expected integer, got '{env_val}'") from e
 
         # Additional range validations for specific keys to match tests
         if key == "MIN_BID_AMOUNT" and val is not None:

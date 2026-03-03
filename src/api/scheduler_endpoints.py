@@ -8,6 +8,7 @@ managing recurring tasks, and viewing schedule analytics.
 from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.exc import OperationalError, IntegrityError
 from typing import List, Optional, Dict, Any
 from datetime import datetime, timedelta
 
@@ -124,13 +125,13 @@ async def schedule_task(
 
     except (ValueError, TypeError) as e:
         logger.error(f"Validation error scheduling task: {e}", exc_info=True)
-        raise HTTPException(status_code=400, detail=f"Invalid request: {e}")
+        raise HTTPException(status_code=400, detail=f"Invalid request: {e}") from e
     except (OperationalError, IntegrityError) as e:
         logger.error(f"Database error scheduling task: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Database error occurred")
+        raise HTTPException(status_code=500, detail="Database error occurred") from e
     except Exception as e:
         logger.error(f"Failed to schedule task: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Failed to schedule task: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to schedule task: {e}") from e
 
 
 @router.post("/schedule/daily")
@@ -169,15 +170,15 @@ async def schedule_daily_task_endpoint(
 
     except (ValueError, TypeError) as e:
         logger.error(f"Validation error scheduling daily task: {e}", exc_info=True)
-        raise HTTPException(status_code=400, detail=f"Invalid request: {e}")
+        raise HTTPException(status_code=400, detail=f"Invalid request: {e}") from e
     except (OperationalError, IntegrityError) as e:
         logger.error(f"Database error scheduling daily task: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Database error occurred")
+        raise HTTPException(status_code=500, detail="Database error occurred") from e
     except Exception as e:
         logger.error(f"Failed to schedule daily task: {e}", exc_info=True)
         raise HTTPException(
             status_code=500, detail=f"Failed to schedule daily task: {e}"
-        )
+        ) from e
 
 
 @router.post("/schedule/weekly")
@@ -223,15 +224,15 @@ async def schedule_weekly_task_endpoint(
 
     except (ValueError, TypeError) as e:
         logger.error(f"Validation error scheduling weekly task: {e}", exc_info=True)
-        raise HTTPException(status_code=400, detail=f"Invalid request: {e}")
+        raise HTTPException(status_code=400, detail=f"Invalid request: {e}") from e
     except (OperationalError, IntegrityError) as e:
         logger.error(f"Database error scheduling weekly task: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Database error occurred")
+        raise HTTPException(status_code=500, detail="Database error occurred") from e
     except Exception as e:
         logger.error(f"Failed to schedule weekly task: {e}", exc_info=True)
         raise HTTPException(
             status_code=500, detail=f"Failed to schedule weekly task: {e}"
-        )
+        ) from e
 
 
 @router.post("/schedule/monthly")
@@ -275,15 +276,15 @@ async def schedule_monthly_task_endpoint(
 
     except (ValueError, TypeError) as e:
         logger.error(f"Validation error scheduling monthly task: {e}", exc_info=True)
-        raise HTTPException(status_code=400, detail=f"Invalid request: {e}")
+        raise HTTPException(status_code=400, detail=f"Invalid request: {e}") from e
     except (OperationalError, IntegrityError) as e:
         logger.error(f"Database error scheduling monthly task: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Database error occurred")
+        raise HTTPException(status_code=500, detail="Database error occurred") from e
     except Exception as e:
         logger.error(f"Failed to schedule monthly task: {e}", exc_info=True)
         raise HTTPException(
             status_code=500, detail=f"Failed to schedule monthly task: {e}"
-        )
+        ) from e
 
 
 @router.get("/schedules")
@@ -327,13 +328,13 @@ async def list_schedules(
 
     except (ValueError, TypeError, KeyError) as e:
         logger.error(f"Data error listing schedules: {e}", exc_info=True)
-        raise HTTPException(status_code=400, detail=f"Invalid request: {e}")
+        raise HTTPException(status_code=400, detail=f"Invalid request: {e}") from e
     except (OperationalError, IntegrityError) as e:
         logger.error(f"Database error listing schedules: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Database error occurred")
+        raise HTTPException(status_code=500, detail="Database error occurred") from e
     except Exception as e:
         logger.error(f"Failed to list schedules: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Failed to list schedules: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to list schedules: {e}") from e
 
 
 @router.get("/schedules/{schedule_id}")
@@ -384,13 +385,13 @@ async def get_schedule(schedule_id: str, db: AsyncSession = Depends(get_async_db
         raise
     except (ValueError, TypeError, KeyError) as e:
         logger.error(f"Data error getting schedule: {e}", exc_info=True)
-        raise HTTPException(status_code=400, detail=f"Invalid request: {e}")
+        raise HTTPException(status_code=400, detail=f"Invalid request: {e}") from e
     except (OperationalError, IntegrityError) as e:
         logger.error(f"Database error getting schedule: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Database error occurred")
+        raise HTTPException(status_code=500, detail="Database error occurred") from e
     except Exception as e:
         logger.error(f"Failed to get schedule {schedule_id}: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Failed to get schedule: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get schedule: {e}") from e
 
 
 @router.put("/schedules/{schedule_id}")
@@ -451,7 +452,7 @@ async def update_schedule(
         raise
     except Exception as e:
         logger.error(f"Failed to update schedule {schedule_id}: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to update schedule: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to update schedule: {e}") from e
 
 
 @router.post("/schedules/{schedule_id}/pause")
@@ -473,7 +474,7 @@ async def pause_schedule(schedule_id: str, db: AsyncSession = Depends(get_async_
         raise
     except Exception as e:
         logger.error(f"Failed to pause schedule {schedule_id}: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to pause schedule: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to pause schedule: {e}") from e
 
 
 @router.post("/schedules/{schedule_id}/resume")
@@ -495,7 +496,7 @@ async def resume_schedule(schedule_id: str, db: AsyncSession = Depends(get_async
         raise
     except Exception as e:
         logger.error(f"Failed to resume schedule {schedule_id}: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to resume schedule: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to resume schedule: {e}") from e
 
 
 @router.post("/schedules/{schedule_id}/cancel")
@@ -517,7 +518,7 @@ async def cancel_schedule(schedule_id: str, db: AsyncSession = Depends(get_async
         raise
     except Exception as e:
         logger.error(f"Failed to cancel schedule {schedule_id}: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to cancel schedule: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to cancel schedule: {e}") from e
 
 
 @router.get("/schedules/{schedule_id}/analytics")
@@ -543,7 +544,7 @@ async def get_schedule_analytics(
         logger.error(f"Failed to get analytics for schedule {schedule_id}: {e}")
         raise HTTPException(
             status_code=500, detail=f"Failed to get schedule analytics: {e}"
-        )
+        ) from e
 
 
 @router.get("/schedules/{schedule_id}/history")
@@ -594,7 +595,7 @@ async def get_schedule_history(
         logger.error(f"Failed to get history for schedule {schedule_id}: {e}")
         raise HTTPException(
             status_code=500, detail=f"Failed to get schedule history: {e}"
-        )
+        ) from e
 
 
 @router.get("/cron/validate")
@@ -722,7 +723,7 @@ async def get_scheduler_status(db: AsyncSession = Depends(get_async_db)):
         logger.error(f"Failed to get scheduler status: {e}")
         raise HTTPException(
             status_code=500, detail=f"Failed to get scheduler status: {e}"
-        )
+        ) from e
 
 
 # Register the scheduler endpoints with the main app
