@@ -5,9 +5,11 @@ Factory pattern for registering and creating marketplace adapters.
 Provides a registry to manage different marketplace implementations.
 """
 
-from typing import Dict, Type, Optional, Any
-from .base import MarketplaceAdapter
+from typing import Any
+
 from src.utils.logger import get_logger
+
+from .base import MarketplaceAdapter
 
 logger = get_logger(__name__)
 
@@ -20,11 +22,11 @@ class MarketplaceRegistry:
     Supports dynamic registration of new marketplace implementations.
     """
 
-    _adapters: Dict[str, Type[MarketplaceAdapter]] = {}
+    _adapters: dict[str, type[MarketplaceAdapter]] = {}
 
     @classmethod
     def register(
-        cls, name: str, adapter_class: Type[MarketplaceAdapter]
+        cls, name: str, adapter_class: type[MarketplaceAdapter],
     ) -> None:
         """
         Register a new marketplace adapter.
@@ -38,13 +40,13 @@ class MarketplaceRegistry:
         """
         if name.lower() in cls._adapters:
             logger.warning(
-                f"Marketplace '{name}' already registered, overwriting..."
+                f"Marketplace '{name}' already registered, overwriting...",
             )
         cls._adapters[name.lower()] = adapter_class
         logger.info(f"Registered marketplace adapter: {name}")
 
     @classmethod
-    def get(cls, name: str) -> Optional[Type[MarketplaceAdapter]]:
+    def get(cls, name: str) -> type[MarketplaceAdapter] | None:
         """
         Get adapter class by marketplace name.
 
@@ -58,7 +60,7 @@ class MarketplaceRegistry:
 
     @classmethod
     def create(
-        cls, name: str, **kwargs: Any
+        cls, name: str, **kwargs: Any,
     ) -> MarketplaceAdapter:
         """
         Create an instance of a registered adapter.
@@ -77,7 +79,7 @@ class MarketplaceRegistry:
         if not adapter_class:
             raise ValueError(
                 f"Marketplace '{name}' not registered. "
-                f"Available: {list(cls._adapters.keys())}"
+                f"Available: {list(cls._adapters.keys())}",
             )
         return adapter_class(**kwargs)
 

@@ -14,15 +14,15 @@ injected into this template. This approach:
 - Provides consistent, reliable document generation
 """
 
+import base64
 import io
 import json
-import base64
-import pandas as pd
-from typing import Dict, Any, Optional
+from typing import Any
 
 # python-docx imports
 from docx import Document
 from docx.shared import Inches, Pt
+import pandas as pd
 
 
 class BaseDocumentTemplate:
@@ -52,7 +52,7 @@ class BaseDocumentTemplate:
 
     def generate(
         self,
-        content_json: Dict[str, Any],
+        content_json: dict[str, Any],
         csv_data: str,
         output_format: str = "docx",
         **kwargs,
@@ -95,7 +95,7 @@ class BaseDocumentTemplate:
         except Exception as e:
             return {
                 "success": False,
-                "message": f"Document generation error: {str(e)}",
+                "message": f"Document generation error: {e!s}",
                 "output_format": output_format,
                 "document_type": "document",
             }
@@ -132,7 +132,7 @@ class BaseDocumentTemplate:
         if not sections and "data" in content:
             self._build_from_data(content["data"])
 
-    def _add_section(self, section: Dict[str, Any]):
+    def _add_section(self, section: dict[str, Any]):
         """Add a section to the document."""
         # Section heading
         if "heading" in section:
@@ -156,7 +156,7 @@ class BaseDocumentTemplate:
         if "table" in section:
             self._add_table_from_data(section["table"])
 
-    def _add_content_item(self, item: Dict[str, Any]):
+    def _add_content_item(self, item: dict[str, Any]):
         """Add a content item to the document."""
         if item.get("type") == "paragraph":
             self.add_paragraph(item.get("text", ""), style=item.get("style"))
@@ -221,11 +221,11 @@ class BaseDocumentTemplate:
         for run in heading.runs:
             run.font.name = self.HEADING_FONT
             run.font.size = Pt(
-                self.HEADING_SIZE if level <= 1 else self.SUBHEADING_SIZE
+                self.HEADING_SIZE if level <= 1 else self.SUBHEADING_SIZE,
             )
         return heading
 
-    def add_paragraph(self, text: str, style: Optional[str] = None):
+    def add_paragraph(self, text: str, style: str | None = None):
         """Add a paragraph to the document."""
         para = self.document.add_paragraph(text, style=style)
         # Apply formatting
@@ -262,7 +262,7 @@ class BaseDocumentTemplate:
         except Exception as e:
             return {
                 "success": False,
-                "message": f"Error reading output file: {str(e)}",
+                "message": f"Error reading output file: {e!s}",
                 "output_format": output_format,
             }
 
@@ -376,7 +376,7 @@ if __name__ == "__main__":
 
 
 def get_template_code(
-    content_json: Dict[str, Any], csv_data: str, output_format: str = "docx"
+    content_json: dict[str, Any], csv_data: str, output_format: str = "docx",
 ) -> str:
     """
     Get the executable template code with injected content.

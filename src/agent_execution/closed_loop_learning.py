@@ -12,16 +12,15 @@ After each job completion:
 Issue #106: [PHASE 5.3] CLOSED-LOOP LEARNING SYSTEM
 """
 
-from typing import Optional, Dict, Any, List
 from datetime import datetime, timedelta
 from enum import Enum as PyEnum
+from typing import Any
 
 from ..api.database import SessionLocal
 from ..api.models import LearningEntry
 from ..utils.logger import get_logger
-from ..config.config_manager import ConfigManager
 from .confidence_tracker import ConfidenceTracker
-from .self_adjusting_algorithm import SelfAdjustingConfidenceAlgorithm, AdjustmentReason
+from .self_adjusting_algorithm import AdjustmentReason, SelfAdjustingConfidenceAlgorithm
 
 logger = get_logger(__name__)
 
@@ -77,7 +76,7 @@ class ClosedLoopLearningSystem:
         """Initialize closed-loop learning system."""
         self.confidence_tracker = ConfidenceTracker()
         self.adjustment_algorithm = SelfAdjustingConfidenceAlgorithm()
-        self._last_weekly_review: Optional[datetime] = None
+        self._last_weekly_review: datetime | None = None
 
     def record_job_completion(
         self,
@@ -87,8 +86,8 @@ class ClosedLoopLearningSystem:
         total_cost_cents: int,
         predicted_profit_cents: int,
         initial_confidence_score: int,
-        strategy_type: Optional[str] = None,
-        metadata: Optional[Dict[str, Any]] = None,
+        strategy_type: str | None = None,
+        metadata: dict[str, Any] | None = None,
     ) -> LearningEntry:
         """
         Record job completion and calculate learning metrics.
@@ -131,12 +130,12 @@ class ClosedLoopLearningSystem:
         # Calculate new confidence score
         try:
             new_confidence_score = self.confidence_tracker.calculate_confidence_score(
-                threshold=50
+                threshold=50,
             )
         except Exception as e:
             logger.warning(f"Failed to calculate confidence score: {e}")
             new_confidence_score = initial_confidence_score
-            
+
         confidence_adjustment = new_confidence_score - initial_confidence_score
 
         # Create learning entry
@@ -167,7 +166,7 @@ class ClosedLoopLearningSystem:
             logger.info(
                 f"Recorded job completion - Task: {task_id}, "
                 f"Actual Profit: ${actual_profit_cents / 100:.2f}, "
-                f"Prediction Error: {prediction_error_percentage:.1f}%"
+                f"Prediction Error: {prediction_error_percentage:.1f}%",
             )
 
             # Trigger strategy adjustment if needed
@@ -187,10 +186,10 @@ class ClosedLoopLearningSystem:
 
     def calculate_prediction_accuracy(
         self,
-        marketplace: Optional[str] = None,
-        strategy_type: Optional[str] = None,
+        marketplace: str | None = None,
+        strategy_type: str | None = None,
         limit: int = 100,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Calculate prediction accuracy metrics.
 
@@ -205,7 +204,7 @@ class ClosedLoopLearningSystem:
         db = SessionLocal()
         try:
             query = db.query(LearningEntry).filter(
-                LearningEntry.event_type == LearningEventType.JOB_COMPLETED.value
+                LearningEntry.event_type == LearningEventType.JOB_COMPLETED.value,
             )
 
             if marketplace:
@@ -270,9 +269,9 @@ class ClosedLoopLearningSystem:
 
     def get_learning_insights(
         self,
-        marketplace: Optional[str] = None,
-        strategy_type: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        marketplace: str | None = None,
+        strategy_type: str | None = None,
+    ) -> dict[str, Any]:
         """
         Generate learning insights and recommendations.
 
@@ -284,7 +283,7 @@ class ClosedLoopLearningSystem:
             Dictionary with insights and recommendations
         """
         accuracy = self.calculate_prediction_accuracy(
-            marketplace=marketplace, strategy_type=strategy_type
+            marketplace=marketplace, strategy_type=strategy_type,
         )
 
         if "error" in accuracy:
@@ -297,28 +296,28 @@ class ClosedLoopLearningSystem:
         if accuracy["accuracy_rate"] < 70:
             insights.append(
                 f"Prediction accuracy is low ({accuracy['accuracy_rate']:.1f}%). "
-                "Consider adjusting profit estimation model."
+                "Consider adjusting profit estimation model.",
             )
             recommendations.append(
-                "Review cost estimation factors and add more granular tracking"
+                "Review cost estimation factors and add more granular tracking",
             )
 
         # Analyze bias
         if accuracy["overestimate_rate"] > 60:
             insights.append(
                 f"Tendency to overestimate profits ({accuracy['overestimate_rate']:.1f}% of cases). "
-                "Predictions are consistently optimistic."
+                "Predictions are consistently optimistic.",
             )
             recommendations.append(
-                "Apply conservative adjustment factor (-10% to -20%) to predictions"
+                "Apply conservative adjustment factor (-10% to -20%) to predictions",
             )
         elif accuracy["underestimate_rate"] > 60:
             insights.append(
                 f"Tendency to underestimate profits ({accuracy['underestimate_rate']:.1f}% of cases). "
-                "Missing profitable opportunities."
+                "Missing profitable opportunities.",
             )
             recommendations.append(
-                "Review cost factors - may be overestimating expenses"
+                "Review cost factors - may be overestimating expenses",
             )
 
         # Analyze variance
@@ -330,10 +329,10 @@ class ClosedLoopLearningSystem:
         if abs(variance_pct) > 30:
             insights.append(
                 f"High profit variance ({variance_pct:.1f}%). "
-                "Actual profits differ significantly from predictions."
+                "Actual profits differ significantly from predictions.",
             )
             recommendations.append(
-                "Improve cost tracking and add contingency buffers"
+                "Improve cost tracking and add contingency buffers",
             )
 
         return {
@@ -343,7 +342,7 @@ class ClosedLoopLearningSystem:
             "confidence_score": self.confidence_tracker.calculate_confidence_score(50),
         }
 
-    def perform_weekly_review(self) -> Dict[str, Any]:
+    def perform_weekly_review(self) -> dict[str, Any]:
         """
         Perform weekly strategy review.
 
@@ -438,7 +437,7 @@ class ClosedLoopLearningSystem:
                 )
                 recommendations.append(
                     f"Focus on {best_mp[0]} marketplace - highest profit generator "
-                    f"(${best_mp[1]['total_profit_dollars']:.2f} this week)"
+                    f"(${best_mp[1]['total_profit_dollars']:.2f} this week)",
                 )
 
             # Best performing strategy
@@ -449,7 +448,7 @@ class ClosedLoopLearningSystem:
                 )
                 recommendations.append(
                     f"Use {best_strategy[0]} strategy - highest win rate "
-                    f"({best_strategy[1]['win_rate']:.1f}%)"
+                    f"({best_strategy[1]['win_rate']:.1f}%)",
                 )
 
             # Create weekly review entry
@@ -475,7 +474,7 @@ class ClosedLoopLearningSystem:
 
             logger.info(
                 f"Weekly review completed - {len(entries)} jobs analyzed, "
-                f"{len(recommendations)} recommendations generated"
+                f"{len(recommendations)} recommendations generated",
             )
 
             return {
@@ -497,7 +496,7 @@ class ClosedLoopLearningSystem:
     def _maybe_adjust_strategy(
         self,
         marketplace: str,
-        strategy_type: Optional[str],
+        strategy_type: str | None,
     ) -> None:
         """
         Adjust strategy if enough data has been collected.
@@ -521,18 +520,18 @@ class ClosedLoopLearningSystem:
             if count >= self.MIN_SAMPLES_FOR_ADJUSTMENT:
                 # Get recent accuracy
                 accuracy = self.calculate_prediction_accuracy(
-                    marketplace=marketplace, limit=50
+                    marketplace=marketplace, limit=50,
                 )
 
                 # Adjust if accuracy is poor
                 if accuracy.get("accuracy_rate", 100) < 60:
                     logger.info(
                         f"Triggering strategy adjustment for {marketplace} - "
-                        f"accuracy rate {accuracy['accuracy_rate']:.1f}%"
+                        f"accuracy rate {accuracy['accuracy_rate']:.1f}%",
                     )
 
                     self.adjustment_algorithm.adjust_conservatism(
-                        reason=AdjustmentReason.POOR_PERFORMANCE
+                        reason=AdjustmentReason.POOR_PERFORMANCE,
                     )
 
                     # Record adjustment
@@ -570,9 +569,9 @@ class ClosedLoopLearningSystem:
     def get_learning_history(
         self,
         limit: int = 100,
-        event_type: Optional[LearningEventType] = None,
-        marketplace: Optional[str] = None,
-    ) -> List[LearningEntry]:
+        event_type: LearningEventType | None = None,
+        marketplace: str | None = None,
+    ) -> list[LearningEntry]:
         """
         Get learning history.
 
@@ -602,7 +601,7 @@ class ClosedLoopLearningSystem:
 
 
 # Global singleton instance
-_learning_system_instance: Optional[ClosedLoopLearningSystem] = None
+_learning_system_instance: ClosedLoopLearningSystem | None = None
 
 
 def get_learning_system() -> ClosedLoopLearningSystem:

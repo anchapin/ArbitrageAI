@@ -8,11 +8,11 @@ Issue #6: Decouple Experience Vector Database from task execution flow
 """
 
 import asyncio
-import time
-from typing import Optional, List, Dict, Any
-from datetime import datetime, timezone
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from enum import Enum
+import time
+from typing import Any
 
 from src.experience_vector_db import ExperienceVectorDB, FewShotExample
 from src.utils.logger import get_logger
@@ -96,14 +96,14 @@ class AsyncRAGCircuitBreaker:
             self.state = CircuitBreakerState.OPEN
             self.open_at = time.time()
             logger.warning(
-                "Circuit breaker: transitioning to OPEN (half-open test failed)"
+                "Circuit breaker: transitioning to OPEN (half-open test failed)",
             )
         elif self.failure_count >= self.config.failure_threshold:
             self.state = CircuitBreakerState.OPEN
             self.open_at = time.time()
             logger.warning(
                 f"Circuit breaker: transitioning to OPEN "
-                f"({self.failure_count} failures)"
+                f"({self.failure_count} failures)",
             )
 
     def state_changed(self) -> bool:
@@ -116,7 +116,7 @@ class AsyncRAGCircuitBreaker:
 class CachedFewShotQuery:
     """Cached few-shot query result with integrity validation."""
 
-    examples: List[FewShotExample]
+    examples: list[FewShotExample]
     cached_at: datetime
     version: int = 1  # Cache version for invalidation tracking
     circuit_breaker_state: str = "closed"  # State when cached
@@ -157,7 +157,7 @@ class AsyncRAGService:
         self.circuit_breaker = AsyncRAGCircuitBreaker(circuit_breaker_config)
 
         # Query cache: (user_request_hash, domain) -> CachedFewShotQuery
-        self._query_cache: Dict[tuple, CachedFewShotQuery] = {}
+        self._query_cache: dict[tuple, CachedFewShotQuery] = {}
         self._cache_lock = asyncio.Lock()
 
         # Metrics
@@ -167,8 +167,8 @@ class AsyncRAGService:
         self.fallback_count = 0
 
     async def get_few_shot_examples(
-        self, user_request: str, domain: str, top_k: int = 2
-    ) -> List[FewShotExample]:
+        self, user_request: str, domain: str, top_k: int = 2,
+    ) -> list[FewShotExample]:
         """
         Get few-shot examples for a user request.
 
@@ -196,10 +196,9 @@ class AsyncRAGService:
                     self.cache_hits += 1
                     logger.debug(f"RAG cache hit for {domain}")
                     return cached.examples
-                else:
-                    # Invalidate stale cache entry
-                    del self._query_cache[cache_key]
-                    logger.debug(f"RAG cache invalidated for {domain}")
+                # Invalidate stale cache entry
+                del self._query_cache[cache_key]
+                logger.debug(f"RAG cache invalidated for {domain}")
 
         # Check circuit breaker
         if not self.circuit_breaker.is_allowed():
@@ -214,7 +213,7 @@ class AsyncRAGService:
                 self.vector_db.query_similar_tasks,
                 user_request=user_request,
                 domain=domain,
-                top_k=top_k
+                top_k=top_k,
             )
 
             self.queries_succeeded += 1
@@ -273,14 +272,14 @@ class AsyncRAGService:
             # Get few-shot examples with timeout
             examples = await asyncio.wait_for(
                 self.get_few_shot_examples(
-                    user_request=user_request, domain=domain, top_k=2
+                    user_request=user_request, domain=domain, top_k=2,
                 ),
                 timeout=timeout_seconds,
             )
 
             if examples:
                 enriched = self.vector_db.build_few_shot_system_prompt(
-                    base_prompt=base_prompt, examples=examples
+                    base_prompt=base_prompt, examples=examples,
                 )
                 logger.debug(f"System prompt enriched with {len(examples)} examples")
                 return enriched
@@ -288,7 +287,7 @@ class AsyncRAGService:
         except asyncio.TimeoutError:
             logger.warning(
                 f"RAG enrichment timed out after {timeout_seconds}s, "
-                f"using zero-shot prompt"
+                f"using zero-shot prompt",
             )
             self.fallback_count += 1
         except Exception as e:
@@ -298,7 +297,7 @@ class AsyncRAGService:
         # Return base prompt on any failure
         return base_prompt
 
-    def get_metrics(self) -> Dict[str, Any]:
+    def get_metrics(self) -> dict[str, Any]:
         """Get RAG service metrics."""
         success_rate = (
             (self.queries_succeeded / self.queries_attempted * 100)
@@ -324,7 +323,7 @@ class AsyncRAGService:
 
 
 # Global instance
-_async_rag_service: Optional[AsyncRAGService] = None
+_async_rag_service: AsyncRAGService | None = None
 
 
 def get_async_rag_service(vector_db: ExperienceVectorDB) -> AsyncRAGService:

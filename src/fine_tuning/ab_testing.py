@@ -4,12 +4,12 @@ A/B Testing Framework for Fine-Tuned Models
 Compare fine-tuned models against base models in production.
 """
 
-import json
-from dataclasses import dataclass, asdict
-from typing import Optional, Dict, Any, List
+from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from enum import Enum
+import json
 import logging
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +45,7 @@ class ABTestResult:
     confidence_level: float
     started_at: str
     completed_at: str
-    metadata: Dict[str, Any]
+    metadata: dict[str, Any]
 
 
 class ABTestFramework:
@@ -61,16 +61,16 @@ class ABTestFramework:
 
     def __init__(self):
         """Initialize A/B testing framework."""
-        self.tests: Dict[str, ABTestResult] = {}
-        self.ongoing_tests: Dict[str, Dict[str, Any]] = {}
+        self.tests: dict[str, ABTestResult] = {}
+        self.ongoing_tests: dict[str, dict[str, Any]] = {}
 
     def create_test(
         self,
         test_id: str,
         model_a: str,
         model_b: str,
-        metadata: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
+        metadata: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         """
         Create a new A/B test.
 
@@ -105,7 +105,7 @@ class ABTestFramework:
         reference: str,
         latency_ms: float,
         cost: float,
-        metadata: Optional[Dict[str, Any]] = None,
+        metadata: dict[str, Any] | None = None,
     ) -> bool:
         """
         Record a sample in the A/B test.
@@ -203,7 +203,7 @@ class ABTestFramework:
 
         # Chi-squared test for statistical significance
         is_significant = self._chi_squared_test(
-            accuracy_a, accuracy_b, len(samples_a), len(samples_b), alpha
+            accuracy_a, accuracy_b, len(samples_a), len(samples_b), alpha,
         )
 
         result = ABTestResult(
@@ -234,13 +234,13 @@ class ABTestFramework:
         logger.info(
             f"Concluded test {test_id}: "
             f"accuracy {accuracy_a:.2%} vs {accuracy_b:.2%}, "
-            f"significant={is_significant}"
+            f"significant={is_significant}",
         )
 
         return result
 
     def _chi_squared_test(
-        self, accuracy_a: float, accuracy_b: float, n_a: int, n_b: int, alpha: float = 0.05
+        self, accuracy_a: float, accuracy_b: float, n_a: int, n_b: int, alpha: float = 0.05,
     ) -> bool:
         """
         Perform chi-squared test for statistical significance.
@@ -277,7 +277,7 @@ class ABTestFramework:
 
         return abs(z) > critical_z
 
-    def get_test_results(self, test_id: str) -> Optional[ABTestResult]:
+    def get_test_results(self, test_id: str) -> ABTestResult | None:
         """
         Get results of a completed test.
 
@@ -289,7 +289,7 @@ class ABTestFramework:
         """
         return self.tests.get(test_id)
 
-    def get_all_results(self) -> List[ABTestResult]:
+    def get_all_results(self) -> list[ABTestResult]:
         """
         Get all completed test results.
 
@@ -326,8 +326,7 @@ class ABTestFramework:
 
         if score_b > score_a:
             return test_result.model_b
-        else:
-            return test_result.model_a
+        return test_result.model_a
 
     def export_results(self, filepath: str) -> None:
         """

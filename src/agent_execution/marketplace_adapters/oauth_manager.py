@@ -7,15 +7,15 @@ Implements OAuth 2.0 three-legged authentication with token refresh.
 Issue #105: Marketplace API Integration - OAuth Flow
 """
 
-import secrets
-import time
-from typing import Optional, Dict, Any, Tuple
 from datetime import datetime, timedelta
-from urllib.parse import urlencode, parse_qs
+import secrets
+from typing import Any
+from urllib.parse import urlencode
+
 import httpx
 
-from src.utils.logger import get_logger
 from src.config.config_manager import ConfigManager
+from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
 
@@ -29,7 +29,7 @@ class OAuthToken:
         refresh_token: str,
         expires_in: int,
         token_type: str = "Bearer",
-        scope: Optional[str] = None,
+        scope: str | None = None,
     ):
         """
         Initialize OAuth token.
@@ -62,7 +62,7 @@ class OAuthToken:
         now = datetime.utcnow()
         return now >= (self.expires_at - timedelta(seconds=buffer_seconds))
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert token to dictionary."""
         return {
             "access_token": self.access_token,
@@ -75,7 +75,7 @@ class OAuthToken:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "OAuthToken":
+    def from_dict(cls, data: dict[str, Any]) -> "OAuthToken":
         """Create OAuthToken from dictionary."""
         token = cls(
             access_token=data["access_token"],
@@ -147,14 +147,14 @@ class OAuthManager:
             raise ValueError(f"Unsupported platform: {platform}")
 
         self.config = self.PLATFORM_CONFIG[self.platform]
-        self._token: Optional[OAuthToken] = None
-        self._state: Optional[str] = None
+        self._token: OAuthToken | None = None
+        self._state: str | None = None
 
     def generate_authorization_url(
         self,
-        redirect_uri: Optional[str] = None,
-        scope: Optional[str] = None,
-        state: Optional[str] = None,
+        redirect_uri: str | None = None,
+        scope: str | None = None,
+        state: str | None = None,
     ) -> str:
         """
         Generate OAuth authorization URL.
@@ -187,7 +187,7 @@ class OAuthManager:
         self,
         authorization_code: str,
         state: str,
-        redirect_uri: Optional[str] = None,
+        redirect_uri: str | None = None,
     ) -> OAuthToken:
         """
         Exchange authorization code for access token.
@@ -236,7 +236,7 @@ class OAuthManager:
 
         logger.info(
             f"Successfully obtained {self.platform} access token "
-            f"(expires in {self._token.expires_in}s)"
+            f"(expires in {self._token.expires_in}s)",
         )
 
         return self._token
@@ -311,7 +311,7 @@ class OAuthManager:
         self._token = token
         logger.info(f"Set {self.platform} token (expires at {token.expires_at})")
 
-    def get_token(self) -> Optional[OAuthToken]:
+    def get_token(self) -> OAuthToken | None:
         """
         Get current token.
 
@@ -362,7 +362,7 @@ class OAuthTokenStorage:
 
     def __init__(self):
         """Initialize token storage."""
-        self._tokens: Dict[str, OAuthToken] = {}
+        self._tokens: dict[str, OAuthToken] = {}
 
     def store(self, platform: str, token: OAuthToken) -> None:
         """
@@ -375,7 +375,7 @@ class OAuthTokenStorage:
         self._tokens[platform] = token
         logger.debug(f"Stored token for {platform}")
 
-    def retrieve(self, platform: str) -> Optional[OAuthToken]:
+    def retrieve(self, platform: str) -> OAuthToken | None:
         """
         Retrieve token for platform.
 
@@ -420,10 +420,10 @@ class OAuthTokenStorage:
 
 # Global instances
 _token_storage = OAuthTokenStorage()
-_oauth_managers: Dict[str, OAuthManager] = {}
+_oauth_managers: dict[str, OAuthManager] = {}
 
 
-def get_oauth_manager(platform: str) -> Optional[OAuthManager]:
+def get_oauth_manager(platform: str) -> OAuthManager | None:
     """
     Get OAuth manager for platform.
 
@@ -463,7 +463,7 @@ def get_token_storage() -> OAuthTokenStorage:
     return _token_storage
 
 
-async def refresh_all_tokens() -> Dict[str, bool]:
+async def refresh_all_tokens() -> dict[str, bool]:
     """
     Refresh all stored tokens that are expiring.
 

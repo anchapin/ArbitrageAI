@@ -15,21 +15,21 @@ cloud models (GPT-4o) and learn from their successes/failures.
 """
 
 import asyncio
-import json
-import time
 from datetime import datetime, timezone
-from typing import Optional, Dict, Any
 from enum import Enum
+import json
+import pathlib
+import time
+from typing import Any
+
+# Import Traceloop decorators for OpenTelemetry observability
+from traceloop.sdk.decorators import task, workflow
+
+from src.agent_execution.planning import ResearchAndPlanOrchestrator
+from src.llm_service import LLMService
 
 # Import logging module
 from src.utils.logger import get_logger
-
-from src.llm_service import LLMService
-from src.agent_execution.planning import ResearchAndPlanOrchestrator
-
-# Import Traceloop decorators for OpenTelemetry observability
-from traceloop.sdk.decorators import workflow, task
-
 
 # =============================================================================
 # COST CONFIGURATION
@@ -110,8 +110,8 @@ class ProfitCalculator:
         self.cost_config = cost_config or CostConfig()
 
     def calculate_profit_score(
-        self, agent_config: AgentConfig, agent_result: Dict[str, Any], task_revenue: int
-    ) -> Dict[str, Any]:
+        self, agent_config: AgentConfig, agent_result: dict[str, Any], task_revenue: int,
+    ) -> dict[str, Any]:
         """
         Calculate profit score for an agent.
 
@@ -212,23 +212,23 @@ class ArenaAgent:
 
         # Create the orchestrator with this agent's LLM
         self.orchestrator = ResearchAndPlanOrchestrator(
-            llm_service=config.llm_service, domain=domain
+            llm_service=config.llm_service, domain=domain,
         )
 
-        self.result: Optional[Dict[str, Any]] = None
+        self.result: dict[str, Any] | None = None
         self.execution_time: float = 0
 
     async def execute(
         self,
         user_request: str,
-        csv_data: Optional[str] = None,
-        file_content: Optional[str] = None,
-        filename: Optional[str] = None,
-        file_type: Optional[str] = None,
-        api_key: Optional[str] = None,
-        task_type: Optional[str] = None,
-        output_format: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        csv_data: str | None = None,
+        file_content: str | None = None,
+        filename: str | None = None,
+        file_type: str | None = None,
+        api_key: str | None = None,
+        task_type: str | None = None,
+        output_format: str | None = None,
+    ) -> dict[str, Any]:
         """
         Execute the task as this agent.
 
@@ -321,7 +321,7 @@ class ArenaRouter:
                 max_retries=0,
                 planning_time_multiplier=2.0,  # More planning time
             )
-        elif self.competition_type == CompetitionType.PROMPT:
+        if self.competition_type == CompetitionType.PROMPT:
             # Agent A: Cautious & Detailed prompt
             return AgentConfig(
                 name="Agent_A_Cautious",
@@ -329,14 +329,14 @@ class ArenaRouter:
                 system_prompt_style="cautious_detailed",
                 max_retries=3,
             )
-        else:  # TOOLING
-            # Agent A: 3 retries allowed
-            return AgentConfig(
-                name="Agent_A_Retries",
-                llm_service=LLMService.with_cloud(model="gpt-4o-mini"),
-                system_prompt_style="standard",
-                max_retries=3,
-            )
+        # TOOLING
+        # Agent A: 3 retries allowed
+        return AgentConfig(
+            name="Agent_A_Retries",
+            llm_service=LLMService.with_cloud(model="gpt-4o-mini"),
+            system_prompt_style="standard",
+            max_retries=3,
+        )
 
     def _create_agent_b(self) -> AgentConfig:
         """Create Agent B - Cloud model (GPT-4o-mini)."""
@@ -348,7 +348,7 @@ class ArenaRouter:
                 system_prompt_style="standard",
                 max_retries=2,
             )
-        elif self.competition_type == CompetitionType.PROMPT:
+        if self.competition_type == CompetitionType.PROMPT:
             # Agent B: Fast & Minimalist prompt
             return AgentConfig(
                 name="Agent_B_Fast",
@@ -356,30 +356,30 @@ class ArenaRouter:
                 system_prompt_style="fast_minimalist",
                 max_retries=1,
             )
-        else:  # TOOLING
-            # Agent B: 0 retries but longer planning
-            return AgentConfig(
-                name="Agent_B_NoRetries",
-                llm_service=LLMService.with_cloud(model="gpt-4o-mini"),
-                system_prompt_style="standard",
-                max_retries=0,
-                planning_time_multiplier=2.0,
-            )
+        # TOOLING
+        # Agent B: 0 retries but longer planning
+        return AgentConfig(
+            name="Agent_B_NoRetries",
+            llm_service=LLMService.with_cloud(model="gpt-4o-mini"),
+            system_prompt_style="standard",
+            max_retries=0,
+            planning_time_multiplier=2.0,
+        )
 
     @task(name="arena_competition")
     async def run_arena(
         self,
         user_request: str,
         domain: str,
-        csv_data: Optional[str] = None,
-        file_content: Optional[str] = None,
-        filename: Optional[str] = None,
-        file_type: Optional[str] = None,
-        api_key: Optional[str] = None,
-        task_type: Optional[str] = None,
-        output_format: Optional[str] = None,
+        csv_data: str | None = None,
+        file_content: str | None = None,
+        filename: str | None = None,
+        file_type: str | None = None,
+        api_key: str | None = None,
+        task_type: str | None = None,
+        output_format: str | None = None,
         task_revenue: int = None,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Run the arena competition.
 
@@ -405,20 +405,20 @@ class ArenaRouter:
 
         # Create arena agents
         arena_agent_a = ArenaAgent(
-            config=self.agent_a, domain=domain, max_retries=self.agent_a.max_retries
+            config=self.agent_a, domain=domain, max_retries=self.agent_a.max_retries,
         )
 
         arena_agent_b = ArenaAgent(
-            config=self.agent_b, domain=domain, max_retries=self.agent_b.max_retries
+            config=self.agent_b, domain=domain, max_retries=self.agent_b.max_retries,
         )
 
         # Run both agents in parallel
         logger.info(f"Starting Arena Competition: {self.competition_type.value}")
         logger.info(
-            f"Agent A: {self.agent_a.name} ({self.agent_a.llm_service.get_model()})"
+            f"Agent A: {self.agent_a.name} ({self.agent_a.llm_service.get_model()})",
         )
         logger.info(
-            f"Agent B: {self.agent_b.name} ({self.agent_b.llm_service.get_model()})"
+            f"Agent B: {self.agent_b.name} ({self.agent_b.llm_service.get_model()})",
         )
 
         # Execute both agents concurrently
@@ -447,24 +447,24 @@ class ArenaRouter:
         result_a, result_b = await asyncio.gather(task_a, task_b)
 
         logger.info(
-            f"Agent A completed in {result_a.get('execution_time_seconds', 0):.1f}s"
+            f"Agent A completed in {result_a.get('execution_time_seconds', 0):.1f}s",
         )
         logger.info(
-            f"Agent B completed in {result_b.get('execution_time_seconds', 0):.1f}s"
+            f"Agent B completed in {result_b.get('execution_time_seconds', 0):.1f}s",
         )
 
         # Calculate profit scores
         profit_a = self.profit_calculator.calculate_profit_score(
-            agent_config=self.agent_a, agent_result=result_a, task_revenue=task_revenue
+            agent_config=self.agent_a, agent_result=result_a, task_revenue=task_revenue,
         )
 
         profit_b = self.profit_calculator.calculate_profit_score(
-            agent_config=self.agent_b, agent_result=result_b, task_revenue=task_revenue
+            agent_config=self.agent_b, agent_result=result_b, task_revenue=task_revenue,
         )
 
         # Determine winner
         winner, win_reason = self._determine_winner(
-            result_a, result_b, profit_a, profit_b
+            result_a, result_b, profit_a, profit_b,
         )
 
         # Prepare final result
@@ -495,10 +495,10 @@ class ArenaRouter:
 
     def _determine_winner(
         self,
-        result_a: Dict[str, Any],
-        result_b: Dict[str, Any],
-        profit_a: Dict[str, Any],
-        profit_b: Dict[str, Any],
+        result_a: dict[str, Any],
+        result_b: dict[str, Any],
+        profit_a: dict[str, Any],
+        profit_b: dict[str, Any],
     ) -> tuple:
         """
         Determine the winner based on quality + profit.
@@ -524,18 +524,16 @@ class ArenaRouter:
                     "agent_a",
                     f"Higher profit: ${profit_a['profit'] / 100:.2f} vs ${profit_b['profit'] / 100:.2f}",
                 )
-            else:
-                return (
-                    "agent_b",
-                    f"Higher profit: ${profit_b['profit'] / 100:.2f} vs ${profit_a['profit'] / 100:.2f}",
-                )
+            return (
+                "agent_b",
+                f"Higher profit: ${profit_b['profit'] / 100:.2f} vs ${profit_a['profit'] / 100:.2f}",
+            )
 
         # Case 3: Both fail - lower loss wins
         if not approved_a and not approved_b:
             if profit_a["profit"] > profit_b["profit"]:
                 return "agent_a", "Both failed, but lower loss"
-            else:
-                return "agent_b", "Both failed, but lower loss"
+            return "agent_b", "Both failed, but lower loss"
 
         # Case 4: Edge case (shouldn't reach here)
         return "agent_a", "Default to Agent A"
@@ -558,7 +556,7 @@ class ArenaLearningLogger:
         self.dpo_dataset_path = "data/dpo_dataset.jsonl"
         self.logger = get_logger(__name__)
 
-    def log_winner(self, arena_result: Dict[str, Any], task_data: Dict[str, Any]):
+    def log_winner(self, arena_result: dict[str, Any], task_data: dict[str, Any]):
         """
         Log winning example to ExperienceVectorDB and DistillationDataCollector.
         """
@@ -597,7 +595,7 @@ class ArenaLearningLogger:
         except Exception as e:
             self.logger.warning(f"Failed to log to DistillationDataCollector: {e}")
 
-    def log_loser(self, arena_result: Dict[str, Any], task_data: Dict[str, Any]):
+    def log_loser(self, arena_result: dict[str, Any], task_data: dict[str, Any]):
         """
         Log losing example to DPO dataset for preference optimization.
         """
@@ -643,14 +641,14 @@ class ArenaLearningLogger:
         try:
             import os
 
-            os.makedirs(os.path.dirname(self.dpo_dataset_path), exist_ok=True)
+            os.makedirs(pathlib.Path(self.dpo_dataset_path).parent, exist_ok=True)
             with open(self.dpo_dataset_path, "a") as f:
                 f.write(json.dumps(dpo_example) + "\n")
             self.logger.info("Logged loser to DPO dataset")
         except Exception as e:
             self.logger.warning(f"Failed to log to DPO dataset: {e}")
 
-    def _extract_code(self, result: Dict[str, Any]) -> str:
+    def _extract_code(self, result: dict[str, Any]) -> str:
         """Extract generated code from agent result."""
         # Try various paths where code might be stored
         steps = result.get("steps", {})
@@ -678,16 +676,16 @@ class ArenaLearningLogger:
 async def run_agent_arena(
     user_request: str,
     domain: str,
-    csv_data: Optional[str] = None,
-    file_content: Optional[str] = None,
-    filename: Optional[str] = None,
-    file_type: Optional[str] = None,
-    api_key: Optional[str] = None,
+    csv_data: str | None = None,
+    file_content: str | None = None,
+    filename: str | None = None,
+    file_type: str | None = None,
+    api_key: str | None = None,
     competition_type: CompetitionType = CompetitionType.MODEL,
     task_revenue: int = None,
     enable_learning: bool = True,
-    task_data: Optional[Dict[str, Any]] = None,
-) -> Dict[str, Any]:
+    task_data: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     """
     Convenience function to run an arena competition.
 
@@ -749,7 +747,7 @@ if __name__ == "__main__":
         )
 
         logger.info(
-            f"Arena Result - Winner: {result['winner']}, Reason: {result['win_reason']}"
+            f"Arena Result - Winner: {result['winner']}, Reason: {result['win_reason']}",
         )
 
         # Profit breakdown
@@ -760,7 +758,7 @@ if __name__ == "__main__":
             f"LLM Cost: ${profit['llm_cost'] / 100:.2f}, "
             f"E2B Cost: ${profit['e2b_cost'] / 100:.2f}, "
             f"Total Cost: ${profit['total_cost'] / 100:.2f}, "
-            f"Profit: ${profit['profit'] / 100:.2f}"
+            f"Profit: ${profit['profit'] / 100:.2f}",
         )
 
     # Run example

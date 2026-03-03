@@ -22,18 +22,20 @@ Usage:
 """
 
 import asyncio
+from dataclasses import asdict, dataclass
+from datetime import datetime
+from enum import Enum as PyEnum
 import json
 import time
-from datetime import datetime
-from typing import Dict, List, Optional, Set, Any, Union
-from dataclasses import dataclass, asdict
-from enum import Enum as PyEnum
+from typing import Any
+
 from fastapi import WebSocket, WebSocketDisconnect
 from fastapi.websockets import WebSocketState
 import jwt
+from sqlalchemy.exc import IntegrityError, OperationalError
 
-from ..utils.logger import get_logger
 from ..config import Config
+from ..utils.logger import get_logger
 
 logger = get_logger(__name__)
 
@@ -92,14 +94,14 @@ class WebSocketMessage:
     """WebSocket message data structure."""
     type: str
     timestamp: float
-    data: Dict[str, Any]
-    
+    data: dict[str, Any]
+
     def to_json(self) -> str:
         """Convert message to JSON string."""
         return json.dumps({
             "type": self.type,
             "timestamp": self.timestamp,
-            "data": self.data
+            "data": self.data,
         })
 
 
@@ -109,10 +111,10 @@ class TaskUpdateData:
     task_id: str
     status: str
     message: str
-    progress: Optional[float] = None
-    estimated_completion: Optional[str] = None
-    result_url: Optional[str] = None
-    error_details: Optional[str] = None
+    progress: float | None = None
+    estimated_completion: str | None = None
+    result_url: str | None = None
+    error_details: str | None = None
 
 
 @dataclass
@@ -123,7 +125,7 @@ class BidUpdateData:
     status: str
     message: str
     marketplace: str
-    bid_amount: Optional[int] = None
+    bid_amount: int | None = None
 
 
 @dataclass
@@ -132,7 +134,7 @@ class NotificationData:
     type: str
     title: str
     message: str
-    duration: Optional[int] = None  # milliseconds
+    duration: int | None = None  # milliseconds
     persistent: bool = False
 
 
@@ -143,52 +145,51 @@ class InteractiveResponseData:
     task_id: str
     success: bool
     message: str
-    data: Optional[Dict[str, Any]] = None
+    data: dict[str, Any] | None = None
 
 
 class WebSocketAuthError(Exception):
     """Authentication error for WebSocket connections."""
-    pass
 
 
 class WebSocketManager:
     """WebSocket connection manager with authentication and real-time updates."""
-    
-    def __init__(self, config: Optional[Config] = None):
+
+    def __init__(self, config: Config | None = None):
         self.config = config or Config()
-        
+
         # Connection management
-        self.active_connections: Dict[str, WebSocket] = {}
-        self.client_sessions: Dict[str, Dict[str, Any]] = {}
-        self.connection_pools: Dict[str, Set[str]] = {}  # Pool -> client IDs
-        
+        self.active_connections: dict[str, WebSocket] = {}
+        self.client_sessions: dict[str, dict[str, Any]] = {}
+        self.connection_pools: dict[str, set[str]] = {}  # Pool -> client IDs
+
         # Task tracking
-        self.task_subscriptions: Dict[str, Set[str]] = {}  # task_id -> client_ids
-        self.bid_subscriptions: Dict[str, Set[str]] = {}   # bid_id -> client_ids
-        
+        self.task_subscriptions: dict[str, set[str]] = {}  # task_id -> client_ids
+        self.bid_subscriptions: dict[str, set[str]] = {}   # bid_id -> client_ids
+
         # Heartbeat management
-        self.heartbeat_tasks: Dict[str, asyncio.Task] = {}
-        self.last_heartbeat: Dict[str, float] = {}
-        
+        self.heartbeat_tasks: dict[str, asyncio.Task] = {}
+        self.last_heartbeat: dict[str, float] = {}
+
         # Rate limiting
-        self.message_rate_limits: Dict[str, List[float]] = {}
+        self.message_rate_limits: dict[str, list[float]] = {}
         self.max_messages_per_minute = 60
-        
+
         # Background tasks
-        self.cleanup_task: Optional[asyncio.Task] = None
+        self.cleanup_task: asyncio.Task | None = None
         self.heartbeat_interval = 30  # seconds
-        
+
         # Authentication
         self.jwt_secret = self.config.JWT_SECRET_KEY
         self.jwt_algorithm = "HS256"
-        
+
         logger.info("WebSocket Manager initialized")
-    
+
     async def start(self):
         """Start background tasks."""
         self.cleanup_task = asyncio.create_task(self._cleanup_loop())
         logger.info("WebSocket Manager started")
-    
+
     async def stop(self):
         """Stop background tasks and close all connections."""
         if self.cleanup_task:
@@ -197,7 +198,7 @@ class WebSocketManager:
                 await self.cleanup_task
             except asyncio.CancelledError:
                 logger.info("Cleanup task cancelled")
-        
+
         # Close all connections
         for client_id, websocket in list(self.active_connections.items()):
             try:
@@ -206,9 +207,9 @@ class WebSocketManager:
                 logger.error(f"Connection error closing connection for {client_id}: {e}", exc_info=True)
             except Exception as e:
                 logger.error(f"Error closing connection for {client_id}: {e}", exc_info=True)
-        
+
         logger.info("WebSocket Manager stopped")
-    
+
     async def authenticate_client(self, websocket: WebSocket, token: str) -> str:
         """Authenticate a client using JWT token."""
         try:
@@ -216,75 +217,75 @@ class WebSocketManager:
             payload = jwt.decode(token, self.jwt_secret, algorithms=[self.jwt_algorithm])
             client_id = payload.get("client_id")
             user_id = payload.get("user_id")
-            
+
             if not client_id or not user_id:
                 raise WebSocketAuthError("Invalid token payload")
-            
+
             # Validate token expiration
             exp = payload.get("exp")
             if exp and datetime.fromtimestamp(exp) < datetime.utcnow():
                 raise WebSocketAuthError("Token expired")
-            
+
             # Store session info
             self.client_sessions[client_id] = {
                 "user_id": user_id,
                 "connected_at": time.time(),
                 "last_activity": time.time(),
                 "authenticated": True,
-                "websocket": websocket
+                "websocket": websocket,
             }
-            
+
             logger.info(f"Client {client_id} authenticated successfully")
             return client_id
-            
+
         except jwt.ExpiredSignatureError:
-            raise WebSocketAuthError("Token expired")
+            raise WebSocketAuthError("Token expired") from None
         except jwt.InvalidTokenError as e:
-            raise WebSocketAuthError(f"Invalid token: {e}")
-    
+            raise WebSocketAuthError(f"Invalid token: {e}") from e
+
     async def connect_client(self, websocket: WebSocket, client_id: str) -> bool:
         """Connect a client to the WebSocket manager."""
         await websocket.accept()
-        
+
         # Check rate limits
         if not self._check_rate_limit(client_id):
             await self._send_message(websocket, WebSocketMessageType.AUTH_RESPONSE, {
                 "success": False,
-                "error": "Rate limit exceeded"
+                "error": "Rate limit exceeded",
             })
             await websocket.close(code=1008)  # Policy violation
             return False
-        
+
         try:
             # Authenticate client
             auth_token = await websocket.receive_text()
             client_id = await self.authenticate_client(websocket, auth_token)
-            
+
             # Store connection
             self.active_connections[client_id] = websocket
             self.last_heartbeat[client_id] = time.time()
-            
+
             # Start heartbeat task
             if client_id in self.heartbeat_tasks:
                 self.heartbeat_tasks[client_id].cancel()
             self.heartbeat_tasks[client_id] = asyncio.create_task(
-                self._heartbeat_loop(client_id)
+                self._heartbeat_loop(client_id),
             )
-            
+
             # Send success response
             await self._send_message(websocket, WebSocketMessageType.AUTH_RESPONSE, {
                 "success": True,
                 "client_id": client_id,
-                "server_time": time.time()
+                "server_time": time.time(),
             })
-            
+
             # Start message handler
             await self._handle_client_messages(client_id)
-            
+
         except WebSocketAuthError as e:
             await self._send_message(websocket, WebSocketMessageType.AUTH_RESPONSE, {
                 "success": False,
-                "error": str(e)
+                "error": str(e),
             })
             await websocket.close(code=1008)  # Policy violation
             return False
@@ -299,9 +300,9 @@ class WebSocketManager:
             logger.error(f"Error connecting client {client_id}: {e}", exc_info=True)
             await websocket.close(code=1011)  # Internal error
             return False
-        
+
         return True
-    
+
     async def disconnect_client(self, client_id: str):
         """Disconnect a client and clean up resources."""
         if client_id in self.active_connections:
@@ -312,81 +313,81 @@ class WebSocketManager:
                 logger.error(f"Connection error closing websocket for {client_id}: {e}", exc_info=True)
             except Exception as e:
                 logger.error(f"Error closing websocket for {client_id}: {e}", exc_info=True)
-        
+
         # Clean up resources
         self.active_connections.pop(client_id, None)
         self.client_sessions.pop(client_id, None)
         self.last_heartbeat.pop(client_id, None)
-        
+
         # Cancel heartbeat task
         if client_id in self.heartbeat_tasks:
             self.heartbeat_tasks[client_id].cancel()
             self.heartbeat_tasks.pop(client_id, None)
-        
+
         # Remove from subscriptions
         for task_id, client_ids in list(self.task_subscriptions.items()):
             client_ids.discard(client_id)
             if not client_ids:
                 self.task_subscriptions.pop(task_id, None)
-        
+
         for bid_id, client_ids in list(self.bid_subscriptions.items()):
             client_ids.discard(client_id)
             if not client_ids:
                 self.bid_subscriptions.pop(bid_id, None)
-        
+
         logger.info(f"Client {client_id} disconnected")
-    
+
     async def subscribe_to_task(self, client_id: str, task_id: str):
         """Subscribe a client to task updates."""
         if client_id not in self.active_connections:
             return False
-        
+
         if task_id not in self.task_subscriptions:
             self.task_subscriptions[task_id] = set()
-        
+
         self.task_subscriptions[task_id].add(client_id)
         logger.debug(f"Client {client_id} subscribed to task {task_id}")
         return True
-    
+
     async def subscribe_to_bid(self, client_id: str, bid_id: str):
         """Subscribe a client to bid updates."""
         if client_id not in self.active_connections:
             return False
-        
+
         if bid_id not in self.bid_subscriptions:
             self.bid_subscriptions[bid_id] = set()
-        
+
         self.bid_subscriptions[bid_id].add(client_id)
         logger.debug(f"Client {client_id} subscribed to bid {bid_id}")
         return True
-    
+
     async def unsubscribe_from_task(self, client_id: str, task_id: str):
         """Unsubscribe a client from task updates."""
         if task_id in self.task_subscriptions:
             self.task_subscriptions[task_id].discard(client_id)
             if not self.task_subscriptions[task_id]:
                 self.task_subscriptions.pop(task_id, None)
-    
+
     async def unsubscribe_from_bid(self, client_id: str, bid_id: str):
         """Unsubscribe a client from bid updates."""
         if bid_id in self.bid_subscriptions:
             self.bid_subscriptions[bid_id].discard(client_id)
             if not self.bid_subscriptions[bid_id]:
                 self.bid_subscriptions.pop(bid_id, None)
-    
+
     async def send_task_update(
-        self, 
-        task_id: str, 
-        status: Union[TaskStatus, str], 
+        self,
+        task_id: str,
+        status: TaskStatus | str,
         message: str,
-        progress: Optional[float] = None,
-        estimated_completion: Optional[datetime] = None,
-        result_url: Optional[str] = None,
-        error_details: Optional[str] = None
+        progress: float | None = None,
+        estimated_completion: datetime | None = None,
+        result_url: str | None = None,
+        error_details: str | None = None,
     ):
         """Send task status update to all subscribed clients."""
         status_str = status.value if isinstance(status, TaskStatus) else status
-        
+
         data = TaskUpdateData(
             task_id=task_id,
             status=status_str,
@@ -394,142 +395,142 @@ class WebSocketManager:
             progress=progress,
             estimated_completion=estimated_completion.isoformat() if estimated_completion else None,
             result_url=result_url,
-            error_details=error_details
+            error_details=error_details,
         )
-        
+
         await self._broadcast_to_subscribers(
             self.task_subscriptions.get(task_id, set()),
             WebSocketMessageType.TASK_STATUS_UPDATE,
-            asdict(data)
+            asdict(data),
         )
-    
+
     async def send_task_progress(
-        self, 
-        task_id: str, 
-        progress: float, 
-        message: str = "Task in progress"
+        self,
+        task_id: str,
+        progress: float,
+        message: str = "Task in progress",
     ):
         """Send task progress update."""
         await self.send_task_update(
             task_id=task_id,
             status=TaskStatus.PROCESSING,
             message=message,
-            progress=progress
+            progress=progress,
         )
-    
+
     async def send_task_completed(
         self,
         task_id: str,
         result_url: str,
-        message: str = "Task completed successfully"
+        message: str = "Task completed successfully",
     ):
         """Send task completion notification."""
         data = TaskUpdateData(
             task_id=task_id,
             status=TaskStatus.COMPLETED.value,
             message=message,
-            result_url=result_url
+            result_url=result_url,
         )
         await self._broadcast_to_subscribers(
             self.task_subscriptions.get(task_id, set()),
             WebSocketMessageType.TASK_COMPLETED,
-            asdict(data)
+            asdict(data),
         )
 
     async def send_task_error(
         self,
         task_id: str,
         error_message: str,
-        error_details: Optional[str] = None
+        error_details: str | None = None,
     ):
         """Send task error notification."""
         data = TaskUpdateData(
             task_id=task_id,
             status=TaskStatus.FAILED.value,
             message=error_message,
-            error_details=error_details
+            error_details=error_details,
         )
         await self._broadcast_to_subscribers(
             self.task_subscriptions.get(task_id, set()),
             WebSocketMessageType.TASK_ERROR,
-            asdict(data)
+            asdict(data),
         )
-    
+
     async def send_bid_update(
-        self, 
-        bid_id: str, 
+        self,
+        bid_id: str,
         job_id: str,
-        status: Union[BidStatus, str], 
+        status: BidStatus | str,
         message: str,
         marketplace: str,
-        bid_amount: Optional[int] = None
+        bid_amount: int | None = None,
     ):
         """Send bid status update to all subscribed clients."""
         status_str = status.value if isinstance(status, BidStatus) else status
-        
+
         data = BidUpdateData(
             bid_id=bid_id,
             job_id=job_id,
             status=status_str,
             message=message,
             marketplace=marketplace,
-            bid_amount=bid_amount
+            bid_amount=bid_amount,
         )
-        
+
         await self._broadcast_to_subscribers(
             self.bid_subscriptions.get(bid_id, set()),
             WebSocketMessageType.BID_STATUS_UPDATE,
-            asdict(data)
+            asdict(data),
         )
-    
+
     async def send_notification(
-        self, 
-        client_id: str, 
-        notification_type: Union[NotificationType, str],
-        title: str, 
+        self,
+        client_id: str,
+        notification_type: NotificationType | str,
+        title: str,
         message: str,
-        duration: Optional[int] = None,
-        persistent: bool = False
+        duration: int | None = None,
+        persistent: bool = False,
     ):
         """Send a notification to a specific client."""
         type_str = notification_type.value if isinstance(notification_type, NotificationType) else notification_type
-        
+
         data = NotificationData(
             type=type_str,
             title=title,
             message=message,
             duration=duration,
-            persistent=persistent
+            persistent=persistent,
         )
-        
+
         await self._send_to_client(client_id, WebSocketMessageType.NOTIFICATION, asdict(data))
-    
+
     async def send_system_alert(
-        self, 
-        alert_type: str, 
+        self,
+        alert_type: str,
         message: str,
-        clients: Optional[List[str]] = None
+        clients: list[str] | None = None,
     ):
         """Send system alert to specified clients or all clients."""
         data = {
             "type": alert_type,
             "message": message,
-            "timestamp": time.time()
+            "timestamp": time.time(),
         }
-        
+
         if clients:
             await self._broadcast_to_clients(clients, WebSocketMessageType.SYSTEM_ALERT, data)
         else:
             await self._broadcast_to_all(WebSocketMessageType.SYSTEM_ALERT, data)
-    
+
     async def send_interactive_response(
-        self, 
-        client_id: str, 
+        self,
+        client_id: str,
         action: str,
-        task_id: str, 
+        task_id: str,
         success: bool,
         message: str,
-        data: Optional[Dict[str, Any]] = None
+        data: dict[str, Any] | None = None,
     ):
         """Send interactive action response to client."""
         response_data = InteractiveResponseData(
@@ -537,77 +538,77 @@ class WebSocketManager:
             task_id=task_id,
             success=success,
             message=message,
-            data=data
+            data=data,
         )
-        
+
         await self._send_to_client(client_id, WebSocketMessageType.INTERACTIVE_RESPONSE, asdict(response_data))
-    
+
     async def handle_interactive_action(
-        self, 
-        client_id: str, 
-        action: str, 
-        task_id: str, 
-        params: Dict[str, Any]
+        self,
+        client_id: str,
+        action: str,
+        task_id: str,
+        params: dict[str, Any],
     ):
         """Handle interactive actions from clients (pause, cancel, prioritize)."""
         try:
             # Validate client has permission for this task
             if not await self._validate_task_access(client_id, task_id):
                 await self.send_interactive_response(
-                    client_id, action, task_id, False, "Access denied"
+                    client_id, action, task_id, False, "Access denied",
                 )
                 return
-            
+
             # Handle specific actions
             if action == "pause":
                 result = await self._pause_task(task_id, params)
                 await self.send_interactive_response(
-                    client_id, action, task_id, result["success"], result["message"]
+                    client_id, action, task_id, result["success"], result["message"],
                 )
             elif action == "cancel":
                 result = await self._cancel_task(task_id, params)
                 await self.send_interactive_response(
-                    client_id, action, task_id, result["success"], result["message"]
+                    client_id, action, task_id, result["success"], result["message"],
                 )
             elif action == "prioritize":
                 result = await self._prioritize_task(task_id, params)
                 await self.send_interactive_response(
-                    client_id, action, task_id, result["success"], result["message"]
+                    client_id, action, task_id, result["success"], result["message"],
                 )
             else:
                 await self.send_interactive_response(
-                    client_id, action, task_id, False, f"Unknown action: {action}"
+                    client_id, action, task_id, False, f"Unknown action: {action}",
                 )
 
         except (ValueError, TypeError, KeyError) as e:
             logger.error(f"Error handling interactive action {action} for task {task_id} (data error): {e}", exc_info=True)
             await self.send_interactive_response(
-                client_id, action, task_id, False, f"Internal error: {str(e)}"
+                client_id, action, task_id, False, f"Internal error: {e!s}",
             )
         except Exception as e:
             logger.error(f"Error handling interactive action {action} for task {task_id}: {e}", exc_info=True)
             await self.send_interactive_response(
-                client_id, action, task_id, False, f"Internal error: {str(e)}"
+                client_id, action, task_id, False, f"Internal error: {e!s}",
             )
-    
+
     async def _handle_client_messages(self, client_id: str):
         """Handle incoming messages from a client."""
         websocket = self.active_connections[client_id]
-        
+
         try:
             while websocket.application_state == WebSocketState.CONNECTED:
                 try:
                     message = await asyncio.wait_for(
-                        websocket.receive_text(), 
-                        timeout=1.0
+                        websocket.receive_text(),
+                        timeout=1.0,
                     )
-                    
+
                     # Update last activity
                     self.client_sessions[client_id]["last_activity"] = time.time()
-                    
+
                     # Process message
                     await self._process_client_message(client_id, message)
-                    
+
                 except asyncio.TimeoutError:
                     # Check if connection is still alive
                     if websocket.application_state != WebSocketState.CONNECTED:
@@ -621,14 +622,14 @@ class WebSocketManager:
             logger.error(f"Error handling messages for client {client_id}: {e}", exc_info=True)
         finally:
             await self.disconnect_client(client_id)
-    
+
     async def _process_client_message(self, client_id: str, message: str):
         """Process a message from a client."""
         try:
             data = json.loads(message)
             message_type = data.get("type")
             payload = data.get("data", {})
-            
+
             if message_type == "subscribe_task":
                 await self.subscribe_to_task(client_id, payload.get("task_id"))
             elif message_type == "subscribe_bid":
@@ -639,10 +640,10 @@ class WebSocketManager:
                 await self.unsubscribe_from_bid(client_id, payload.get("bid_id"))
             elif message_type == "interactive_action":
                 await self.handle_interactive_action(
-                    client_id, 
-                    payload.get("action"), 
-                    payload.get("task_id"), 
-                    payload.get("params", {})
+                    client_id,
+                    payload.get("action"),
+                    payload.get("task_id"),
+                    payload.get("params", {}),
                 )
             elif message_type == "heartbeat":
                 self.last_heartbeat[client_id] = time.time()
@@ -655,47 +656,47 @@ class WebSocketManager:
             logger.error(f"Data error processing message from client {client_id}: {e}", exc_info=True)
         except Exception as e:
             logger.error(f"Error processing message from client {client_id}: {e}", exc_info=True)
-    
-    async def _send_message(self, websocket: WebSocket, message_type: WebSocketMessageType, data: Dict[str, Any]):
+
+    async def _send_message(self, websocket: WebSocket, message_type: WebSocketMessageType, data: dict[str, Any]):
         """Send a message to a specific websocket."""
         if websocket.application_state == WebSocketState.CONNECTED:
             message = WebSocketMessage(
                 type=message_type.value,
                 timestamp=time.time(),
-                data=data
+                data=data,
             )
             await websocket.send_text(message.to_json())
-    
-    async def _send_to_client(self, client_id: str, message_type: WebSocketMessageType, data: Dict[str, Any]):
+
+    async def _send_to_client(self, client_id: str, message_type: WebSocketMessageType, data: dict[str, Any]):
         """Send a message to a specific client."""
         if client_id in self.active_connections:
             websocket = self.active_connections[client_id]
             await self._send_message(websocket, message_type, data)
-    
-    async def _broadcast_to_subscribers(self, client_ids: Set[str], message_type: WebSocketMessageType, data: Dict[str, Any]):
+
+    async def _broadcast_to_subscribers(self, client_ids: set[str], message_type: WebSocketMessageType, data: dict[str, Any]):
         """Broadcast a message to a set of subscribed clients."""
         for client_id in client_ids:
             await self._send_to_client(client_id, message_type, data)
-    
-    async def _broadcast_to_clients(self, client_ids: List[str], message_type: WebSocketMessageType, data: Dict[str, Any]):
+
+    async def _broadcast_to_clients(self, client_ids: list[str], message_type: WebSocketMessageType, data: dict[str, Any]):
         """Broadcast a message to specific clients."""
         for client_id in client_ids:
             await self._send_to_client(client_id, message_type, data)
-    
-    async def _broadcast_to_all(self, message_type: WebSocketMessageType, data: Dict[str, Any]):
+
+    async def _broadcast_to_all(self, message_type: WebSocketMessageType, data: dict[str, Any]):
         """Broadcast a message to all connected clients."""
         for client_id in self.active_connections:
             await self._send_to_client(client_id, message_type, data)
-    
+
     async def _heartbeat_loop(self, client_id: str):
         """Send periodic heartbeat messages to a client."""
         websocket = self.active_connections[client_id]
-        
+
         while websocket.application_state == WebSocketState.CONNECTED:
             try:
                 await self._send_message(websocket, WebSocketMessageType.HEARTBEAT, {
                     "timestamp": time.time(),
-                    "server_time": time.time()
+                    "server_time": time.time(),
                 })
                 await asyncio.sleep(self.heartbeat_interval)
             except (ConnectionError, BrokenPipeError) as e:
@@ -706,25 +707,25 @@ class WebSocketManager:
                 logger.error(f"Heartbeat failed for client {client_id}: {e}", exc_info=True)
                 await self.disconnect_client(client_id)
                 break
-    
+
     async def _cleanup_loop(self):
         """Background cleanup task."""
         while True:
             try:
                 await asyncio.sleep(60)  # Run every minute
-                
+
                 # Clean up stale connections
                 current_time = time.time()
                 stale_clients = []
-                
+
                 for client_id, last_time in self.last_heartbeat.items():
                     if current_time - last_time > 120:  # 2 minutes timeout
                         stale_clients.append(client_id)
-                
+
                 for client_id in stale_clients:
                     logger.warning(f"Client {client_id} heartbeat timeout, disconnecting")
                     await self.disconnect_client(client_id)
-                
+
                 # Clean up old rate limit data
                 cutoff_time = current_time - 60
                 for client_id in list(self.message_rate_limits.keys()):
@@ -741,28 +742,28 @@ class WebSocketManager:
                 logger.error(f"Database error in cleanup loop: {e}", exc_info=True)
             except Exception as e:
                 logger.error(f"Error in cleanup loop: {e}", exc_info=True)
-    
+
     def _check_rate_limit(self, client_id: str) -> bool:
         """Check if client has exceeded message rate limit."""
         current_time = time.time()
-        
+
         if client_id not in self.message_rate_limits:
             self.message_rate_limits[client_id] = []
-        
+
         # Remove old timestamps
         self.message_rate_limits[client_id] = [
             timestamp for timestamp in self.message_rate_limits[client_id]
             if current_time - timestamp < 60
         ]
-        
+
         # Check limit
         if len(self.message_rate_limits[client_id]) >= self.max_messages_per_minute:
             return False
-        
+
         # Add current timestamp
         self.message_rate_limits[client_id].append(current_time)
         return True
-    
+
     async def _validate_task_access(self, client_id: str, task_id: str) -> bool:
         """
         Validate that a client has access to a task.
@@ -776,37 +777,36 @@ class WebSocketManager:
         """
         from sqlalchemy import create_engine
         from sqlalchemy.orm import Session
-        
+
         session_data = self.client_sessions.get(client_id, {})
         user_id = session_data.get("user_id")
-        
+
         if not user_id:
             logger.warning(f"No user_id found in session for client {client_id}")
             return False
-        
+
         try:
             # Create database session
             engine = create_engine(self.config.DATABASE_URL)
-            
+
             with Session(engine) as db:
                 # Import Task model here to avoid circular imports
                 from .models import Task
-                
+
                 # Query task by ID and verify ownership
                 task = db.query(Task).filter(
                     Task.id == task_id,
-                    Task.client_id == user_id
+                    Task.client_id == user_id,
                 ).first()
-                
+
                 if task:
                     logger.debug(f"Client {client_id} has access to task {task_id}")
                     return True
-                else:
-                    logger.warning(
-                        f"Client {client_id} (user: {user_id}) attempted "
-                        f"to access unauthorized task {task_id}"
-                    )
-                    return False
+                logger.warning(
+                    f"Client {client_id} (user: {user_id}) attempted "
+                    f"to access unauthorized task {task_id}",
+                )
+                return False
 
         except (OperationalError, IntegrityError) as e:
             logger.error(f"Database error validating task access: {e}", exc_info=True)
@@ -816,8 +816,8 @@ class WebSocketManager:
             logger.error(f"Error validating task access: {e}", exc_info=True)
             # Fail closed - deny access on error
             return False
-    
-    async def _pause_task(self, task_id: str, params: Dict[str, Any]) -> Dict[str, Any]:
+
+    async def _pause_task(self, task_id: str, params: dict[str, Any]) -> dict[str, Any]:
         """
         Pause a task execution.
         
@@ -830,31 +830,31 @@ class WebSocketManager:
         """
         from sqlalchemy import create_engine
         from sqlalchemy.orm import Session
-        
+
         try:
             engine = create_engine(self.config.DATABASE_URL)
-            
+
             with Session(engine) as db:
                 from .models import Task, TaskStatus
-                
+
                 # Query the task
                 task = db.query(Task).filter(Task.id == task_id).first()
-                
+
                 if not task:
                     return {
                         "success": False,
                         "message": f"Task {task_id} not found",
-                        "error_code": "TASK_NOT_FOUND"
+                        "error_code": "TASK_NOT_FOUND",
                     }
-                
+
                 # Check if task can be paused
                 if task.status not in [TaskStatus.PLANNING, TaskStatus.PROCESSING]:
                     return {
                         "success": False,
                         "message": f"Task cannot be paused in status: {task.status}",
-                        "error_code": "INVALID_STATUS_FOR_PAUSE"
+                        "error_code": "INVALID_STATUS_FOR_PAUSE",
                     }
-                
+
                 # Update task status to indicate paused state
                 # Store the original status to resume later
                 previous_status = task.status.value
@@ -863,19 +863,19 @@ class WebSocketManager:
                 task.metadata["paused_at"] = datetime.now().isoformat()
                 task.metadata["previous_status"] = previous_status
                 task.metadata["pause_reason"] = params.get("reason", "User requested")
-                
+
                 db.commit()
-                
+
                 logger.info(f"Task {task_id} paused successfully (previous status: {previous_status})")
-                
+
                 # Send WebSocket notification to subscribers
                 await self._send_pause_notification(task_id, previous_status)
-                
+
                 return {
                     "success": True,
                     "message": f"Task {task_id} paused successfully",
                     "previous_status": previous_status,
-                    "paused_at": task.metadata["paused_at"]
+                    "paused_at": task.metadata["paused_at"],
                 }
 
         except (OperationalError, IntegrityError) as e:
@@ -883,23 +883,23 @@ class WebSocketManager:
             return {
                 "success": False,
                 "message": "Database error occurred",
-                "error_code": "DATABASE_ERROR"
+                "error_code": "DATABASE_ERROR",
             }
         except (KeyError, TypeError, ValueError) as e:
             logger.error(f"Data error pausing task {task_id}: {e}", exc_info=True)
             return {
                 "success": False,
-                "message": f"Failed to pause task: {str(e)}",
-                "error_code": "PAUSE_ERROR"
+                "message": f"Failed to pause task: {e!s}",
+                "error_code": "PAUSE_ERROR",
             }
         except Exception as e:
             logger.error(f"Error pausing task {task_id}: {e}", exc_info=True)
             return {
                 "success": False,
-                "message": f"Failed to pause task: {str(e)}",
-                "error_code": "PAUSE_ERROR"
+                "message": f"Failed to pause task: {e!s}",
+                "error_code": "PAUSE_ERROR",
             }
-    
+
     async def _send_pause_notification(self, task_id: str, previous_status: str):
         """Send pause notification to task subscribers."""
         if task_id in self.task_subscriptions:
@@ -911,14 +911,14 @@ class WebSocketManager:
                     "status": "PAUSED",
                     "previous_status": previous_status,
                     "message": "Task paused by user",
-                    "paused_at": datetime.now().isoformat()
-                }
+                    "paused_at": datetime.now().isoformat(),
+                },
             )
-            
+
             for client_id in self.task_subscriptions[task_id]:
                 await self.send_message(client_id, message)
-    
-    async def _cancel_task(self, task_id: str, params: Dict[str, Any]) -> Dict[str, Any]:
+
+    async def _cancel_task(self, task_id: str, params: dict[str, Any]) -> dict[str, Any]:
         """
         Cancel a task execution.
         
@@ -931,42 +931,42 @@ class WebSocketManager:
         """
         from sqlalchemy import create_engine
         from sqlalchemy.orm import Session
-        
+
         try:
             engine = create_engine(self.config.DATABASE_URL)
-            
+
             with Session(engine) as db:
                 from .models import Task, TaskStatus
-                
+
                 # Query the task
                 task = db.query(Task).filter(Task.id == task_id).first()
-                
+
                 if not task:
                     return {
                         "success": False,
                         "message": f"Task {task_id} not found",
-                        "error_code": "TASK_NOT_FOUND"
+                        "error_code": "TASK_NOT_FOUND",
                     }
-                
+
                 # Check if task can be cancelled
                 cancellable_statuses = [
                     TaskStatus.PENDING,
                     TaskStatus.PLANNING,
                     TaskStatus.PROCESSING,
-                    TaskStatus.REVIEW_REQUIRED
+                    TaskStatus.REVIEW_REQUIRED,
                 ]
-                
+
                 if task.status not in cancellable_statuses:
                     return {
                         "success": False,
                         "message": f"Task cannot be cancelled in status: {task.status}",
-                        "error_code": "INVALID_STATUS_FOR_CANCEL"
+                        "error_code": "INVALID_STATUS_FOR_CANCEL",
                     }
-                
+
                 # Store previous state for audit
                 previous_status = task.status.value
                 cancellation_reason = params.get("reason", "User requested cancellation")
-                
+
                 # Update task status to FAILED with cancellation metadata
                 task.status = TaskStatus.FAILED
                 task.metadata = task.metadata or {}
@@ -975,20 +975,20 @@ class WebSocketManager:
                 task.metadata["cancellation_reason"] = cancellation_reason
                 task.metadata["cancelled_by"] = "user"
                 task.error_message = f"Task cancelled: {cancellation_reason}"
-                
+
                 db.commit()
-                
+
                 logger.info(f"Task {task_id} cancelled successfully (previous status: {previous_status})")
-                
+
                 # Send WebSocket notification to subscribers
                 await self._send_cancel_notification(task_id, previous_status, cancellation_reason)
-                
+
                 return {
                     "success": True,
                     "message": f"Task {task_id} cancelled successfully",
                     "previous_status": previous_status,
                     "cancelled_at": task.metadata["cancelled_at"],
-                    "cancellation_reason": cancellation_reason
+                    "cancellation_reason": cancellation_reason,
                 }
 
         except (OperationalError, IntegrityError) as e:
@@ -996,28 +996,28 @@ class WebSocketManager:
             return {
                 "success": False,
                 "message": "Database error occurred",
-                "error_code": "DATABASE_ERROR"
+                "error_code": "DATABASE_ERROR",
             }
         except (KeyError, TypeError, ValueError) as e:
             logger.error(f"Data error cancelling task {task_id}: {e}", exc_info=True)
             return {
                 "success": False,
-                "message": f"Failed to cancel task: {str(e)}",
-                "error_code": "CANCEL_ERROR"
+                "message": f"Failed to cancel task: {e!s}",
+                "error_code": "CANCEL_ERROR",
             }
         except Exception as e:
             logger.error(f"Error cancelling task {task_id}: {e}", exc_info=True)
             return {
                 "success": False,
-                "message": f"Failed to cancel task: {str(e)}",
-                "error_code": "CANCEL_ERROR"
+                "message": f"Failed to cancel task: {e!s}",
+                "error_code": "CANCEL_ERROR",
             }
-    
+
     async def _send_cancel_notification(
-        self, 
-        task_id: str, 
-        previous_status: str, 
-        cancellation_reason: str
+        self,
+        task_id: str,
+        previous_status: str,
+        cancellation_reason: str,
     ):
         """Send cancellation notification to task subscribers."""
         if task_id in self.task_subscriptions:
@@ -1030,14 +1030,14 @@ class WebSocketManager:
                     "previous_status": previous_status,
                     "message": "Task cancelled by user",
                     "cancellation_reason": cancellation_reason,
-                    "cancelled_at": datetime.now().isoformat()
-                }
+                    "cancelled_at": datetime.now().isoformat(),
+                },
             )
-            
+
             for client_id in self.task_subscriptions[task_id]:
                 await self.send_message(client_id, message)
-    
-    async def _prioritize_task(self, task_id: str, params: Dict[str, Any]) -> Dict[str, Any]:
+
+    async def _prioritize_task(self, task_id: str, params: dict[str, Any]) -> dict[str, Any]:
         """
         Prioritize a task in the execution queue.
         
@@ -1050,59 +1050,59 @@ class WebSocketManager:
         """
         from sqlalchemy import create_engine
         from sqlalchemy.orm import Session
-        
+
         try:
             engine = create_engine(self.config.DATABASE_URL)
-            
+
             with Session(engine) as db:
                 from .models import Task, TaskStatus
-                
+
                 # Query the task
                 task = db.query(Task).filter(Task.id == task_id).first()
-                
+
                 if not task:
                     return {
                         "success": False,
                         "message": f"Task {task_id} not found",
-                        "error_code": "TASK_NOT_FOUND"
+                        "error_code": "TASK_NOT_FOUND",
                     }
-                
+
                 # Check if task can be prioritized
                 prioritizable_statuses = [
                     TaskStatus.PENDING,
                     TaskStatus.PLANNING,
-                    TaskStatus.PROCESSING
+                    TaskStatus.PROCESSING,
                 ]
-                
+
                 if task.status not in prioritizable_statuses:
                     return {
                         "success": False,
                         "message": f"Task cannot be prioritized in status: {task.status}",
-                        "error_code": "INVALID_STATUS_FOR_PRIORITY"
+                        "error_code": "INVALID_STATUS_FOR_PRIORITY",
                     }
-                
+
                 # Get priority level (1-10, where 10 is highest)
                 priority_level = params.get("priority", 5)
                 priority_level = max(1, min(10, priority_level))  # Clamp between 1-10
-                
+
                 # Update task priority in metadata
                 task.metadata = task.metadata or {}
                 previous_priority = task.metadata.get("priority", 5)
                 task.metadata["priority"] = priority_level
                 task.metadata["priority_updated_at"] = datetime.now().isoformat()
                 task.metadata["priority_reason"] = params.get("reason", "User requested")
-                
+
                 db.commit()
-                
+
                 logger.info(
-                    f"Task {task_id} priority updated: {previous_priority} -> {priority_level}"
+                    f"Task {task_id} priority updated: {previous_priority} -> {priority_level}",
                 )
-                
+
                 # Send WebSocket notification to subscribers
                 await self._send_priority_notification(
-                    task_id, 
-                    previous_priority, 
-                    priority_level
+                    task_id,
+                    previous_priority,
+                    priority_level,
                 )
 
                 return {
@@ -1110,7 +1110,7 @@ class WebSocketManager:
                     "message": f"Task {task_id} priority updated to {priority_level}",
                     "previous_priority": previous_priority,
                     "new_priority": priority_level,
-                    "priority_updated_at": task.metadata["priority_updated_at"]
+                    "priority_updated_at": task.metadata["priority_updated_at"],
                 }
 
         except (OperationalError, IntegrityError) as e:
@@ -1118,28 +1118,28 @@ class WebSocketManager:
             return {
                 "success": False,
                 "message": "Database error occurred",
-                "error_code": "DATABASE_ERROR"
+                "error_code": "DATABASE_ERROR",
             }
         except (KeyError, TypeError, ValueError) as e:
             logger.error(f"Data error updating task priority {task_id}: {e}", exc_info=True)
             return {
                 "success": False,
-                "message": f"Failed to update task priority: {str(e)}",
-                "error_code": "PRIORITY_ERROR"
+                "message": f"Failed to update task priority: {e!s}",
+                "error_code": "PRIORITY_ERROR",
             }
         except Exception as e:
             logger.error(f"Error updating task priority {task_id}: {e}", exc_info=True)
             return {
                 "success": False,
-                "message": f"Failed to update task priority: {str(e)}",
-                "error_code": "PRIORITY_ERROR"
+                "message": f"Failed to update task priority: {e!s}",
+                "error_code": "PRIORITY_ERROR",
             }
-    
+
     async def _send_priority_notification(
-        self, 
-        task_id: str, 
-        previous_priority: int, 
-        new_priority: int
+        self,
+        task_id: str,
+        previous_priority: int,
+        new_priority: int,
     ):
         """Send priority update notification to task subscribers."""
         if task_id in self.task_subscriptions:
@@ -1152,29 +1152,29 @@ class WebSocketManager:
                     "previous_priority": previous_priority,
                     "new_priority": new_priority,
                     "message": f"Task priority changed to {new_priority}",
-                    "updated_at": datetime.now().isoformat()
-                }
+                    "updated_at": datetime.now().isoformat(),
+                },
             )
-            
+
             for client_id in self.task_subscriptions[task_id]:
                 await self.send_message(client_id, message)
-    
+
     def get_connection_count(self) -> int:
         """Get the number of active connections."""
         return len(self.active_connections)
-    
-    def get_subscriptions_count(self) -> Dict[str, int]:
+
+    def get_subscriptions_count(self) -> dict[str, int]:
         """Get subscription counts."""
         return {
             "task_subscriptions": len(self.task_subscriptions),
             "bid_subscriptions": len(self.bid_subscriptions),
             "total_subscriptions": sum(len(clients) for clients in self.task_subscriptions.values()) +
-                                 sum(len(clients) for clients in self.bid_subscriptions.values())
+                                 sum(len(clients) for clients in self.bid_subscriptions.values()),
         }
 
 
 # Global WebSocket manager instance
-websocket_manager: Optional[WebSocketManager] = None
+websocket_manager: WebSocketManager | None = None
 
 
 def get_websocket_manager() -> WebSocketManager:

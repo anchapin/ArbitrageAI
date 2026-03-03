@@ -4,13 +4,14 @@ Model Registry and Versioning
 Tracks fine-tuned models, their versions, performance metrics, and deployment status.
 """
 
-import json
-import os
 from dataclasses import dataclass
-from typing import Optional, Dict, Any, List
 from datetime import datetime, timezone
 from enum import Enum
+import json
 import logging
+import os
+import pathlib
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -35,12 +36,12 @@ class FinetuneJobRecord:
     dataset_size: int
     training_time_seconds: float
     cost: float
-    accuracy: Optional[float]
+    accuracy: float | None
     status: str
     started_at: str
-    completed_at: Optional[str]
+    completed_at: str | None
     notes: str
-    metadata: Dict[str, Any]
+    metadata: dict[str, Any]
 
 
 class ModelRegistry:
@@ -55,7 +56,7 @@ class ModelRegistry:
     - Cost tracking per model
     """
 
-    def __init__(self, registry_path: Optional[str] = None):
+    def __init__(self, registry_path: str | None = None):
         """
         Initialize model registry.
 
@@ -64,7 +65,7 @@ class ModelRegistry:
         """
         if registry_path is None:
             data_dir = os.path.join(
-                os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
+                pathlib.Path(pathlib.Path(pathlib.Path(__file__).parent).parent).parent,
                 "data",
                 "fine_tuning",
             )
@@ -72,13 +73,13 @@ class ModelRegistry:
             registry_path = os.path.join(data_dir, "model_registry.json")
 
         self.registry_path = registry_path
-        self.models: Dict[str, List[Dict[str, Any]]] = self._load_registry()
+        self.models: dict[str, list[dict[str, Any]]] = self._load_registry()
 
-    def _load_registry(self) -> Dict[str, List[Dict[str, Any]]]:
+    def _load_registry(self) -> dict[str, list[dict[str, Any]]]:
         """Load registry from file."""
-        if os.path.exists(self.registry_path):
+        if pathlib.Path(self.registry_path).exists():
             try:
-                with open(self.registry_path, "r") as f:
+                with open(self.registry_path) as f:
                     return json.load(f)
             except Exception as e:
                 logger.warning(f"Failed to load registry: {e}")
@@ -96,10 +97,10 @@ class ModelRegistry:
         base_model: str,
         job_id: str,
         dataset_size: int,
-        accuracy: Optional[float] = None,
+        accuracy: float | None = None,
         cost: float = 0.0,
-        metadata: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
+        metadata: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         """
         Register a new fine-tuned model version.
 
@@ -140,7 +141,7 @@ class ModelRegistry:
         logger.info(f"Registered {model_name} v{version}")
         return record
 
-    def get_model_version(self, model_name: str, version: Optional[int] = None) -> Optional[Dict]:
+    def get_model_version(self, model_name: str, version: int | None = None) -> dict | None:
         """
         Get a specific model version.
 
@@ -163,7 +164,7 @@ class ModelRegistry:
 
         return None
 
-    def list_model_versions(self, model_name: str) -> List[Dict[str, Any]]:
+    def list_model_versions(self, model_name: str) -> list[dict[str, Any]]:
         """
         List all versions of a model.
 
@@ -176,7 +177,7 @@ class ModelRegistry:
         return self.models.get(model_name, [])
 
     def set_model_status(
-        self, model_name: str, status: str, version: Optional[int] = None
+        self, model_name: str, status: str, version: int | None = None,
     ) -> bool:
         """
         Update model status.
@@ -230,7 +231,7 @@ class ModelRegistry:
         logger.info(f"Rolled back {model_name} to v{target_version}")
         return True
 
-    def get_deployment_status(self) -> Dict[str, Dict[str, Any]]:
+    def get_deployment_status(self) -> dict[str, dict[str, Any]]:
         """
         Get current deployment status of all models.
 
@@ -251,7 +252,7 @@ class ModelRegistry:
 
         return deployed
 
-    def get_cost_summary(self, model_name: Optional[str] = None) -> Dict[str, Any]:
+    def get_cost_summary(self, model_name: str | None = None) -> dict[str, Any]:
         """
         Get cost summary for model(s).
 
@@ -269,19 +270,18 @@ class ModelRegistry:
                 "versions": len(versions),
                 "total_cost": total_cost,
             }
-        else:
-            # All models
-            summary = {
-                "models": {},
-                "total_cost": 0.0,
-            }
+        # All models
+        summary = {
+            "models": {},
+            "total_cost": 0.0,
+        }
 
-            for name, versions in self.models.items():
-                cost = sum(v.get("cost", 0) for v in versions)
-                summary["models"][name] = {"versions": len(versions), "cost": cost}
-                summary["total_cost"] += cost
+        for name, versions in self.models.items():
+            cost = sum(v.get("cost", 0) for v in versions)
+            summary["models"][name] = {"versions": len(versions), "cost": cost}
+            summary["total_cost"] += cost
 
-            return summary
+        return summary
 
     def export_registry(self, filepath: str) -> None:
         """
@@ -294,7 +294,7 @@ class ModelRegistry:
             json.dump(self.models, f, indent=2)
         logger.info(f"Exported model registry to {filepath}")
 
-    def get_registry_stats(self) -> Dict[str, Any]:
+    def get_registry_stats(self) -> dict[str, Any]:
         """
         Get statistics about the registry.
 

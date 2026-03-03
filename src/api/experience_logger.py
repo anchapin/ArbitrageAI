@@ -1,7 +1,8 @@
-import os
+from datetime import datetime, timezone
 import json
 import logging
-from datetime import datetime, timezone
+import os
+import pathlib
 
 # Setup basic logging for the logger itself
 logging.basicConfig(level=logging.INFO)
@@ -19,7 +20,7 @@ class ExperienceLogger:
         self.dataset_path = dataset_path
 
         # Ensure the data directory exists
-        os.makedirs(os.path.dirname(self.dataset_path), exist_ok=True)
+        os.makedirs(pathlib.Path(self.dataset_path).parent, exist_ok=True)
 
     def log_success(self, task) -> bool:
         """
@@ -61,12 +62,12 @@ class ExperienceLogger:
                 f.write(json.dumps(dataset_entry) + "\n")
 
             logger.info(
-                f"Successfully logged experience for task {task.id} to {self.dataset_path}"
+                f"Successfully logged experience for task {task.id} to {self.dataset_path}",
             )
             return True
 
         except Exception as e:
-            logger.error(f"Failed to log experience for task {task.id}: {str(e)}")
+            logger.error(f"Failed to log experience for task {task.id}: {e!s}")
             return False
 
 

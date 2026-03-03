@@ -5,27 +5,29 @@ Implements marketplace adapter for Upwork platform.
 Handles job searching, proposal placement, and contract management.
 """
 
-from typing import List, Optional, Dict, Any
 from datetime import datetime
+from typing import Any
+
 import httpx
 
+from src.agent_execution.exponential_backoff import ExponentialBackoff
+from src.utils.logger import get_logger
+
 from .base import (
-    MarketplaceAdapter,
-    SearchQuery,
-    SearchResult,
+    AuthenticationError,
     BidProposal,
     BidStatus,
     BidStatusUpdate,
+    InboxMessage,
+    MarketplaceAdapter,
+    MarketplaceError,
+    NotFoundError,
     PlacedBid,
     PricingModel,
-    InboxMessage,
-    MarketplaceError,
-    AuthenticationError,
     RateLimitError,
-    NotFoundError,
+    SearchQuery,
+    SearchResult,
 )
-from src.utils.logger import get_logger
-from src.agent_execution.exponential_backoff import ExponentialBackoff
 
 logger = get_logger(__name__)
 
@@ -48,10 +50,10 @@ class UpworkAdapter(MarketplaceAdapter):
 
     def __init__(
         self,
-        api_key: Optional[str] = None,
-        api_secret: Optional[str] = None,
-        access_token: Optional[str] = None,
-        access_token_secret: Optional[str] = None,
+        api_key: str | None = None,
+        api_secret: str | None = None,
+        access_token: str | None = None,
+        access_token_secret: str | None = None,
     ):
         """
         Initialize Upwork adapter.
@@ -65,8 +67,8 @@ class UpworkAdapter(MarketplaceAdapter):
         super().__init__("upwork", api_key, api_secret)
         self.access_token = access_token
         self.access_token_secret = access_token_secret
-        self.client: Optional[httpx.AsyncClient] = None
-        self.user_id: Optional[str] = None
+        self.client: httpx.AsyncClient | None = None
+        self.user_id: str | None = None
 
     async def authenticate(self) -> bool:
         """
@@ -102,9 +104,9 @@ class UpworkAdapter(MarketplaceAdapter):
             return True
 
         except httpx.HTTPError as e:
-            raise AuthenticationError(f"Upwork authentication failed: {str(e)}")
+            raise AuthenticationError(f"Upwork authentication failed: {e!s}") from e
 
-    async def search(self, query: SearchQuery) -> List[SearchResult]:
+    async def search(self, query: SearchQuery) -> list[SearchResult]:
         """
         Search for jobs on Upwork.
 
@@ -170,14 +172,14 @@ class UpworkAdapter(MarketplaceAdapter):
                 results.append(result)
 
             logger.info(
-                f"Upwork search returned {len(results)} results for '{query.keywords}'"
+                f"Upwork search returned {len(results)} results for '{query.keywords}'",
             )
             return results
 
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 429:
-                raise RateLimitError("Upwork rate limit exceeded")
-            raise MarketplaceError(f"Upwork search failed: {str(e)}")
+                raise RateLimitError("Upwork rate limit exceeded") from e
+            raise MarketplaceError(f"Upwork search failed: {e!s}") from e
 
     async def get_job_details(self, job_id: str) -> SearchResult:
         """
@@ -198,7 +200,7 @@ class UpworkAdapter(MarketplaceAdapter):
 
         try:
             response = await self._request(
-                "GET", f"{self.API_BASE_URL}/{self.API_VERSION}/jobs/{job_id}"
+                "GET", f"{self.API_BASE_URL}/{self.API_VERSION}/jobs/{job_id}",
             )
 
             job = response.get("job", {})
@@ -227,8 +229,8 @@ class UpworkAdapter(MarketplaceAdapter):
 
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 404:
-                raise NotFoundError(f"Job {job_id} not found")
-            raise MarketplaceError(f"Failed to get job details: {str(e)}")
+                raise NotFoundError(f"Job {job_id} not found") from e
+            raise MarketplaceError(f"Failed to get job details: {e!s}") from e
 
     async def place_bid(self, proposal: BidProposal) -> PlacedBid:
         """
@@ -281,8 +283,8 @@ class UpworkAdapter(MarketplaceAdapter):
 
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 429:
-                raise RateLimitError("Upwork rate limit exceeded")
-            raise MarketplaceError(f"Failed to place Upwork proposal: {str(e)}")
+                raise RateLimitError("Upwork rate limit exceeded") from e
+            raise MarketplaceError(f"Failed to place Upwork proposal: {e!s}") from e
 
     async def get_bid_status(self, bid_id: str) -> BidStatusUpdate:
         """
@@ -322,7 +324,7 @@ class UpworkAdapter(MarketplaceAdapter):
                 bid_id=bid_id,
                 job_id=proposal_data.get("job_id", ""),
                 status=status_map.get(
-                    proposal_data.get("status", "").lower(), BidStatus.PENDING
+                    proposal_data.get("status", "").lower(), BidStatus.PENDING,
                 ),
                 last_updated=self._parse_datetime(proposal_data.get("updated_at")),
                 metadata=proposal_data,
@@ -330,8 +332,8 @@ class UpworkAdapter(MarketplaceAdapter):
 
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 404:
-                raise NotFoundError(f"Proposal {bid_id} not found")
-            raise MarketplaceError(f"Failed to get proposal status: {str(e)}")
+                raise NotFoundError(f"Proposal {bid_id} not found") from e
+            raise MarketplaceError(f"Failed to get proposal status: {e!s}") from e
 
     async def withdraw_bid(self, bid_id: str) -> BidStatusUpdate:
         """
@@ -368,10 +370,10 @@ class UpworkAdapter(MarketplaceAdapter):
 
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 404:
-                raise NotFoundError(f"Proposal {bid_id} not found")
-            raise MarketplaceError(f"Failed to withdraw proposal: {str(e)}")
+                raise NotFoundError(f"Proposal {bid_id} not found") from e
+            raise MarketplaceError(f"Failed to withdraw proposal: {e!s}") from e
 
-    async def check_inbox(self) -> List[InboxMessage]:
+    async def check_inbox(self) -> list[InboxMessage]:
         """
         Check for new messages in Upwork inbox.
 
@@ -409,7 +411,7 @@ class UpworkAdapter(MarketplaceAdapter):
             return messages
 
         except httpx.HTTPStatusError as e:
-            raise MarketplaceError(f"Failed to check Upwork inbox: {str(e)}")
+            raise MarketplaceError(f"Failed to check Upwork inbox: {e!s}") from e
 
     async def mark_message_read(self, message_id: str) -> bool:
         """
@@ -437,10 +439,10 @@ class UpworkAdapter(MarketplaceAdapter):
 
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 404:
-                raise NotFoundError(f"Message {message_id} not found")
-            raise MarketplaceError(f"Failed to mark message as read: {str(e)}")
+                raise NotFoundError(f"Message {message_id} not found") from e
+            raise MarketplaceError(f"Failed to mark message as read: {e!s}") from e
 
-    async def sync_portfolio(self, portfolio_items: List[Dict[str, Any]]) -> bool:
+    async def sync_portfolio(self, portfolio_items: list[dict[str, Any]]) -> bool:
         """
         Sync portfolio with Upwork.
 
@@ -475,7 +477,7 @@ class UpworkAdapter(MarketplaceAdapter):
             return True
 
         except httpx.HTTPStatusError as e:
-            raise MarketplaceError(f"Failed to sync Upwork portfolio: {str(e)}")
+            raise MarketplaceError(f"Failed to sync Upwork portfolio: {e!s}") from e
 
     async def close(self) -> None:
         """Clean up resources."""
@@ -492,7 +494,7 @@ class UpworkAdapter(MarketplaceAdapter):
         method: str,
         url: str,
         **kwargs,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Make HTTP request with automatic retry and error handling.
 
@@ -525,7 +527,7 @@ class UpworkAdapter(MarketplaceAdapter):
         backoff = ExponentialBackoff(base_delay=1.0)
         return await backoff.with_retry(_do_request, max_retries=3)
 
-    def _get_auth_headers(self) -> Dict[str, str]:
+    def _get_auth_headers(self) -> dict[str, str]:
         """Get OAuth headers for Upwork API."""
         return {
             "Authorization": f"Bearer {self.access_token}",
@@ -540,13 +542,12 @@ class UpworkAdapter(MarketplaceAdapter):
         """
         if amount < 500:
             return "0"  # Tier 1
-        elif amount < 1000:
+        if amount < 1000:
             return "1"  # Tier 2
-        else:
-            return "2"  # Tier 3+
+        return "2"  # Tier 3+
 
     @staticmethod
-    def _parse_datetime(dt_str: Optional[str]) -> Optional[datetime]:
+    def _parse_datetime(dt_str: str | None) -> datetime | None:
         """Parse datetime string from Upwork API."""
         if not dt_str:
             return None

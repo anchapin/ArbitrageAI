@@ -8,10 +8,11 @@ Issue #6: Decouple Experience Vector Database from task execution flow
 """
 
 import asyncio
-from typing import Callable, Any, Optional, Dict
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from enum import Enum
+from typing import Any
 
 from src.utils.logger import get_logger
 
@@ -39,13 +40,13 @@ class Job:
     task_args: tuple
     task_kwargs: dict
     created_at: datetime
-    started_at: Optional[datetime] = None
-    completed_at: Optional[datetime] = None
-    error: Optional[str] = None
+    started_at: datetime | None = None
+    completed_at: datetime | None = None
+    error: str | None = None
     retry_count: int = 0
     max_retries: int = 3
-    timeout_seconds: Optional[float] = None  # Job-specific timeout
-    fallback_func: Optional[Callable] = None  # Fallback on timeout/failure
+    timeout_seconds: float | None = None  # Job-specific timeout
+    fallback_func: Callable | None = None  # Fallback on timeout/failure
 
 
 class BackgroundJobQueue:
@@ -65,10 +66,10 @@ class BackgroundJobQueue:
 
         # Job storage
         self.pending_queue: asyncio.Queue = asyncio.Queue(maxsize=max_queue_size)
-        self.running_jobs: Dict[str, Job] = {}
-        self.completed_jobs: Dict[str, Job] = {}
-        self.failed_jobs: Dict[str, Job] = {}
-        self.dead_letter_queue: Dict[str, Job] = {}  # Permanently failed jobs
+        self.running_jobs: dict[str, Job] = {}
+        self.completed_jobs: dict[str, Job] = {}
+        self.failed_jobs: dict[str, Job] = {}
+        self.dead_letter_queue: dict[str, Job] = {}  # Permanently failed jobs
 
         # Metrics
         self.jobs_queued = 0
@@ -115,10 +116,10 @@ class BackgroundJobQueue:
         task_func: Callable,
         task_args: tuple = (),
         task_kwargs: dict = None,
-        job_id: Optional[str] = None,
+        job_id: str | None = None,
         max_retries: int = 3,
-        timeout_seconds: Optional[float] = None,
-        fallback_func: Optional[Callable] = None,
+        timeout_seconds: float | None = None,
+        fallback_func: Callable | None = None,
     ) -> str:
         """
         Queue a background job with optional timeout and fallback.
@@ -203,14 +204,14 @@ class BackgroundJobQueue:
                         f"Job execution timeout after {job.timeout_seconds}s"
                     )
                     logger.warning(
-                        f"Worker {worker_id}: job {job.job_id} timed out: {timeout_error}"
+                        f"Worker {worker_id}: job {job.job_id} timed out: {timeout_error}",
                     )
 
                     # Try fallback if available
                     if job.fallback_func:
                         try:
                             logger.info(
-                                f"Worker {worker_id}: executing fallback for {job.job_id}"
+                                f"Worker {worker_id}: executing fallback for {job.job_id}",
                             )
                             await job.fallback_func(*job.task_args, **job.task_kwargs)
                             job.status = JobStatus.SUCCEEDED
@@ -218,19 +219,19 @@ class BackgroundJobQueue:
                             job.error = timeout_error + " (fallback executed)"
                             self.completed_jobs[job.job_id] = job
                             logger.info(
-                                f"Worker {worker_id}: fallback for {job.job_id} succeeded"
+                                f"Worker {worker_id}: fallback for {job.job_id} succeeded",
                             )
                         except Exception as fallback_error:
                             logger.error(
-                                f"Worker {worker_id}: fallback for {job.job_id} failed: {fallback_error}"
+                                f"Worker {worker_id}: fallback for {job.job_id} failed: {fallback_error}",
                             )
                             raise TimeoutError(timeout_error) from fallback_error
                     else:
-                        raise TimeoutError(timeout_error)
+                        raise TimeoutError(timeout_error) from timeout_error
 
             except Exception as e:
                 logger.error(
-                    f"Worker {worker_id}: job {job.job_id} failed: {e}", exc_info=True
+                    f"Worker {worker_id}: job {job.job_id} failed: {e}", exc_info=True,
                 )
 
                 # Retry if attempts remaining
@@ -245,7 +246,7 @@ class BackgroundJobQueue:
                     logger.warning(
                         f"Worker {worker_id}: job {job.job_id} failed, "
                         f"retrying after {backoff_seconds:.2f}s "
-                        f"({job.retry_count}/{job.max_retries}): {e}"
+                        f"({job.retry_count}/{job.max_retries}): {e}",
                     )
 
                     # Re-queue with exponential backoff
@@ -254,7 +255,7 @@ class BackgroundJobQueue:
 
                     logger.debug(
                         f"Worker {worker_id}: job {job.job_id} queued for retry "
-                        f"({job.retry_count}/{job.max_retries})"
+                        f"({job.retry_count}/{job.max_retries})",
                     )
                 else:
                     # Move to dead-letter queue - permanently failed job
@@ -270,14 +271,14 @@ class BackgroundJobQueue:
 
                     logger.error(
                         f"Worker {worker_id}: job {job.job_id} failed permanently "
-                        f"after {job.retry_count} retries: {e}"
+                        f"after {job.retry_count} retries: {e}",
                     )
 
             finally:
                 # Remove from running jobs
                 self.running_jobs.pop(job.job_id, None)
 
-    def get_metrics(self) -> Dict[str, Any]:
+    def get_metrics(self) -> dict[str, Any]:
         """Get queue metrics and health status."""
         return {
             "jobs_queued": self.jobs_queued,
@@ -297,11 +298,11 @@ class BackgroundJobQueue:
             ),
         }
 
-    def get_dead_letter_jobs(self) -> Dict[str, Job]:
+    def get_dead_letter_jobs(self) -> dict[str, Job]:
         """Get all permanently failed jobs from dead-letter queue."""
         return dict(self.dead_letter_queue)
 
-    def get_job_status(self, job_id: str) -> Optional[JobStatus]:
+    def get_job_status(self, job_id: str) -> JobStatus | None:
         """Get the status of a job."""
         if job_id in self.running_jobs:
             return self.running_jobs[job_id].status
@@ -315,7 +316,7 @@ class BackgroundJobQueue:
 
 
 # Global instance
-_background_job_queue: Optional[BackgroundJobQueue] = None
+_background_job_queue: BackgroundJobQueue | None = None
 
 
 def get_background_job_queue() -> BackgroundJobQueue:

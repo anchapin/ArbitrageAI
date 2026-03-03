@@ -7,8 +7,9 @@ Issue #4: Fix async Playwright resource leaks in market scanner
 """
 
 import asyncio
+from collections.abc import Callable
 import random
-from typing import TypeVar, Callable, Any
+from typing import Any, TypeVar
 
 from src.utils.logger import get_logger
 
@@ -29,7 +30,7 @@ class ExponentialBackoff:
     """
 
     def __init__(
-        self, base_delay: float = 1.0, max_delay: float = 60.0, jitter: bool = True
+        self, base_delay: float = 1.0, max_delay: float = 60.0, jitter: bool = True,
     ):
         """
         Initialize backoff strategy.
@@ -70,7 +71,7 @@ class ExponentialBackoff:
         return delay
 
     async def with_retry(
-        self, func: Callable[..., Any], *args, max_retries: int = 3, **kwargs
+        self, func: Callable[..., Any], *args, max_retries: int = 3, **kwargs,
     ) -> Any:
         """
         Execute function with exponential backoff retry.
@@ -103,7 +104,7 @@ class ExponentialBackoff:
 
                 if attempt < max_retries - 1:
                     logger.warning(
-                        f"Operation failed (attempt {attempt + 1}/{max_retries}): {e}"
+                        f"Operation failed (attempt {attempt + 1}/{max_retries}): {e}",
                     )
                     await self.wait(attempt)
                 else:

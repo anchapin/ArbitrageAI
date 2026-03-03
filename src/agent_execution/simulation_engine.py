@@ -61,7 +61,7 @@ class SimulationEngine:
         """Initialize the Simulation Engine."""
         self.training_mode = ConfigManager.get("TRAINING_MODE", False)
         logger.info(
-            f"Simulation Engine initialized - Training Mode: {self.training_mode}"
+            f"Simulation Engine initialized - Training Mode: {self.training_mode}",
         )
 
     def record_simulation_bid(
@@ -122,7 +122,7 @@ class SimulationEngine:
 
             logger.info(
                 f"Recorded simulation bid: {job_title} (${bid_amount_cents / 100:.2f}) "
-                f"Strategy: {strategy_type}, Would have won: {would_have_won}"
+                f"Strategy: {strategy_type}, Would have won: {would_have_won}",
             )
 
             return simulation_bid
@@ -167,12 +167,12 @@ class SimulationEngine:
                 if "start" in date_filter:
                     query = query.filter(
                         SimulationBid.created_at
-                        >= datetime.fromisoformat(date_filter["start"])
+                        >= datetime.fromisoformat(date_filter["start"]),
                     )
                 if "end" in date_filter:
                     query = query.filter(
                         SimulationBid.created_at
-                        <= datetime.fromisoformat(date_filter["end"])
+                        <= datetime.fromisoformat(date_filter["end"]),
                     )
 
             # Get all simulation bids
@@ -242,7 +242,7 @@ class SimulationEngine:
         results = {}
         for strategy in strategies:
             results[strategy] = self.calculate_total_profit(
-                strategy_type=strategy, date_filter=date_filter
+                strategy_type=strategy, date_filter=date_filter,
             )
 
         # Determine best strategy
@@ -289,24 +289,24 @@ class SimulationEngine:
             if win_rate > 60:
                 insights.append(
                     f"{strategy.title()} strategy performing well: "
-                    f"{win_rate:.1f}% win rate with ${profit:.2f} total profit"
+                    f"{win_rate:.1f}% win rate with ${profit:.2f} total profit",
                 )
             elif win_rate < 30:
                 insights.append(
                     f"{strategy.title()} strategy needs improvement: "
-                    f"only {win_rate:.1f}% win rate"
+                    f"only {win_rate:.1f}% win rate",
                 )
 
             # Profit analysis
             if profit > 0:
                 insights.append(
                     f"{strategy.title()} strategy is profitable: "
-                    f"${profit:.2f} total profit across {stats['total_bids']} bids"
+                    f"${profit:.2f} total profit across {stats['total_bids']} bids",
                 )
             else:
                 insights.append(
                     f"{strategy.title()} strategy is not profitable: "
-                    f"-${abs(profit):.2f} loss across {stats['total_bids']} bids"
+                    f"-${abs(profit):.2f} loss across {stats['total_bids']} bids",
                 )
 
         # Compare aggressive vs conservative
@@ -316,17 +316,17 @@ class SimulationEngine:
         if aggressive["total_bids"] > 0 and conservative["total_bids"] > 0:
             if aggressive["win_rate_percentage"] > conservative["win_rate_percentage"]:
                 insights.append(
-                    "Aggressive bidding appears more effective than conservative bidding"
+                    "Aggressive bidding appears more effective than conservative bidding",
                 )
             elif (
                 conservative["win_rate_percentage"] > aggressive["win_rate_percentage"]
             ):
                 insights.append(
-                    "Conservative bidding appears more effective than aggressive bidding"
+                    "Conservative bidding appears more effective than aggressive bidding",
                 )
             else:
                 insights.append(
-                    "Both strategies have similar effectiveness - consider other factors"
+                    "Both strategies have similar effectiveness - consider other factors",
                 )
 
         return insights
@@ -347,7 +347,7 @@ class SimulationEngine:
             Dictionary with detailed strategy summary
         """
         stats = self.calculate_total_profit(
-            strategy_type=strategy_type, date_filter=date_filter
+            strategy_type=strategy_type, date_filter=date_filter,
         )
 
         # Add strategy details
@@ -366,7 +366,7 @@ class SimulationEngine:
         return summary
 
     def get_recent_simulations(
-        self, limit: int = 100, date_filter: dict[str, str] | None = None
+        self, limit: int = 100, date_filter: dict[str, str] | None = None,
     ) -> list[SimulationBid]:
         """
         Get recent simulation bids for review and analysis.
@@ -387,12 +387,12 @@ class SimulationEngine:
                 if "start" in date_filter:
                     query = query.filter(
                         SimulationBid.created_at
-                        >= datetime.fromisoformat(date_filter["start"])
+                        >= datetime.fromisoformat(date_filter["start"]),
                     )
                 if "end" in date_filter:
                     query = query.filter(
                         SimulationBid.created_at
-                        <= datetime.fromisoformat(date_filter["end"])
+                        <= datetime.fromisoformat(date_filter["end"]),
                     )
 
             # Order by created_at desc and limit
@@ -522,7 +522,7 @@ if __name__ == "__main__":
         logger.info(f"Total Profit: ${aggressive_summary['total_profit_dollars']:.2f}")
         logger.info(f"Total Bids: {aggressive_summary['total_bids']}")
         logger.info(
-            f"Wins: {aggressive_summary['wins']}, Losses: {aggressive_summary['losses']}"
+            f"Wins: {aggressive_summary['wins']}, Losses: {aggressive_summary['losses']}",
         )
 
         logger.info("\n" + "=" * 60)

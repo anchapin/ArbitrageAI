@@ -44,8 +44,8 @@ def upgrade(db_session):
         connection.execute(
             text(
                 "CREATE INDEX IF NOT EXISTS idx_task_client_status "
-                "ON tasks(client_email, status)"
-            )
+                "ON tasks(client_email, status)",
+            ),
         )
     except Exception as e:
         logger.info(f"Index idx_task_client_status creation info: {e}")
@@ -56,8 +56,8 @@ def upgrade(db_session):
         connection.execute(
             text(
                 "CREATE INDEX IF NOT EXISTS idx_task_status_created "
-                "ON tasks(status, created_at)"
-            )
+                "ON tasks(status, created_at)",
+            ),
         )
     except Exception as e:
         logger.info(f"Index idx_task_status_created creation info: {e}")
@@ -65,7 +65,7 @@ def upgrade(db_session):
     # Add index on Bid status for filtering
     try:
         connection.execute(
-            text("CREATE INDEX IF NOT EXISTS idx_bid_status ON bids(status)")
+            text("CREATE INDEX IF NOT EXISTS idx_bid_status ON bids(status)"),
         )
     except Exception as e:
         logger.info(f"Index idx_bid_status creation info: {e}")
@@ -76,8 +76,8 @@ def upgrade(db_session):
         connection.execute(
             text(
                 "CREATE INDEX IF NOT EXISTS idx_bid_marketplace_status "
-                "ON bids(marketplace, status)"
-            )
+                "ON bids(marketplace, status)",
+            ),
         )
     except Exception as e:
         logger.info(f"Index idx_bid_marketplace_status creation info: {e}")
@@ -85,7 +85,7 @@ def upgrade(db_session):
     # Add index on Bid created_at for time-range queries
     try:
         connection.execute(
-            text("CREATE INDEX IF NOT EXISTS idx_bid_created_at ON bids(created_at)")
+            text("CREATE INDEX IF NOT EXISTS idx_bid_created_at ON bids(created_at)"),
         )
     except Exception as e:
         logger.info(f"Index idx_bid_created_at creation info: {e}")

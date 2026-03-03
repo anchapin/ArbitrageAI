@@ -66,16 +66,16 @@ def detect_file_type(filename: str, content: bytes | None = None) -> FileType:
 
     if filename_lower.endswith(".csv"):
         return FileType.CSV
-    elif filename_lower.endswith((".xlsx", ".xls")):
+    if filename_lower.endswith((".xlsx", ".xls")):
         return FileType.EXCEL
-    elif filename_lower.endswith(".pdf"):
+    if filename_lower.endswith(".pdf"):
         return FileType.PDF
 
     # Check content magic bytes if available
     if content:
         if content.startswith(b"%PDF"):
             return FileType.PDF
-        elif content.startswith(b"PK\x03\x04"):  # Excel files are ZIP-based
+        if content.startswith(b"PK\x03\x04"):  # Excel files are ZIP-based
             return FileType.EXCEL
 
     return FileType.UNKNOWN
@@ -310,7 +310,7 @@ def parse_pdf(content: bytes) -> dict:
 
 
 def parse_file(
-    file_content: str, filename: str, file_type: str | None = None
+    file_content: str, filename: str, file_type: str | None = None,
 ) -> dict:
     """
     Parse a file based on its type.
@@ -352,7 +352,7 @@ def parse_file(
             csv_content = file_content
         return parse_csv(csv_content)
 
-    elif detected_type == FileType.EXCEL:
+    if detected_type == FileType.EXCEL:
         # Decode base64 to bytes
         try:
             excel_bytes = base64.b64decode(file_content)
@@ -362,7 +362,7 @@ def parse_file(
             excel_bytes = file_content
         return parse_excel(excel_bytes)
 
-    elif detected_type == FileType.PDF:
+    if detected_type == FileType.PDF:
         # Decode base64 to bytes
         try:
             pdf_bytes = base64.b64decode(file_content)
@@ -372,14 +372,13 @@ def parse_file(
             pdf_bytes = file_content
         return parse_pdf(pdf_bytes)
 
-    else:
-        return {
-            "success": False,
-            "error": f"Unsupported file type: {filename}",
-            "headers": [],
-            "data": [],
-            "row_count": 0,
-        }
+    return {
+        "success": False,
+        "error": f"Unsupported file type: {filename}",
+        "headers": [],
+        "data": [],
+        "row_count": 0,
+    }
 
 
 def get_file_type_description(file_type: FileType) -> str:

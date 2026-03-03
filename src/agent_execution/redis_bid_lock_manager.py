@@ -18,16 +18,15 @@ Issue #19: Implement distributed BidLockManager with Redis
 """
 
 import asyncio
-import uuid
-from typing import Dict, Optional
 from contextlib import asynccontextmanager
+import uuid
 
 import redis.asyncio as redis
 from redis.asyncio.client import Redis
 from redis.exceptions import RedisError
 
-from src.utils.logger import get_logger
 from src.config import get_redis_url
+from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
 
@@ -40,7 +39,7 @@ class RedisBidLockManager:
     Safe across multiple processes/instances/servers.
     """
 
-    def __init__(self, redis_url: Optional[str] = None, ttl: int = 300):
+    def __init__(self, redis_url: str | None = None, ttl: int = 300):
         """
         Initialize the RedisBidLockManager.
 
@@ -50,7 +49,7 @@ class RedisBidLockManager:
         """
         self.redis_url = redis_url or get_redis_url()
         self.ttl = ttl
-        self._redis_pool: Optional[Redis] = None
+        self._redis_pool: Redis | None = None
 
         # Metrics
         self._lock_attempts: int = 0
@@ -85,8 +84,8 @@ class RedisBidLockManager:
 
     def _make_holder_id(self) -> str:
         """Generate a unique holder ID (server instance + UUID)."""
-        import socket
         import os
+        import socket
 
         hostname = socket.gethostname()
         pid = os.getpid()
@@ -98,7 +97,7 @@ class RedisBidLockManager:
         marketplace_id: str,
         posting_id: str,
         timeout: float = 10.0,
-        holder_id: Optional[str] = None,
+        holder_id: str | None = None,
     ) -> bool:
         """
         Try to acquire a distributed lock for bidding on a specific posting.
@@ -153,7 +152,7 @@ class RedisBidLockManager:
                     self._lock_successes += 1
                     logger.info(
                         f"Lock acquired: {holder_id} locked {lock_key} "
-                        f"(TTL: {self.ttl}s)"
+                        f"(TTL: {self.ttl}s)",
                     )
                     return True
 
@@ -164,7 +163,7 @@ class RedisBidLockManager:
                     self._lock_conflicts += 1
                     logger.warning(
                         f"Lock timeout: {holder_id} could not acquire "
-                        f"{lock_key} after {elapsed:.1f}s"
+                        f"{lock_key} after {elapsed:.1f}s",
                     )
                     return False
 
@@ -182,7 +181,7 @@ class RedisBidLockManager:
         self,
         marketplace_id: str,
         posting_id: str,
-        holder_id: Optional[str] = None,
+        holder_id: str | None = None,
     ) -> bool:
         """
         Release a previously acquired lock.
@@ -214,7 +213,7 @@ class RedisBidLockManager:
                 if current_holder != holder_id:
                     logger.warning(
                         f"Holder mismatch for {lock_key}: "
-                        f"{holder_id} tried to release but held by {current_holder}"
+                        f"{holder_id} tried to release but held by {current_holder}",
                     )
                     return False
 
@@ -223,12 +222,11 @@ class RedisBidLockManager:
 
             if deleted:
                 logger.info(
-                    f"Lock released: {holder_id or 'unknown'} released {lock_key}"
+                    f"Lock released: {holder_id or 'unknown'} released {lock_key}",
                 )
                 return True
-            else:
-                logger.warning(f"No lock found for {lock_key}")
-                return False
+            logger.warning(f"No lock found for {lock_key}")
+            return False
 
         except RedisError as e:
             self._redis_errors += 1
@@ -241,7 +239,7 @@ class RedisBidLockManager:
         marketplace_id: str,
         posting_id: str,
         timeout: float = 10.0,
-        holder_id: Optional[str] = None,
+        holder_id: str | None = None,
     ):
         """
         Async context manager for acquiring and releasing locks.
@@ -272,7 +270,7 @@ class RedisBidLockManager:
         if not acquired:
             raise TimeoutError(
                 f"Failed to acquire lock for {marketplace_id}:{posting_id} "
-                f"within {timeout}s"
+                f"within {timeout}s",
             )
 
         try:
@@ -284,7 +282,7 @@ class RedisBidLockManager:
                 holder_id=holder_id,
             )
 
-    def get_metrics(self) -> Dict[str, int]:
+    def get_metrics(self) -> dict[str, int]:
         """Get lock manager metrics."""
         return {
             "lock_attempts": self._lock_attempts,
@@ -338,7 +336,7 @@ class RedisBidLockManager:
 
 
 # Global instance (singleton pattern)
-_bid_lock_manager: Optional[RedisBidLockManager] = None
+_bid_lock_manager: RedisBidLockManager | None = None
 
 
 async def get_bid_lock_manager() -> RedisBidLockManager:
@@ -353,7 +351,7 @@ async def get_bid_lock_manager() -> RedisBidLockManager:
 
 
 async def init_bid_lock_manager(
-    redis_url: Optional[str] = None, ttl: int = 300
+    redis_url: str | None = None, ttl: int = 300,
 ) -> RedisBidLockManager:
     """Initialize the global RedisBidLockManager with custom settings."""
     global _bid_lock_manager

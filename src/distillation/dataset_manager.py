@@ -41,7 +41,7 @@ class DistillationDatasetManager:
     """
 
     def __init__(
-        self, curated_file: str | None = None, teacher_file: str | None = None
+        self, curated_file: str | None = None, teacher_file: str | None = None,
     ):
         """
         Initialize the dataset manager.
@@ -218,7 +218,7 @@ class DistillationDatasetManager:
         if output_path is None:
             timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
             output_path = os.path.join(
-                DISTILLATION_DIR, f"unsloth_train_{timestamp}.json"
+                DISTILLATION_DIR, f"unsloth_train_{timestamp}.json",
             )
 
         # Load examples
@@ -256,7 +256,7 @@ class DistillationDatasetManager:
         if output_path is None:
             timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
             output_path = os.path.join(
-                DISTILLATION_DIR, f"ollama_train_{timestamp}.jsonl"
+                DISTILLATION_DIR, f"ollama_train_{timestamp}.jsonl",
             )
 
         # Load examples
@@ -291,7 +291,7 @@ class DistillationDatasetManager:
             "curated_by_task_type": self._count_by_field(curated, "task_type"),
             "curated_by_rating": self._count_by_field(curated, "rating"),
             "avg_response_length": self._avg_field(
-                curated, "response", lambda x: len(x)
+                curated, "response", lambda x: len(x),
             ),
             "avg_prompt_length": self._avg_field(curated, "prompt", lambda x: len(x)),
         }
@@ -305,7 +305,7 @@ class DistillationDatasetManager:
         return counts
 
     def _avg_field(
-        self, examples: list[dict], field: str, transform: Callable = len
+        self, examples: list[dict], field: str, transform: Callable = len,
     ) -> float:
         """Calculate average of a field."""
         if not examples:
@@ -379,16 +379,15 @@ def prepare_training_data(format: str = "unsloth", domain: str | None = None) ->
 
     if format == "unsloth":
         return manager.prepare_for_unsloth(domain=domain)
-    elif format == "ollama":
+    if format == "ollama":
         return manager.prepare_for_ollama(domain=domain)
-    elif format == "alpaca":
+    if format == "alpaca":
         # Use data_collector for alpaca format
         from .data_collector import DistillationDataCollector
 
         collector = DistillationDataCollector()
         return collector.export_for_training(format="alpaca")
-    else:
-        raise ValueError(f"Unknown format: {format}")
+    raise ValueError(f"Unknown format: {format}")
 
 
 if __name__ == "__main__":

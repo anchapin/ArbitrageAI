@@ -4,18 +4,17 @@ Fine-Tuning CLI Tool
 Command-line interface for managing fine-tuning pipeline.
 """
 
-import sys
 import json
-from typing import Optional
 import logging
+import sys
 
-from .dataset_builder import DatasetBuilder, prepare_fine_tuning_dataset
-from .openai_fine_tuner import OpenAIFineTuner
-from .ollama_fine_tuner import OllamaFineTuner
-from .model_evaluator import ModelEvaluator
 from .ab_testing import ABTestFramework
-from .model_registry import ModelRegistry
 from .cost_tracker import CostTracker
+from .dataset_builder import DatasetBuilder, prepare_fine_tuning_dataset
+from .model_evaluator import ModelEvaluator
+from .model_registry import ModelRegistry
+from .ollama_fine_tuner import OllamaFineTuner
+from .openai_fine_tuner import OpenAIFineTuner
 
 logger = logging.getLogger(__name__)
 
@@ -35,8 +34,8 @@ class FineTuningCLI:
         self,
         format: str = "openai",
         min_rating: int = 4,
-        domain: Optional[str] = None,
-        output_dir: Optional[str] = None,
+        domain: str | None = None,
+        output_dir: str | None = None,
     ) -> str:
         """
         Prepare a fine-tuning dataset.
@@ -66,8 +65,8 @@ class FineTuningCLI:
         self,
         model: str,
         training_file: str,
-        suffix: Optional[str] = None,
-        validation_file: Optional[str] = None,
+        suffix: str | None = None,
+        validation_file: str | None = None,
     ) -> None:
         """
         Create an OpenAI fine-tuning job.
@@ -117,7 +116,7 @@ class FineTuningCLI:
         print(f"  Status: {status['status']}")
         print(f"  Model: {status['model']}")
         print(f"  Fine-tuned model: {status['fine_tuned_model']}")
-        if status.get('trained_tokens'):
+        if status.get("trained_tokens"):
             print(f"  Trained tokens: {status['trained_tokens']}")
 
     def create_ollama_finetuning_script(
@@ -175,7 +174,7 @@ class FineTuningCLI:
         latencies = []
 
         try:
-            with open(test_file, "r") as f:
+            with open(test_file) as f:
                 for line in f:
                     data = json.loads(line)
                     predictions.append(data.get("prediction", ""))
@@ -226,7 +225,7 @@ class FineTuningCLI:
         base_model: str,
         job_id: str,
         dataset_size: int,
-        accuracy: Optional[float] = None,
+        accuracy: float | None = None,
         cost: float = 0.0,
     ) -> None:
         """
@@ -318,8 +317,8 @@ class FineTuningCLI:
     def auto_pipeline(
         self,
         base_model: str,
-        domain: Optional[str] = None,
-        suffix: Optional[str] = None,
+        domain: str | None = None,
+        suffix: str | None = None,
     ) -> None:
         """
         Run end-to-end fine-tuning pipeline automatically.

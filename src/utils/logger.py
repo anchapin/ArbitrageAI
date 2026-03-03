@@ -59,7 +59,7 @@ def setup_logging(
     )
 
     simple_formatter = logging.Formatter(
-        "[%(asctime)s] [%(levelname)s] %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
+        "[%(asctime)s] [%(levelname)s] %(message)s", datefmt="%Y-%m-%d %H:%M:%S",
     )
 
     # File handler - rotates at 10MB, keeps 5 backups
@@ -174,7 +174,7 @@ class TaskLogger:
         """Log arena competition start."""
         self.logger.info(
             f"🏟️ Starting Arena Competition: {competition_type} | "
-            f"Agent A: {agent_a} | Agent B: {agent_b}"
+            f"Agent A: {agent_a} | Agent B: {agent_b}",
         )
 
     def arena_completed(self, agent: str, execution_time: float):
@@ -204,7 +204,7 @@ class ArenaLogger:
         self.logger.info(
             f"🏟️ Starting Arena Competition: {competition_type}\n"
             f"   Agent A: {agent_a}\n"
-            f"   Agent B: {agent_b}"
+            f"   Agent B: {agent_b}",
         )
 
     def agent_complete(self, agent_name: str, execution_time: float):
