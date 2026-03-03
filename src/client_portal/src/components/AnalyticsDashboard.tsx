@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Line, Bar, Doughnut, Radar } from 'react-chartjs-2';
+import React, { useState, useEffect, ChangeEvent } from 'react';
+import { Line, Doughnut, Radar } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -12,9 +12,22 @@ import {
   Title,
   Tooltip,
   Legend,
-  Filler
+  Filler,
+  ChartOptions as ChartJSOptions
 } from 'chart.js';
 import './AnalyticsDashboard.css';
+import {
+  KPIData,
+  PredictionData,
+  Predictions,
+  Anomaly,
+  AnomalySeverity,
+  PerformanceMetric,
+  TimeRange,
+  ChartData,
+  Recommendation,
+  TrendDirection
+} from '../types';
 
 // Register Chart.js components
 ChartJS.register(
@@ -33,18 +46,17 @@ ChartJS.register(
 
 const API_BASE_URL = 'http://localhost:8000';
 
-const AnalyticsDashboard = () => {
-  const [kpis, setKpis] = useState(null);
-  const [predictions, setPredictions] = useState({});
-  const [anomalies, setAnomalies] = useState([]);
-  const [performanceMetrics, setPerformanceMetrics] = useState([]);
-  const [recommendations, setRecommendations] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [timeRange, setTimeRange] = useState('24h');
-  const [selectedMetric, setSelectedMetric] = useState('revenue');
+const AnalyticsDashboard: React.FC = () => {
+  const [kpis, setKpis] = useState<KPIData | null>(null);
+  const [predictions, setPredictions] = useState<Predictions>({});
+  const [anomalies, setAnomalies] = useState<Anomaly[]>([]);
+  const [performanceMetrics, setPerformanceMetrics] = useState<PerformanceMetric[]>([]);
+  const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [timeRange, setTimeRange] = useState<TimeRange>('24h');
 
-  // Chart configurations
-  const chartOptions = {
+  // Chart configurations - base options shared across charts
+  const chartOptions: ChartJSOptions = {
     responsive: true,
     plugins: {
       legend: {
@@ -66,39 +78,39 @@ const AnalyticsDashboard = () => {
     fetchAnalyticsData();
   }, [timeRange]);
 
-  const fetchAnalyticsData = async () => {
+  const fetchAnalyticsData = async (): Promise<void> => {
     setLoading(true);
     try {
       // Fetch KPIs
       const kpisResponse = await fetch(`${API_BASE_URL}/api/analytics/kpis?time_range=${timeRange}`);
-      const kpisData = await kpisResponse.json();
+      const kpisData: KPIData = await kpisResponse.json();
       setKpis(kpisData);
 
       // Fetch predictions
       const revenuePredictionResponse = await fetch(`${API_BASE_URL}/api/analytics/predictions/revenue?horizon_hours=24`);
-      const revenuePrediction = await revenuePredictionResponse.json();
-      
+      const revenuePrediction: PredictionData = await revenuePredictionResponse.json();
+
       const tasksPredictionResponse = await fetch(`${API_BASE_URL}/api/analytics/predictions/tasks?horizon_hours=168`);
-      const tasksPrediction = await tasksPredictionResponse.json();
-      
+      const tasksPrediction: PredictionData = await tasksPredictionResponse.json();
+
       setPredictions({
         revenue: revenuePrediction,
         tasks: tasksPrediction
       });
 
       // Fetch anomalies
-      const anomaliesResponse = await fetch(`${API_BASE_URL}/api/analytics/anomalies/${selectedMetric}?time_range=${timeRange}`);
-      const anomaliesData = await anomaliesResponse.json();
+      const anomaliesResponse = await fetch(`${API_BASE_URL}/api/analytics/anomalies/revenue?time_range=${timeRange}`);
+      const anomaliesData: Anomaly[] = await anomaliesResponse.json();
       setAnomalies(anomaliesData);
 
       // Fetch performance metrics
       const performanceResponse = await fetch(`${API_BASE_URL}/api/analytics/performance`);
-      const performanceData = await performanceResponse.json();
+      const performanceData: PerformanceMetric[] = await performanceResponse.json();
       setPerformanceMetrics(performanceData);
 
       // Fetch recommendations
       const recommendationsResponse = await fetch(`${API_BASE_URL}/api/analytics/recommendations`);
-      const recommendationsData = await recommendationsResponse.json();
+      const recommendationsData: Recommendation[] = await recommendationsResponse.json();
       setRecommendations(recommendationsData);
 
     } catch (error) {
@@ -108,7 +120,7 @@ const AnalyticsDashboard = () => {
     }
   };
 
-  const formatCurrency = (value) => {
+  const formatCurrency = (value: number): string => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD',
@@ -116,11 +128,11 @@ const AnalyticsDashboard = () => {
     }).format(value);
   };
 
-  const formatNumber = (value) => {
+  const formatNumber = (value: number): string => {
     return new Intl.NumberFormat('en-US').format(value);
   };
 
-  const getSeverityColor = (severity) => {
+  const getSeverityColor = (severity: AnomalySeverity): string => {
     switch (severity) {
       case 'critical': return '#dc2626';
       case 'high': return '#ea580c';
@@ -130,7 +142,7 @@ const AnalyticsDashboard = () => {
     }
   };
 
-  const getTrendIcon = (trend) => {
+  const getTrendIcon = (trend: TrendDirection): string => {
     switch (trend) {
       case 'up': return '📈';
       case 'down': return '📉';
@@ -140,7 +152,7 @@ const AnalyticsDashboard = () => {
   };
 
   // Chart data
-  const revenueChartData = {
+  const revenueChartData: ChartData = {
     labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
     datasets: [
       {
@@ -153,7 +165,7 @@ const AnalyticsDashboard = () => {
     ],
   };
 
-  const taskCompletionChartData = {
+  const taskCompletionChartData: ChartData = {
     labels: ['Pending', 'Paid', 'Completed', 'Failed'],
     datasets: [
       {
@@ -169,7 +181,7 @@ const AnalyticsDashboard = () => {
     ],
   };
 
-  const performanceChartData = {
+  const performanceChartData: ChartData = {
     labels: ['Completion Time', 'Success Rate', 'Queue Length', 'Response Time'],
     datasets: [
       {
@@ -206,7 +218,7 @@ const AnalyticsDashboard = () => {
         <h1>📊 Analytics Dashboard</h1>
         <div className="time-range-selector">
           <label>Time Range:</label>
-          <select value={timeRange} onChange={(e) => setTimeRange(e.target.value)}>
+          <select value={timeRange} onChange={(e: ChangeEvent<HTMLSelectElement>) => setTimeRange(e.target.value as TimeRange)}>
             <option value="24h">Last 24 Hours</option>
             <option value="7d">Last 7 Days</option>
             <option value="30d">Last 30 Days</option>
@@ -270,7 +282,7 @@ const AnalyticsDashboard = () => {
       <div className="charts-grid">
         <div className="chart-card">
           <h3>Revenue Trend</h3>
-          <Line data={revenueChartData} options={chartOptions} />
+          <Line data={revenueChartData} options={chartOptions as ChartJSOptions<'line'>} />
         </div>
 
         <div className="chart-card">
@@ -280,7 +292,7 @@ const AnalyticsDashboard = () => {
 
         <div className="chart-card">
           <h3>Performance Metrics</h3>
-          <Radar data={performanceChartData} options={{ ...chartOptions, scales: { r: { beginAtZero: true } } }} />
+          <Radar data={performanceChartData} options={{ ...chartOptions, scales: { r: { beginAtZero: true } } } as ChartJSOptions<'radar'>} />
         </div>
       </div>
 
@@ -320,11 +332,11 @@ const AnalyticsDashboard = () => {
         <h2>⚠️ Anomaly Detection</h2>
         {anomalies.length > 0 ? (
           <div className="anomalies-grid">
-            {anomalies.map((anomaly, index) => (
+            {anomalies.map((anomaly: Anomaly, index: number) => (
               <div key={index} className="anomaly-card">
                 <div className="anomaly-header">
                   <span className="anomaly-metric">{anomaly.metric}</span>
-                  <span 
+                  <span
                     className="anomaly-severity"
                     style={{ backgroundColor: getSeverityColor(anomaly.severity) }}
                   >
@@ -352,7 +364,7 @@ const AnalyticsDashboard = () => {
       <div className="performance-section">
         <h2>⚡ Performance Metrics</h2>
         <div className="metrics-grid">
-          {performanceMetrics.map((metric, index) => (
+          {performanceMetrics.map((metric: PerformanceMetric, index: number) => (
             <div key={index} className="metric-card">
               <div className="metric-header">
                 <h4>{metric.name.replace(/_/g, ' ').toUpperCase()}</h4>
@@ -363,9 +375,9 @@ const AnalyticsDashboard = () => {
                 <div className="metric-target">
                   Target: {metric.target} {metric.unit}
                   <div className="metric-progress">
-                    <div 
+                    <div
                       className="metric-progress-bar"
-                      style={{ 
+                      style={{
                         width: `${Math.min((metric.value / metric.target) * 100, 100)}%`,
                         backgroundColor: metric.value <= metric.target ? '#10b981' : '#ef4444'
                       }}
@@ -383,10 +395,10 @@ const AnalyticsDashboard = () => {
         <h2>💡 Recommendations</h2>
         {recommendations.length > 0 ? (
           <div className="recommendations-list">
-            {recommendations.map((recommendation, index) => (
+            {recommendations.map((recommendation: Recommendation, index: number) => (
               <div key={index} className="recommendation-card">
                 <span className="recommendation-icon">🎯</span>
-                <p>{recommendation}</p>
+                <p>{recommendation.text}</p>
               </div>
             ))}
           </div>

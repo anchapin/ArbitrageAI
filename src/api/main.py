@@ -9,12 +9,13 @@ import json
 import re
 import secrets
 import time as _time
+import httpx
 from fastapi import FastAPI, HTTPException, Request, Depends, Header, BackgroundTasks
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel, field_validator, ValidationInfo, Field
+from pydantic import BaseModel, field_validator, ValidationInfo, Field, ValidationError
 from typing import Optional, Any
 from sqlalchemy.orm import Session
-from sqlalchemy.exc import OperationalError
+from sqlalchemy.exc import OperationalError, IntegrityError, SQLAlchemyError
 import stripe
 
 from datetime import datetime, timedelta, timezone
@@ -60,6 +61,12 @@ from ..utils.client_auth import generate_client_token, verify_client_token
 
 # Import Rate Limiting Middleware (Issue #65)
 from .rate_limit_middleware import RateLimitMiddleware
+
+# Import Security Headers Middleware (Issue #149)
+from .security_headers import SecurityHeadersMiddleware
+
+# Import API Versioning (Issue #145)
+from .versioning import APIVersion, get_api_version, add_deprecation_headers, APIVersionMiddleware, setup_api_versioning
 
 # Import contextlib for lifespan
 from contextlib import asynccontextmanager
@@ -438,10 +445,21 @@ async def _escalate_task(db, task, reason: str, error_message: str = None):
         # Commit the savepoint - task status + escalation log are now persisted
         db.commit()
 
+    except (OperationalError, IntegrityError, SQLAlchemyError) as e:
+        db.rollback()
+        # If the savepoint fails, still try to update task status
+        logger.error(f"[ESCALATION] Database error in escalation transaction: {e}", exc_info=True)
+        task.status = TaskStatus.ESCALATION
+        task.escalation_reason = reason
+        task.escalated_at = datetime.now(timezone.utc)
+        task.last_error = error_message
+        task.review_status = ReviewStatus.PENDING
+        db.commit()
+        return
     except Exception as e:
         db.rollback()
         # If the savepoint fails, still try to update task status
-        logger.error(f"[ESCALATION] Error in escalation transaction: {e}")
+        logger.error(f"[ESCALATION] Unexpected error in escalation transaction: {e}", exc_info=True)
         task.status = TaskStatus.ESCALATION
         task.escalation_reason = reason
         task.escalated_at = datetime.now(timezone.utc)
@@ -484,12 +502,19 @@ async def _escalate_task(db, task, reason: str, error_message: str = None):
                 )
 
             db.commit()
+        except (httpx.HTTPError, httpx.TimeoutException, httpx.NetworkError) as e:
+            # Log error but don't raise - task status is already committed
+            escalation_log.notification_attempt_count += 1
+            escalation_log.last_notification_attempt_at = datetime.now(timezone.utc)
+            escalation_log.notification_error = str(e)[:500]
+            logger.error(f"[ESCALATION] HTTP error sending Telegram notification: {e}", exc_info=True)
+            db.commit()
         except Exception as e:
             # Log error but don't raise - task status is already committed
             escalation_log.notification_attempt_count += 1
             escalation_log.last_notification_attempt_at = datetime.now(timezone.utc)
             escalation_log.notification_error = str(e)[:500]
-            logger.error(f"[ESCALATION] Failed to send Telegram notification: {e}")
+            logger.error(f"[ESCALATION] Failed to send Telegram notification: {e}", exc_info=True)
             db.commit()
     elif escalation_log is not None and not should_send_notification:
         # Not first notification or not high-value - just increment attempt count
@@ -656,8 +681,12 @@ Support,180"""
                             "description": user_request,
                         },
                     )
+                except (FileNotFoundError, IOError, OSError) as e:
+                    logger.error(f"Error logging arena learning (file I/O): {e}", exc_info=True)
+                except (KeyError, TypeError, ValueError) as e:
+                    logger.error(f"Error logging arena learning (data error): {e}", exc_info=True)
                 except Exception as e:
-                    logger.error(f"Error logging arena learning: {e}")
+                    logger.error(f"Error logging arena learning: {e}", exc_info=True)
             else:
                 # Arena failed - escalate for human review
                 error_message = (
@@ -930,8 +959,12 @@ Support,180"""
                     logger.info(
                         f"Retrieved {len(few_shot_examples)} few-shot examples via async service"
                     )
+                except (TimeoutError, ConnectionError) as rag_err:
+                    logger.warning(f"Async RAG retrieval failed (network/timeout): {rag_err}")
+                except (KeyError, ValueError, TypeError) as rag_err:
+                    logger.warning(f"Async RAG retrieval failed (data error): {rag_err}")
                 except Exception as rag_err:
-                    logger.warning(f"Async RAG retrieval failed: {rag_err}")
+                    logger.warning(f"Async RAG retrieval failed: {rag_err}", exc_info=True)
 
             # Call executor with pre-fetched examples
             result = execute_task(
@@ -1000,8 +1033,8 @@ Support,180"""
         db.commit()
         logger.info(f"processed, final status: {task.status}")
 
-    except Exception as e:
-        logger.error(f"Error processing task: {str(e)}")
+    except (ValueError, TypeError, KeyError) as e:
+        logger.error(f"Error processing task (validation/data error): {str(e)}", exc_info=True)
         # Check if should escalate instead of marking as failed
         try:
             task = db.query(Task).filter(Task.id == task_id).first()
@@ -1023,8 +1056,35 @@ Support,180"""
                     task.status = TaskStatus.FAILED
                     task.review_feedback = error_message
                     db.commit()
-        except Exception as e:
-            logger.error(f"Error in task completion processing: {e}")
+        except Exception as inner_e:
+            logger.error(f"Error in task completion processing: {inner_e}", exc_info=True)
+    except Exception as e:
+        logger.error(f"Error processing task: {str(e)}", exc_info=True)
+        # Check if should escalate instead of marking as failed
+        try:
+            task = db.query(Task).filter(Task.id == task_id).first()
+            if task:
+                error_message = str(e)
+                task.last_error = error_message
+
+                # Check if should escalate based on high-value status
+                should_escalate, escalation_reason = _should_escalate_task(
+                    task, task.retry_count or 0, error_message
+                )
+
+                if should_escalate:
+                    # ESCALATE to human review (Pillar 1.7)
+                    await _escalate_task(db, task, escalation_reason, error_message)
+                    logger.warning(f"ESCALATED for human review - {escalation_reason}")
+                else:
+                    # Mark as FAILED
+                    task.status = TaskStatus.FAILED
+                    task.review_feedback = error_message
+                    db.commit()
+        except (OperationalError, IntegrityError) as inner_e:
+            logger.error(f"Database error in task completion processing: {inner_e}", exc_info=True)
+        except Exception as inner_e:
+            logger.error(f"Error in task completion processing: {inner_e}", exc_info=True)
     finally:
         db.close()
 
@@ -1215,6 +1275,18 @@ app = FastAPI(title="ArbitrageAI API", lifespan=lifespan)
 
 # Add Rate Limiting Middleware (Issue #65)
 app.add_middleware(RateLimitMiddleware)
+
+# Add Security Headers Middleware (Issue #149)
+# This adds essential security headers to all HTTP responses
+app.add_middleware(SecurityHeadersMiddleware)
+
+logger.info("Security headers middleware added")
+
+# Add API Versioning Middleware (Issue #145)
+# This validates API versions from URL path and adds version headers
+app.add_middleware(APIVersionMiddleware)
+
+logger.info("API versioning middleware added")
 
 
 @app.get("/")
@@ -1781,6 +1853,16 @@ async def get_secure_delivery(
         validated = DeliveryTokenRequest(task_id=task_id, token=token)
         validated_task_id = validated.task_id
         validated_token = validated.token
+    except ValidationError as e:
+        logger.warning(f"[DELIVERY] Validation failed: {str(e)} ip={client_ip}")
+        _record_ip_delivery_attempt(client_ip)
+        _record_delivery_failure(task_id, client_ip)
+        raise HTTPException(status_code=400, detail=f"Invalid input: {str(e)}")
+    except (ValueError, TypeError) as e:
+        logger.warning(f"[DELIVERY] Type validation failed: {str(e)} ip={client_ip}")
+        _record_ip_delivery_attempt(client_ip)
+        _record_delivery_failure(task_id, client_ip)
+        raise HTTPException(status_code=400, detail=f"Invalid input: {str(e)}")
     except Exception as e:
         logger.warning(f"[DELIVERY] Validation failed: {str(e)} ip={client_ip}")
         _record_ip_delivery_attempt(client_ip)
@@ -2273,8 +2355,12 @@ async def _log_arena_learning(
         arena_logger.log_loser(arena_result, task_data)
 
         logger.info(f"Learning data logged for task {task_id}")
+    except (FileNotFoundError, IOError, OSError) as e:
+        logger.error(f"Error logging learning data (file I/O): {e}", exc_info=True)
+    except (KeyError, TypeError, ValueError) as e:
+        logger.error(f"Error logging learning data (data error): {e}", exc_info=True)
     except Exception as e:
-        logger.error(f"Error logging learning data: {e}")
+        logger.error(f"Error logging learning data: {e}", exc_info=True)
 
 
 @app.get("/api/arena/history")
@@ -2557,8 +2643,12 @@ Reply with APPROVE to submit bid or REJECT to skip."""
                 finally:
                     db.close()
 
+        except (OperationalError, IntegrityError) as e:
+            logger.error(f"[AUTONOMOUS] Database error in scan loop: {e}", exc_info=True)
+        except (ConnectionError, TimeoutError) as e:
+            logger.error(f"[AUTONOMOUS] Network error in scan loop: {e}", exc_info=True)
         except Exception as e:
-            logger.error(f"[AUTONOMOUS] Error in scan loop: {e}")
+            logger.error(f"[AUTONOMOUS] Error in scan loop: {e}", exc_info=True)
 
         # Random sleep between 15-30 minutes
         sleep_minutes = random.randint(
@@ -3189,16 +3279,26 @@ async def create_threshold_petition(
                 petition.telegram_sent_at = datetime.utcnow()
                 db.commit()
 
+        except (httpx.HTTPError, httpx.TimeoutException, httpx.NetworkError) as e:
+            logger.error(f"HTTP error sending Telegram notification for petition: {e}", exc_info=True)
         except Exception as e:
-            logger.error(f"Failed to send Telegram notification for petition: {e}")
+            logger.error(f"Failed to send Telegram notification for petition: {e}", exc_info=True)
 
         return {
             "petition": petition.to_dict(),
             "message": "Threshold petition created and awaiting approval",
         }
 
+    except (OperationalError, IntegrityError) as e:
+        logger.error(f"Database error creating threshold petition: {e}", exc_info=True)
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Database error occurred")
+    except (ValueError, TypeError, KeyError) as e:
+        logger.error(f"Data error creating threshold petition: {e}", exc_info=True)
+        db.rollback()
+        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        logger.error(f"Failed to create threshold petition: {e}")
+        logger.error(f"Failed to create threshold petition: {e}", exc_info=True)
         db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
     finally:
@@ -3376,8 +3476,10 @@ async def decide_threshold_petition(
 
             notifier.send_alert(message)
 
+        except (httpx.HTTPError, httpx.TimeoutException, httpx.NetworkError) as e:
+            logger.error(f"HTTP error sending confirmation notification: {e}", exc_info=True)
         except Exception as e:
-            logger.error(f"Failed to send confirmation notification: {e}")
+            logger.error(f"Failed to send confirmation notification: {e}", exc_info=True)
 
         return {
             "petition": petition.to_dict(),
@@ -3386,8 +3488,16 @@ async def decide_threshold_petition(
 
     except HTTPException:
         raise
+    except (OperationalError, IntegrityError) as e:
+        logger.error(f"Database error deciding petition: {e}", exc_info=True)
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Database error occurred")
+    except (ValueError, TypeError, KeyError) as e:
+        logger.error(f"Data error deciding petition: {e}", exc_info=True)
+        db.rollback()
+        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        logger.error(f"Failed to decide petition: {e}")
+        logger.error(f"Failed to decide petition: {e}", exc_info=True)
         db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
     finally:
@@ -3604,10 +3714,16 @@ async def oauth_callback(
             "expires_at": token.expires_at.isoformat(),
         }
 
-    except ValueError as e:
+    except (ValueError, TypeError) as e:
+        logger.error(f"OAuth validation error for {platform}: {e}", exc_info=True)
         raise HTTPException(status_code=400, detail=str(e))
+    except (ConnectionError, TimeoutError) as e:
+        logger.error(f"OAuth network error for {platform}: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=503, detail=f"Network error during OAuth: {str(e)}"
+        )
     except Exception as e:
-        logger.error(f"OAuth callback failed for {platform}: {e}")
+        logger.error(f"OAuth callback failed for {platform}: {e}", exc_info=True)
         raise HTTPException(
             status_code=500, detail=f"Failed to complete OAuth flow: {str(e)}"
         )
@@ -3709,8 +3825,14 @@ async def refresh_oauth_token(platform: str):
             "expires_at": new_token.expires_at.isoformat(),
         }
 
+    except (ValueError, TypeError) as e:
+        logger.error(f"Token refresh validation error for {platform}: {e}", exc_info=True)
+        raise HTTPException(status_code=400, detail=f"Token refresh failed: {str(e)}")
+    except (ConnectionError, TimeoutError) as e:
+        logger.error(f"Token refresh network error for {platform}: {e}", exc_info=True)
+        raise HTTPException(status_code=503, detail=f"Network error during token refresh: {str(e)}")
     except Exception as e:
-        logger.error(f"Failed to refresh {platform} token: {e}")
+        logger.error(f"Failed to refresh {platform} token: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Token refresh failed: {str(e)}")
 
 
@@ -3808,8 +3930,14 @@ async def record_job_completion(
             "confidence_adjustment": entry.confidence_adjustment,
         }
 
+    except (ValueError, TypeError) as e:
+        logger.error(f"Validation error recording job completion: {e}", exc_info=True)
+        raise HTTPException(status_code=400, detail=str(e))
+    except (KeyError, IndexError) as e:
+        logger.error(f"Data error recording job completion: {e}", exc_info=True)
+        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        logger.error(f"Failed to record job completion: {e}")
+        logger.error(f"Failed to record job completion: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -3840,8 +3968,14 @@ async def get_prediction_accuracy(
         return learning_system.calculate_prediction_accuracy(
             marketplace=marketplace, strategy_type=strategy_type, limit=limit
         )
+    except (ValueError, TypeError) as e:
+        logger.error(f"Validation error calculating prediction accuracy: {e}", exc_info=True)
+        raise HTTPException(status_code=400, detail=str(e))
+    except (KeyError, IndexError) as e:
+        logger.error(f"Data error calculating prediction accuracy: {e}", exc_info=True)
+        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        logger.error(f"Failed to calculate prediction accuracy: {e}")
+        logger.error(f"Failed to calculate prediction accuracy: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -3870,8 +4004,14 @@ async def get_learning_insights(
         return learning_system.get_learning_insights(
             marketplace=marketplace, strategy_type=strategy_type
         )
+    except (ValueError, TypeError) as e:
+        logger.error(f"Validation error getting learning insights: {e}", exc_info=True)
+        raise HTTPException(status_code=400, detail=str(e))
+    except (KeyError, IndexError) as e:
+        logger.error(f"Data error getting learning insights: {e}", exc_info=True)
+        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        logger.error(f"Failed to get learning insights: {e}")
+        logger.error(f"Failed to get learning insights: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -3895,8 +4035,14 @@ async def perform_weekly_review():
 
     try:
         return learning_system.perform_weekly_review()
+    except (ValueError, TypeError) as e:
+        logger.error(f"Validation error performing weekly review: {e}", exc_info=True)
+        raise HTTPException(status_code=400, detail=str(e))
+    except (KeyError, IndexError) as e:
+        logger.error(f"Data error performing weekly review: {e}", exc_info=True)
+        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        logger.error(f"Failed to perform weekly review: {e}")
+        logger.error(f"Failed to perform weekly review: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -3931,8 +4077,14 @@ async def get_learning_history(
             marketplace=marketplace,
         )
         return [entry.to_dict() for entry in entries]
+    except (ValueError, TypeError) as e:
+        logger.error(f"Validation error getting learning history: {e}", exc_info=True)
+        raise HTTPException(status_code=400, detail=str(e))
+    except (KeyError, IndexError) as e:
+        logger.error(f"Data error getting learning history: {e}", exc_info=True)
+        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        logger.error(f"Failed to get learning history: {e}")
+        logger.error(f"Failed to get learning history: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 

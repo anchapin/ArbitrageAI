@@ -129,8 +129,14 @@ class TaskClassifier:
                 logger.info("Loaded pre-trained task classification models")
             else:
                 logger.info("No pre-trained models found, will train on first use")
+        except (pickle.UnpicklingError, EOFError) as e:
+            logger.warning(f"Failed to load models (pickle error): {e}", exc_info=True)
+        except (FileNotFoundError, IOError, OSError) as e:
+            logger.warning(f"Failed to load models (file error): {e}", exc_info=True)
+        except (ValueError, TypeError) as e:
+            logger.warning(f"Failed to load models (validation error): {e}", exc_info=True)
         except Exception as e:
-            logger.warning(f"Failed to load models: {e}")
+            logger.warning(f"Failed to load models: {e}", exc_info=True)
 
     def _save_models(self):
         """Save trained models to disk."""
@@ -146,8 +152,12 @@ class TaskClassifier:
             with open(self.model_path, "wb") as f:
                 pickle.dump(models, f)
             logger.info("Saved task classification models")
+        except (IOError, OSError) as e:
+            logger.error(f"Failed to save models (IO error): {e}", exc_info=True)
+        except (ValueError, TypeError) as e:
+            logger.error(f"Failed to save models (validation error): {e}", exc_info=True)
         except Exception as e:
-            logger.error(f"Failed to save models: {e}")
+            logger.error(f"Failed to save models: {e}", exc_info=True)
 
     def extract_features(self, task_profiles: List[TaskProfile]) -> np.ndarray:
         """
@@ -289,8 +299,14 @@ class TaskClassifier:
                 "method": "ml_classification",
             }
 
+        except (ValueError, TypeError) as e:
+            logger.warning(f"ML classification validation error: {e}, falling back to rule-based", exc_info=True)
+            return self._rule_based_classification(task_profile)
+        except (KeyError, IndexError) as e:
+            logger.warning(f"ML classification data error: {e}, falling back to rule-based", exc_info=True)
+            return self._rule_based_classification(task_profile)
         except Exception as e:
-            logger.warning(f"ML classification failed: {e}, falling back to rule-based")
+            logger.warning(f"ML classification failed: {e}, falling back to rule-based", exc_info=True)
             return self._rule_based_classification(task_profile)
 
     def _rule_based_classification(self, task_profile: TaskProfile) -> Dict[str, Any]:
@@ -387,8 +403,14 @@ class TaskClassifier:
             )
 
             return min(distance / max_distance if max_distance > 0 else 0.0, 1.0)
+        except (ValueError, TypeError, ZeroDivisionError) as e:
+            logger.debug(f"Confidence calculation validation error: {e}", exc_info=True)
+            return 0.0
+        except (KeyError, IndexError) as e:
+            logger.debug(f"Confidence calculation data error: {e}", exc_info=True)
+            return 0.0
         except Exception as e:
-            logger.debug(f"Confidence calculation failed: {e}")
+            logger.debug(f"Confidence calculation failed: {e}", exc_info=True)
             return 0.0
 
 
@@ -661,8 +683,14 @@ class IntelligentRouter:
         # Classify task
         try:
             classification = self.classifier.classify(task_profile)
+        except (ValueError, TypeError) as e:
+            logger.warning(f"Classification validation error: {e}, using rule-based fallback", exc_info=True)
+            classification = self.classifier._rule_based_classification(task_profile)
+        except (KeyError, IndexError) as e:
+            logger.warning(f"Classification data error: {e}, using rule-based fallback", exc_info=True)
+            classification = self.classifier._rule_based_classification(task_profile)
         except Exception as e:
-            logger.warning(f"Classification failed: {e}, using rule-based fallback")
+            logger.warning(f"Classification failed: {e}, using rule-based fallback", exc_info=True)
             classification = self.classifier._rule_based_classification(task_profile)
 
         # Get performance-based recommendations
@@ -670,8 +698,14 @@ class IntelligentRouter:
             performance_recommendations = (
                 self.performance_tracker.get_handler_recommendations(task_profile)
             )
+        except (ValueError, TypeError) as e:
+            logger.warning(f"Performance recommendations validation error: {e}, using empty list", exc_info=True)
+            performance_recommendations = []
+        except (KeyError, IndexError) as e:
+            logger.warning(f"Performance recommendations data error: {e}, using empty list", exc_info=True)
+            performance_recommendations = []
         except Exception as e:
-            logger.warning(f"Performance recommendations failed: {e}, using empty list")
+            logger.warning(f"Performance recommendations failed: {e}, using empty list", exc_info=True)
             performance_recommendations = []
 
         # Make routing decision
@@ -1072,8 +1106,48 @@ class IntelligentRouter:
 
             return result
 
-        except Exception as e:
-            logger.error(f"Task execution failed for handler {handler_type}: {e}")
+        except (ValueError, TypeError) as e:
+            logger.error(f"Task execution validation error for handler {handler_type}: {e}", exc_info=True)
+
+            # Try fallback handlers
+            for fallback_handler in decision.fallback_handlers:
+                try:
+                    fallback_method = handler_map.get(
+                        fallback_handler, self._execute_standard_task
+                    )
+                    result = await fallback_method(task_profile, **kwargs)
+
+                    # Update task profile
+                    task_profile.execution_time = result.get("execution_time", 0)
+                    task_profile.actual_success = result.get("success", False)
+                    task_profile.model_used = result.get("model_used", "unknown")
+
+                    logger.info(
+                        f"Task execution succeeded with fallback handler: {fallback_handler}"
+                    )
+                    return result
+
+                except (ValueError, TypeError) as fallback_error:
+                    logger.error(
+                        f"Fallback validation error for handler {fallback_handler}: {fallback_error}", exc_info=True
+                    )
+                    continue
+                except Exception as fallback_error:
+                    logger.error(
+                        f"Fallback execution failed for handler {fallback_handler}: {fallback_error}", exc_info=True
+                    )
+                    continue
+
+            # All handlers failed
+            return {
+                "success": False,
+                "message": f"All handlers failed. Last error: {str(e)}",
+                "handler_type": handler_type,
+                "execution_time": 0,
+                "model_used": "none",
+            }
+        except (TimeoutError, asyncio.TimeoutError) as e:
+            logger.error(f"Task execution timeout for handler {handler_type}: {e}", exc_info=True)
 
             # Try fallback handlers
             for fallback_handler in decision.fallback_handlers:
@@ -1095,7 +1169,42 @@ class IntelligentRouter:
 
                 except Exception as fallback_error:
                     logger.error(
-                        f"Fallback execution failed for handler {fallback_handler}: {fallback_error}"
+                        f"Fallback execution failed for handler {fallback_handler}: {fallback_error}", exc_info=True
+                    )
+                    continue
+
+            # All handlers failed
+            return {
+                "success": False,
+                "message": f"All handlers failed. Last error: {str(e)}",
+                "handler_type": handler_type,
+                "execution_time": 0,
+                "model_used": "none",
+            }
+        except Exception as e:
+            logger.error(f"Task execution failed for handler {handler_type}: {e}", exc_info=True)
+
+            # Try fallback handlers
+            for fallback_handler in decision.fallback_handlers:
+                try:
+                    fallback_method = handler_map.get(
+                        fallback_handler, self._execute_standard_task
+                    )
+                    result = await fallback_method(task_profile, **kwargs)
+
+                    # Update task profile
+                    task_profile.execution_time = result.get("execution_time", 0)
+                    task_profile.actual_success = result.get("success", False)
+                    task_profile.model_used = result.get("model_used", "unknown")
+
+                    logger.info(
+                        f"Task execution succeeded with fallback handler: {fallback_handler}"
+                    )
+                    return result
+
+                except Exception as fallback_error:
+                    logger.error(
+                        f"Fallback execution failed for handler {fallback_handler}: {fallback_error}", exc_info=True
                     )
                     continue
 
@@ -1327,8 +1436,14 @@ class IntelligentRouter:
             logger.info("Successfully retrained task classifier")
             return True
 
+        except (ValueError, TypeError) as e:
+            logger.error(f"Failed to retrain classifier (validation error): {e}", exc_info=True)
+            return False
+        except (KeyError, IndexError) as e:
+            logger.error(f"Failed to retrain classifier (data error): {e}", exc_info=True)
+            return False
         except Exception as e:
-            logger.error(f"Failed to retrain classifier: {e}")
+            logger.error(f"Failed to retrain classifier: {e}", exc_info=True)
             return False
 
     def _get_training_data(self, db_session) -> List[Tuple[TaskProfile, str]]:
@@ -1377,8 +1492,12 @@ class IntelligentRouter:
                     handler_label = self._determine_handler_label(task)
                     training_data.append((profile, handler_label))
 
+            except (ValueError, TypeError) as e:
+                logger.error(f"Failed to fetch training data (validation error): {e}", exc_info=True)
+            except (KeyError, IndexError) as e:
+                logger.error(f"Failed to fetch training data (data error): {e}", exc_info=True)
             except Exception as e:
-                logger.error(f"Failed to fetch training data: {e}")
+                logger.error(f"Failed to fetch training data: {e}", exc_info=True)
 
         return training_data
 

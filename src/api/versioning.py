@@ -4,9 +4,12 @@ This module provides utilities for API versioning, including version detection,
 validation, and deprecation handling.
 """
 from enum import Enum
-from typing import Annotated
+from typing import Annotated, Optional
+from fastapi import Header, HTTPException, Response, status, Request
+from starlette.middleware.base import BaseHTTPMiddleware
+import logging
 
-from fastapi import Header, HTTPException, Response, status
+logger = logging.getLogger(__name__)
 
 
 class APIVersion(str, Enum):
@@ -144,3 +147,128 @@ def get_successor_version(version: APIVersion) -> APIVersion | None:
     """
     version_order = {APIVersion.V1: APIVersion.V2}
     return version_order.get(version)
+
+
+class APIVersionMiddleware(BaseHTTPMiddleware):
+    """Middleware to handle API versioning from URL path.
+
+    This middleware extracts the API version from the URL path (/api/v1/, /api/v2/, etc.)
+    and validates it against supported versions. It also adds deprecation headers
+    to responses for deprecated versions.
+
+    Example:
+        from fastapi import FastAPI
+        from src.api.versioning import APIVersionMiddleware
+
+        app = FastAPI()
+        app.add_middleware(APIVersionMiddleware)
+    """
+
+    async def dispatch(self, request: Request, call_next):
+        """Process request and validate API version.
+
+        Args:
+            request: Incoming HTTP request
+            call_next: Next middleware/handler in chain
+
+        Returns:
+            HTTP response with version headers
+        """
+        path = request.url.path
+
+        # Extract version from path (/api/v1/..., /api/v2/..., etc.)
+        version = self._extract_version_from_path(path)
+
+        if version:
+            # Validate version is supported
+            if not self._is_version_supported(version):
+                logger.warning(f"Unsupported API version requested: {version}")
+                return Response(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    content={
+                        "error": "VERSION_NOT_SUPPORTED",
+                        "message": f"API version '{version}' is not supported.",
+                        "supported_versions": [v.value for v in SUPPORTED_VERSIONS],
+                    },
+                )
+
+            # Log version usage for analytics
+            logger.debug(f"API request version: {version} for path: {path}")
+
+        # Process request
+        response = await call_next(request)
+
+        # Add version header to response
+        if version:
+            response.headers["X-API-Version"] = version
+
+            # Add deprecation warning for v1 (when v2 becomes current)
+            if version == APIVersion.V1.value and self._is_version_deprecated(version):
+                response.headers[DEPRECATION_HEADER] = "true"
+                response.headers[WARNING_HEADER] = (
+                    f'299 - "API version {version} is deprecated. '
+                    f'Please use {APIVersion.V2.value} instead."'
+                )
+
+        return response
+
+    def _extract_version_from_path(self, path: str) -> Optional[str]:
+        """Extract API version from URL path.
+
+        Args:
+            path: URL path (e.g., /api/v1/tasks)
+
+        Returns:
+            Version string (e.g., 'v1') or None if not found
+        """
+        import re
+
+        # Match /api/v{number}/ pattern
+        match = re.match(r"^/api/(v\d+)/", path)
+        if match:
+            return match.group(1)
+        return None
+
+    def _is_version_supported(self, version: str) -> bool:
+        """Check if version is supported.
+
+        Args:
+            version: Version string to check
+
+        Returns:
+            True if supported, False otherwise
+        """
+        return version in [v.value for v in SUPPORTED_VERSIONS]
+
+    def _is_version_deprecated(self, version: str) -> bool:
+        """Check if version is deprecated.
+
+        Currently, no versions are deprecated. This will be updated
+        when newer versions are released.
+
+        Args:
+            version: Version string to check
+
+        Returns:
+            True if deprecated, False otherwise
+        """
+        # Currently no versions are deprecated
+        return False
+
+
+def setup_api_versioning(app, is_development: bool = False):
+    """Setup API versioning middleware for FastAPI application.
+
+    Usage:
+        from fastapi import FastAPI
+        from src.api.versioning import setup_api_versioning
+
+        app = FastAPI()
+        setup_api_versioning(app)
+
+    Args:
+        app: FastAPI application
+        is_development: Whether running in development mode
+    """
+    app.add_middleware(APIVersionMiddleware)
+    logger.info("API versioning middleware added")

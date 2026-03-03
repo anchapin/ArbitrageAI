@@ -7,7 +7,7 @@ The following versions of ArbitrageAI are currently being supported with securit
 | Version | Supported          |
 | ------- | ------------------ |
 | 0.1.x   | :white_check_mark: |
-| < 0.1   | :x:                |
+| 0.0.x   | :x:                |
 
 ## Reporting a Vulnerability
 
@@ -17,226 +17,270 @@ We take the security of ArbitrageAI seriously. If you believe you have found a s
 
 **Please do NOT report security vulnerabilities through public GitHub issues.**
 
-Instead, please report them via email to **[INSERT SECURITY EMAIL]** with the following information:
+Instead, please report them via one of the following methods:
 
-1. **Description of the vulnerability**: Provide a detailed description of the issue
-2. **Steps to reproduce**: Include detailed steps to reproduce the vulnerability
-3. **Impact assessment**: Describe the potential impact if exploited
-4. **Suggested fix**: If you have suggestions for addressing the issue
-5. **Your contact information**: For follow-up questions
+1. **Email**: Send an email to [security@arbitrageai.example](mailto:security@arbitrageai.example) (replace with actual security contact)
+2. **GitHub Private Vulnerability Reporting**: Use the [GitHub Security Advisories](https://github.com/anchapin/ArbitrageAI/security/advisories/new) feature
+3. **Direct Contact**: Contact the maintainers directly through GitHub
+
+### What to Include
+
+Please include the following information in your report:
+
+- **Description**: A clear description of the vulnerability
+- **Impact**: The potential impact of the vulnerability
+- **Reproduction Steps**: Detailed steps to reproduce the issue
+- **Affected Versions**: Which versions are affected
+- **Proof of Concept**: If possible, include a proof of concept or exploit code
+- **Suggested Fix**: If you have suggestions for how to fix the issue
+
+### Response Timeline
+
+You can expect the following response timeline:
+
+- **Acknowledgment**: Within 48 hours of your report
+- **Status Update**: Within 5 business days with our assessment
+- **Resolution**: We aim to resolve critical issues within 30 days
 
 ### What to Expect
 
-- **Initial Response**: You will receive an acknowledgment within 48 hours
-- **Status Update**: We will provide a status update within 5 business days
-- **Resolution Timeline**: We aim to resolve critical issues within 30 days
+After submitting a report:
 
-### Security Process
-
-1. **Report Submission**: Submit your report via email
-2. **Acknowledgment**: Receive confirmation within 48 hours
-3. **Assessment**: Our security team evaluates the report
-4. **Resolution**: We develop and test a fix
-5. **Release**: Security patch is released
-6. **Disclosure**: Public disclosure after 30 days (or as agreed)
+1. **Acknowledgment**: We will acknowledge receipt of your report
+2. **Assessment**: We will investigate and assess the reported issue
+3. **Communication**: We will keep you informed of our progress
+4. **Resolution**: Once resolved, we will notify you and credit you (if desired)
+5. **Disclosure**: We will coordinate responsible disclosure
 
 ## Security Best Practices
 
 ### For Users
 
+When deploying ArbitrageAI, please follow these security best practices:
+
 #### Environment Variables
 
-Never commit sensitive information to version control. Always use environment variables:
+Never commit sensitive information to version control. Use environment variables for:
 
 ```bash
-# ✅ Good - Use environment variables
-export JWT_SECRET_KEY="your-secret-key"
-export DATABASE_URL="postgresql://user:pass@localhost/db"
-
-# ❌ Bad - Hardcode secrets
-# Don't commit .env files with real credentials
+# Required security configurations
+SECRET_KEY=your-secret-key-here
+JWT_SECRET=your-jwt-secret-here
+DATABASE_URL=postgresql://user:pass@localhost/db
+REDIS_URL=redis://localhost:6379/0
+OPENAI_API_KEY=your-api-key-here
+STRIPE_SECRET_KEY=your-stripe-key-here
 ```
 
-#### Dependencies
+#### Docker Security
 
-Keep dependencies up to date:
+- Run containers as non-root user (configured by default)
+- Use Docker secrets for sensitive data in production
+- Keep Docker images updated
+- Scan images for vulnerabilities regularly
 
-```bash
-# Check for outdated packages
-pip list --outdated
+#### Network Security
 
-# Update dependencies
-pip install --upgrade -r requirements.txt
+- Use HTTPS/TLS for all external communications
+- Configure firewalls to restrict access
+- Use private networks for internal services
+- Enable rate limiting (configured by default)
 
-# Scan for known vulnerabilities
-pip-audit
-safety check
-```
+#### Database Security
 
-#### API Keys
+- Use strong, unique passwords
+- Enable SSL/TLS for database connections
+- Regular backups with encryption
+- Apply principle of least privilege
 
-- Rotate API keys regularly
-- Use different keys for development and production
-- Never expose API keys in client-side code
-- Use environment variables or secret management tools
+### For Developers
 
-### For Contributors
+When contributing to ArbitrageAI, follow these security guidelines:
 
 #### Code Security
 
-When contributing code, ensure:
+- **Input Validation**: Always validate and sanitize user input
+- **Output Encoding**: Encode output to prevent XSS
+- **Authentication**: Verify authentication before authorization checks
+- **SQL Injection**: Use parameterized queries (SQLAlchemy ORM)
+- **Path Traversal**: Validate file paths and use safe joins
+- **Command Injection**: Never use shell=True with user input
 
-1. **Input Validation**: Validate all user inputs
-2. **Output Encoding**: Encode outputs to prevent injection attacks
-3. **Authentication**: Implement proper authentication checks
-4. **Authorization**: Verify user permissions for all actions
-5. **Error Handling**: Don't expose sensitive information in error messages
-6. **Logging**: Don't log sensitive data (passwords, tokens, PII)
+#### Dependencies
 
-#### Security Checklist
+- Keep dependencies updated
+- Review security advisories for dependencies
+- Use `pip-audit` and `safety` to scan for vulnerabilities
+- Pin dependency versions in production
 
-Before submitting a pull request:
+#### Secrets Management
 
-- [ ] No hardcoded credentials
-- [ ] No sensitive data in logs
-- [ ] Input validation implemented
-- [ ] Authentication/authorization checks added
-- [ ] SQL injection prevention (parameterized queries)
-- [ ] XSS prevention (output encoding)
-- [ ] CSRF protection (for state-changing operations)
-- [ ] Rate limiting considered for sensitive endpoints
-- [ ] Dependencies scanned for vulnerabilities
+- Never commit secrets to version control
+- Use environment variables or secret management tools
+- Rotate secrets regularly
+- Use different secrets for different environments
+
+#### Testing
+
+- Write security-focused tests
+- Test for common vulnerabilities (OWASP Top 10)
+- Include security scanning in CI/CD
+- Perform regular security audits
 
 ## Security Features
 
-### Implemented Security Measures
-
 ArbitrageAI includes the following security features:
 
-#### Authentication & Authorization
+### Authentication & Authorization
 
 - JWT-based authentication
 - Role-based access control (RBAC)
-- Session management with expiration
-- Secure password hashing (bcrypt/argon2)
+- Session management with secure cookies
+- API key authentication for service accounts
 
-#### Data Protection
+### Input Validation
 
-- Encryption at rest for sensitive data
-- TLS/HTTPS for data in transit
+- Pydantic models for request validation
+- Type checking and sanitization
+- File upload validation (type, size, content)
+- Rate limiting to prevent abuse
+
+### Data Protection
+
+- Encryption at rest (database encryption)
+- Encryption in transit (TLS/SSL)
 - Secure secret management
-- Database parameterized queries (SQL injection prevention)
+- Audit logging for sensitive operations
 
-#### API Security
+### Security Headers
 
-- Rate limiting on all endpoints
-- Input validation and sanitization
-- CORS configuration
-- Security headers (CSP, X-Frame-Options, etc.)
+The application includes comprehensive security headers:
 
-#### Infrastructure Security
+- **Strict-Transport-Security (HSTS)**: Forces HTTPS
+- **Content-Security-Policy (CSP)**: Prevents XSS attacks
+- **X-Content-Type-Options**: Prevents MIME sniffing
+- **X-Frame-Options**: Prevents clickjacking
+- **X-XSS-Protection**: Legacy XSS filter
+- **Referrer-Policy**: Controls referrer information
+- **Permissions-Policy**: Controls browser features
+- **Cross-Origin-Policies**: Isolation policies
 
-- Non-root Docker containers
-- Minimal base images
-- Regular security updates
-- Network segmentation
+### Monitoring & Logging
 
-### Security Scanning
+- Comprehensive audit logging
+- Security event monitoring
+- Intrusion detection alerts
+- Distributed tracing for security analysis
 
-We perform regular security scanning:
+## Vulnerability Disclosure Policy
 
-```bash
-# Dependency scanning
-pip-audit
-safety check -r requirements.txt
+We follow a coordinated disclosure process:
 
-# Static analysis (SAST)
-bandit -r src/
+1. **Report**: Researcher reports vulnerability
+2. **Verify**: We verify the vulnerability
+3. **Fix**: We develop and test a fix
+4. **Release**: We release a security patch
+5. **Disclose**: After 30 days, we publicly disclose
 
-# Secret detection
-gitleaks detect
+### Embargo Policy
 
-# Code quality and security
-ruff check src/ --select S
-```
+We request that researchers:
 
-## Known Security Considerations
+- Allow us reasonable time to fix the issue before public disclosure
+- Work with us confidentially during the fix process
+- Refrain from exploiting the vulnerability for testing
 
-### Local Development
+## Security Testing
 
-When running locally:
+### Automated Scanning
 
-1. **Use test API keys**: Never use production credentials in development
-2. **Enable debug mode carefully**: Debug mode can expose sensitive information
-3. **Secure your database**: Use strong passwords, even for local databases
-4. **Update regularly**: Keep development environments updated
+Our CI/CD pipeline includes:
 
-### Production Deployment
+- **Bandit**: Python security linter
+- **pip-audit**: Dependency vulnerability scanning
+- **Safety**: Alternative dependency scanner
+- **Gitleaks**: Secret detection
+- **Detect-secrets**: Pre-commit secret detection
 
-For production deployments:
+### Manual Testing
 
-1. **Use environment variables**: Never hardcode secrets
-2. **Enable HTTPS**: Always use TLS in production
-3. **Configure CORS properly**: Restrict allowed origins
-4. **Enable rate limiting**: Protect against abuse
-5. **Monitor logs**: Set up alerting for suspicious activity
-6. **Regular updates**: Keep all dependencies updated
-7. **Backup data**: Regular encrypted backups
+We perform regular:
+
+- Code security reviews
+- Penetration testing
+- Threat modeling
+- Security architecture reviews
+
+## Known Vulnerabilities
+
+This section lists known vulnerabilities and their status:
+
+| CVE ID | Severity | Status | Fixed In | Notes |
+|--------|----------|--------|----------|-------|
+| - | - | - | - | No known vulnerabilities |
 
 ## Security Updates
 
-Security updates are released as patch versions (e.g., 0.1.1, 0.1.2).
+Security updates are released as patch versions (e.g., 0.1.1, 0.1.2). We recommend:
 
-### Notification
+- **Critical**: Update within 24 hours
+- **High**: Update within 7 days
+- **Medium**: Update within 30 days
+- **Low**: Update in next maintenance cycle
 
-Users will be notified of security updates through:
+## Incident Response
 
-- GitHub Security Advisories
-- Release notes
-- Email notifications (for registered users)
+In the event of a security incident:
 
-### Updating
+1. **Containment**: Isolate affected systems
+2. **Assessment**: Determine scope and impact
+3. **Eradication**: Remove threat and vulnerabilities
+4. **Recovery**: Restore systems and data
+5. **Lessons Learned**: Document and improve
 
-To update to the latest secure version:
+## Compliance
 
-```bash
-# Update from PyPI
-pip install --upgrade arbitrage-ai
+ArbitrageAI is designed to help with compliance for:
 
-# Or update from source
-git pull origin main
-pip install -e .
-```
+- **GDPR**: Data protection and privacy
+- **SOC 2**: Security controls
+- **ISO 27001**: Information security management
+- **PCI DSS**: Payment card data security (when configured properly)
 
-## Security Resources
+## Third-Party Security
 
-### Learn More
+### Dependencies
 
-- [OWASP Top 10](https://owasp.org/www-project-top-ten/)
-- [Python Security Best Practices](https://docs.python.org/3/library/security.html)
-- [FastAPI Security](https://fastapi.tiangolo.com/tutorial/security/)
-- [Docker Security Best Practices](https://docs.docker.com/engine/security/)
+We rely on the following security-critical dependencies:
 
-### Tools
+- **FastAPI**: Web framework with built-in security features
+- **SQLAlchemy**: ORM with parameterized queries
+- **Pydantic**: Data validation and security
+- **Redis**: Caching and distributed locking
+- **OpenTelemetry**: Security monitoring and tracing
 
-- [pip-audit](https://pypi.org/project/pip-audit/) - Dependency vulnerability scanning
-- [Safety](https://pyup.io/safety/) - Python dependency security checker
-- [Bandit](https://bandit.readthedocs.io/) - Python security linter
-- [Gitleaks](https://github.com/gitleaks/gitleaks) - Secret detection in git repos
+### Security Advisories
+
+Monitor these sources for security updates:
+
+- [FastAPI Security Advisories](https://github.com/tiangolo/fastapi/security/advisories)
+- [Python Security Advisories](https://www.python.org/dev/security/)
+- [GitHub Security Advisories](https://github.com/advisories)
 
 ## Contact
 
-For security-related questions or concerns:
+For security-related questions:
 
-- **Email**: [INSERT SECURITY EMAIL]
-- **GitHub Security Advisories**: https://github.com/anchapin/ArbitrageAI/security/advisories
+- **Email**: [security@arbitrageai.example](mailto:security@arbitrageai.example)
+- **GitHub**: https://github.com/anchapin/ArbitrageAI/security
+- **Discussions**: https://github.com/anchapin/ArbitrageAI/discussions/categories/security
 
 ## Acknowledgments
 
 We would like to thank the following for their contributions to our security:
 
-- All security researchers who responsibly disclose vulnerabilities
-- The open-source community for security tools and guidance
+- Security researchers who responsibly disclose vulnerabilities
+- The open-source community for security tools and libraries
 - Contributors who help improve our security posture
 
 ---
@@ -244,3 +288,5 @@ We would like to thank the following for their contributions to our security:
 **Last Updated**: March 2, 2026
 
 **Version**: 1.0
+
+**Review Cycle**: This policy is reviewed quarterly and updated as needed.

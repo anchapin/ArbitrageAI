@@ -122,8 +122,14 @@ async def schedule_task(
             ),
         }
 
+    except (ValueError, TypeError) as e:
+        logger.error(f"Validation error scheduling task: {e}", exc_info=True)
+        raise HTTPException(status_code=400, detail=f"Invalid request: {e}")
+    except (OperationalError, IntegrityError) as e:
+        logger.error(f"Database error scheduling task: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Database error occurred")
     except Exception as e:
-        logger.error(f"Failed to schedule task: {e}")
+        logger.error(f"Failed to schedule task: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Failed to schedule task: {e}")
 
 
@@ -161,8 +167,14 @@ async def schedule_daily_task_endpoint(
             ).isoformat(),
         }
 
+    except (ValueError, TypeError) as e:
+        logger.error(f"Validation error scheduling daily task: {e}", exc_info=True)
+        raise HTTPException(status_code=400, detail=f"Invalid request: {e}")
+    except (OperationalError, IntegrityError) as e:
+        logger.error(f"Database error scheduling daily task: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Database error occurred")
     except Exception as e:
-        logger.error(f"Failed to schedule daily task: {e}")
+        logger.error(f"Failed to schedule daily task: {e}", exc_info=True)
         raise HTTPException(
             status_code=500, detail=f"Failed to schedule daily task: {e}"
         )
@@ -209,8 +221,14 @@ async def schedule_weekly_task_endpoint(
             ).isoformat(),
         }
 
+    except (ValueError, TypeError) as e:
+        logger.error(f"Validation error scheduling weekly task: {e}", exc_info=True)
+        raise HTTPException(status_code=400, detail=f"Invalid request: {e}")
+    except (OperationalError, IntegrityError) as e:
+        logger.error(f"Database error scheduling weekly task: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Database error occurred")
     except Exception as e:
-        logger.error(f"Failed to schedule weekly task: {e}")
+        logger.error(f"Failed to schedule weekly task: {e}", exc_info=True)
         raise HTTPException(
             status_code=500, detail=f"Failed to schedule weekly task: {e}"
         )
@@ -255,8 +273,14 @@ async def schedule_monthly_task_endpoint(
             ).isoformat(),
         }
 
+    except (ValueError, TypeError) as e:
+        logger.error(f"Validation error scheduling monthly task: {e}", exc_info=True)
+        raise HTTPException(status_code=400, detail=f"Invalid request: {e}")
+    except (OperationalError, IntegrityError) as e:
+        logger.error(f"Database error scheduling monthly task: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Database error occurred")
     except Exception as e:
-        logger.error(f"Failed to schedule monthly task: {e}")
+        logger.error(f"Failed to schedule monthly task: {e}", exc_info=True)
         raise HTTPException(
             status_code=500, detail=f"Failed to schedule monthly task: {e}"
         )
@@ -301,8 +325,14 @@ async def list_schedules(
             ]
         }
 
+    except (ValueError, TypeError, KeyError) as e:
+        logger.error(f"Data error listing schedules: {e}", exc_info=True)
+        raise HTTPException(status_code=400, detail=f"Invalid request: {e}")
+    except (OperationalError, IntegrityError) as e:
+        logger.error(f"Database error listing schedules: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Database error occurred")
     except Exception as e:
-        logger.error(f"Failed to list schedules: {e}")
+        logger.error(f"Failed to list schedules: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Failed to list schedules: {e}")
 
 
@@ -350,8 +380,16 @@ async def get_schedule(schedule_id: str, db: AsyncSession = Depends(get_async_db
             ),
         }
 
+    except HTTPException:
+        raise
+    except (ValueError, TypeError, KeyError) as e:
+        logger.error(f"Data error getting schedule: {e}", exc_info=True)
+        raise HTTPException(status_code=400, detail=f"Invalid request: {e}")
+    except (OperationalError, IntegrityError) as e:
+        logger.error(f"Database error getting schedule: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Database error occurred")
     except Exception as e:
-        logger.error(f"Failed to get schedule {schedule_id}: {e}")
+        logger.error(f"Failed to get schedule {schedule_id}: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Failed to get schedule: {e}")
 
 

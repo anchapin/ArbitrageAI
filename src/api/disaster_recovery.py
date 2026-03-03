@@ -224,8 +224,13 @@ class DisasterRecoveryAPI:
 
         except HTTPException:
             raise
+        except (FileNotFoundError, IOError, OSError) as e:
+            logger.error(f"File system error during backup creation: {e}", exc_info=True)
+            raise HTTPException(
+                status_code=500, detail=f"Backup creation failed: {str(e)}"
+            )
         except Exception as e:
-            logger.error(f"Backup creation failed: {e}")
+            logger.error(f"Backup creation failed: {e}", exc_info=True)
             raise HTTPException(
                 status_code=500, detail=f"Backup creation failed: {str(e)}"
             )
@@ -274,8 +279,13 @@ class DisasterRecoveryAPI:
 
         except HTTPException:
             raise
+        except (ValueError, TypeError) as e:
+            logger.error(f"Validation error listing backups: {e}", exc_info=True)
+            raise HTTPException(
+                status_code=400, detail=f"Invalid request: {str(e)}"
+            )
         except Exception as e:
-            logger.error(f"Failed to list backups: {e}")
+            logger.error(f"Failed to list backups: {e}", exc_info=True)
             raise HTTPException(
                 status_code=500, detail=f"Failed to list backups: {str(e)}"
             )
@@ -302,8 +312,13 @@ class DisasterRecoveryAPI:
 
         except HTTPException:
             raise
+        except (FileNotFoundError, IOError) as e:
+            logger.error(f"Backup file not found: {e}", exc_info=True)
+            raise HTTPException(
+                status_code=404, detail=f"Backup not found: {str(e)}"
+            )
         except Exception as e:
-            logger.error(f"Failed to get backup details: {e}")
+            logger.error(f"Failed to get backup details: {e}", exc_info=True)
             raise HTTPException(
                 status_code=500, detail=f"Failed to get backup details: {str(e)}"
             )
@@ -331,8 +346,13 @@ class DisasterRecoveryAPI:
 
         except HTTPException:
             raise
+        except (FileNotFoundError, IOError) as e:
+            logger.error(f"Backup validation failed (file error): {e}", exc_info=True)
+            raise HTTPException(
+                status_code=400, detail=f"Backup validation failed: {str(e)}"
+            )
         except Exception as e:
-            logger.error(f"Backup validation failed: {e}")
+            logger.error(f"Backup validation failed: {e}", exc_info=True)
             raise HTTPException(
                 status_code=500, detail=f"Backup validation failed: {str(e)}"
             )
@@ -377,8 +397,13 @@ class DisasterRecoveryAPI:
 
         except HTTPException:
             raise
+        except (FileNotFoundError, IOError, OSError) as e:
+            logger.error(f"File system error during backup deletion: {e}", exc_info=True)
+            raise HTTPException(
+                status_code=500, detail=f"Backup deletion failed: {str(e)}"
+            )
         except Exception as e:
-            logger.error(f"Backup deletion failed: {e}")
+            logger.error(f"Backup deletion failed: {e}", exc_info=True)
             raise HTTPException(
                 status_code=500, detail=f"Backup deletion failed: {str(e)}"
             )
@@ -423,8 +448,13 @@ class DisasterRecoveryAPI:
 
         except HTTPException:
             raise
+        except (FileNotFoundError, IOError, OSError) as e:
+            logger.error(f"File system error during recovery: {e}", exc_info=True)
+            raise HTTPException(
+                status_code=500, detail=f"Recovery execution failed: {str(e)}"
+            )
         except Exception as e:
-            logger.error(f"Recovery execution failed: {e}")
+            logger.error(f"Recovery execution failed: {e}", exc_info=True)
             raise HTTPException(
                 status_code=500, detail=f"Recovery execution failed: {str(e)}"
             )
@@ -462,8 +492,13 @@ class DisasterRecoveryAPI:
                 error_message=recovery_op.error_message,
             )
 
+        except (ValueError, TypeError, KeyError) as e:
+            logger.error(f"Data error getting recovery status: {e}", exc_info=True)
+            raise HTTPException(
+                status_code=400, detail=f"Invalid recovery status request: {str(e)}"
+            )
         except Exception as e:
-            logger.error(f"Failed to get recovery status: {e}")
+            logger.error(f"Failed to get recovery status: {e}", exc_info=True)
             raise HTTPException(
                 status_code=500, detail=f"Failed to get recovery status: {str(e)}"
             )
@@ -485,8 +520,13 @@ class DisasterRecoveryAPI:
 
         except HTTPException:
             raise
+        except (FileNotFoundError, IOError) as e:
+            logger.error(f"Recovery plan test failed (file error): {e}", exc_info=True)
+            raise HTTPException(
+                status_code=400, detail=f"Recovery plan test failed: {str(e)}"
+            )
         except Exception as e:
-            logger.error(f"Recovery plan test failed: {e}")
+            logger.error(f"Recovery plan test failed: {e}", exc_info=True)
             raise HTTPException(
                 status_code=500, detail=f"Recovery plan test failed: {str(e)}"
             )
@@ -514,8 +554,13 @@ class DisasterRecoveryAPI:
 
         except HTTPException:
             raise
+        except (FileNotFoundError, IOError, OSError) as e:
+            logger.error(f"File system error during disaster recovery: {e}", exc_info=True)
+            raise HTTPException(
+                status_code=500, detail=f"Disaster recovery failed: {str(e)}"
+            )
         except Exception as e:
-            logger.error(f"Disaster recovery failed: {e}")
+            logger.error(f"Disaster recovery failed: {e}", exc_info=True)
             raise HTTPException(
                 status_code=500, detail=f"Disaster recovery failed: {str(e)}"
             )
@@ -546,8 +591,13 @@ class DisasterRecoveryAPI:
                 )
             return plans
 
+        except (ValueError, TypeError, KeyError) as e:
+            logger.error(f"Data error getting recovery plans: {e}", exc_info=True)
+            raise HTTPException(
+                status_code=400, detail=f"Invalid request: {str(e)}"
+            )
         except Exception as e:
-            logger.error(f"Failed to get recovery plans: {e}")
+            logger.error(f"Failed to get recovery plans: {e}", exc_info=True)
             raise HTTPException(
                 status_code=500, detail=f"Failed to get recovery plans: {str(e)}"
             )
@@ -564,8 +614,13 @@ class DisasterRecoveryAPI:
             metrics = await self.orchestrator.get_recovery_metrics()
             return RecoveryMetricsResponse(**metrics)
 
+        except (ValueError, TypeError, KeyError) as e:
+            logger.error(f"Data error getting recovery metrics: {e}", exc_info=True)
+            raise HTTPException(
+                status_code=400, detail=f"Invalid request: {str(e)}"
+            )
         except Exception as e:
-            logger.error(f"Failed to get recovery metrics: {e}")
+            logger.error(f"Failed to get recovery metrics: {e}", exc_info=True)
             raise HTTPException(
                 status_code=500, detail=f"Failed to get recovery metrics: {str(e)}"
             )
@@ -741,8 +796,11 @@ async def health_check_endpoint(db: Session = Depends(get_db)):
         db_ok = True
         try:
             db.execute(text("SELECT 1"))
-        except Exception as e:
+        except (OperationalError, InterfaceError) as e:
             logger.debug(f"Database health check failed: {e}")
+            db_ok = False
+        except Exception as e:
+            logger.debug(f"Database health check failed (unexpected): {e}")
             db_ok = False
 
         # Check Redis connectivity if configured
@@ -752,8 +810,11 @@ async def health_check_endpoint(db: Session = Depends(get_db)):
                 redis_client = disaster_recovery_api.backup_manager.redis_client
                 if redis_client:
                     redis_client.ping()
-            except Exception as e:
+            except (ConnectionError, TimeoutError) as e:
                 logger.debug(f"Redis health check failed: {e}")
+                redis_ok = False
+            except Exception as e:
+                logger.debug(f"Redis health check failed (unexpected): {e}")
                 redis_ok = False
 
         # Check S3 connectivity if configured
@@ -763,8 +824,11 @@ async def health_check_endpoint(db: Session = Depends(get_db)):
                 s3_client = disaster_recovery_api.backup_manager.s3_client
                 if s3_client:
                     s3_client.head_bucket(Bucket=Config().AWS_S3_BACKUP_BUCKET)
-            except Exception as e:
+            except (ConnectionError, TimeoutError, ClientError) as e:
                 logger.debug(f"S3 health check failed: {e}")
+                s3_ok = False
+            except Exception as e:
+                logger.debug(f"S3 health check failed (unexpected): {e}")
                 s3_ok = False
 
         status = (
@@ -780,8 +844,15 @@ async def health_check_endpoint(db: Session = Depends(get_db)):
             "timestamp": datetime.now().isoformat(),
         }
 
+    except (ValueError, TypeError, KeyError) as e:
+        logger.error(f"Health check validation error: {e}", exc_info=True)
+        return {
+            "status": "error",
+            "error": str(e),
+            "timestamp": datetime.now().isoformat(),
+        }
     except Exception as e:
-        logger.error(f"Health check failed: {e}")
+        logger.error(f"Health check failed: {e}", exc_info=True)
         return {
             "status": "error",
             "error": str(e),

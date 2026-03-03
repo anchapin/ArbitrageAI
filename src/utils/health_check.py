@@ -178,7 +178,22 @@ class HealthMonitor:
                 )
             finally:
                 db.close()
+        except (TimeoutError, asyncio.TimeoutError) as e:
+            return HealthCheckResult(
+                service="PostgreSQL",
+                service_type=ServiceType.DATABASE,
+                status=HealthStatus.UNHEALTHY,
+                message=f"Database connection timeout: {str(e)}",
+            )
+        except (ConnectionError, ConnectionRefusedError) as e:
+            return HealthCheckResult(
+                service="PostgreSQL",
+                service_type=ServiceType.DATABASE,
+                status=HealthStatus.UNHEALTHY,
+                message=f"Database connection error: {str(e)}",
+            )
         except Exception as e:
+            logger.error(f"Database health check failed: {e}", exc_info=True)
             return HealthCheckResult(
                 service="PostgreSQL",
                 service_type=ServiceType.DATABASE,
@@ -210,7 +225,22 @@ class HealthMonitor:
                 response_time_ms=round(response_time, 2),
                 message="Redis connection successful",
             )
+        except (TimeoutError, asyncio.TimeoutError) as e:
+            return HealthCheckResult(
+                service="Redis",
+                service_type=ServiceType.REDIS,
+                status=HealthStatus.UNHEALTHY,
+                message=f"Redis connection timeout: {str(e)}",
+            )
+        except (ConnectionError, ConnectionRefusedError) as e:
+            return HealthCheckResult(
+                service="Redis",
+                service_type=ServiceType.REDIS,
+                status=HealthStatus.UNHEALTHY,
+                message=f"Redis connection error: {str(e)}",
+            )
         except Exception as e:
+            logger.error(f"Redis health check failed: {e}", exc_info=True)
             return HealthCheckResult(
                 service="Redis",
                 service_type=ServiceType.REDIS,
@@ -250,7 +280,22 @@ class HealthMonitor:
                             status=HealthStatus.UNHEALTHY,
                             message=f"Ollama returned status {response.status}",
                         )
+        except (TimeoutError, asyncio.TimeoutError) as e:
+            return HealthCheckResult(
+                service="Ollama (Local LLM)",
+                service_type=ServiceType.LLM_LOCAL,
+                status=HealthStatus.UNHEALTHY,
+                message=f"Ollama health check timeout: {str(e)}",
+            )
+        except (ConnectionError, ConnectionRefusedError, aiohttp.ClientError) as e:
+            return HealthCheckResult(
+                service="Ollama (Local LLM)",
+                service_type=ServiceType.LLM_LOCAL,
+                status=HealthStatus.UNHEALTHY,
+                message=f"Ollama connection error: {str(e)}",
+            )
         except Exception as e:
+            logger.error(f"Ollama health check failed: {e}", exc_info=True)
             return HealthCheckResult(
                 service="Ollama (Local LLM)",
                 service_type=ServiceType.LLM_LOCAL,
@@ -287,7 +332,22 @@ class HealthMonitor:
                 response_time_ms=round(response_time, 2),
                 message="OpenAI API accessible",
             )
+        except (TimeoutError, asyncio.TimeoutError) as e:
+            return HealthCheckResult(
+                service="OpenAI (Cloud LLM)",
+                service_type=ServiceType.LLM_CLOUD,
+                status=HealthStatus.UNHEALTHY,
+                message=f"OpenAI API timeout: {str(e)}",
+            )
+        except (ConnectionError, ConnectionRefusedError) as e:
+            return HealthCheckResult(
+                service="OpenAI (Cloud LLM)",
+                service_type=ServiceType.LLM_CLOUD,
+                status=HealthStatus.UNHEALTHY,
+                message=f"OpenAI API connection error: {str(e)}",
+            )
         except Exception as e:
+            logger.error(f"OpenAI API health check failed: {e}", exc_info=True)
             return HealthCheckResult(
                 service="OpenAI (Cloud LLM)",
                 service_type=ServiceType.LLM_CLOUD,
@@ -313,7 +373,15 @@ class HealthMonitor:
                 message=f"ChromaDB healthy with {len(collections)} collections",
                 details={"collections": len(collections)},
             )
+        except (TimeoutError, asyncio.TimeoutError) as e:
+            return HealthCheckResult(
+                service="ChromaDB (Vector DB)",
+                service_type=ServiceType.VECTOR_DB,
+                status=HealthStatus.UNHEALTHY,
+                message=f"ChromaDB health check timeout: {str(e)}",
+            )
         except Exception as e:
+            logger.error(f"ChromaDB health check failed: {e}", exc_info=True)
             return HealthCheckResult(
                 service="ChromaDB (Vector DB)",
                 service_type=ServiceType.VECTOR_DB,
@@ -343,7 +411,22 @@ class HealthMonitor:
                 )
             finally:
                 db.close()
+        except (TimeoutError, asyncio.TimeoutError) as e:
+            return HealthCheckResult(
+                service="Task Scheduler",
+                service_type=ServiceType.SCHEDULER,
+                status=HealthStatus.UNHEALTHY,
+                message=f"Scheduler health check timeout: {str(e)}",
+            )
+        except (ConnectionError, ConnectionRefusedError) as e:
+            return HealthCheckResult(
+                service="Task Scheduler",
+                service_type=ServiceType.SCHEDULER,
+                status=HealthStatus.UNHEALTHY,
+                message=f"Scheduler connection error: {str(e)}",
+            )
         except Exception as e:
+            logger.error(f"Scheduler health check failed: {e}", exc_info=True)
             return HealthCheckResult(
                 service="Task Scheduler",
                 service_type=ServiceType.SCHEDULER,
@@ -381,7 +464,16 @@ class HealthMonitor:
                     status=HealthStatus.DEGRADED,
                     message="Worker process not detected",
                 )
+        except (psutil.NoSuchProcess, psutil.AccessDenied) as e:
+            logger.debug(f"Worker check process access error: {e}", exc_info=True)
+            return HealthCheckResult(
+                service="Background Worker",
+                service_type=ServiceType.WORKER,
+                status=HealthStatus.DEGRADED,
+                message="Worker process check encountered access errors",
+            )
         except Exception as e:
+            logger.error(f"Worker health check failed: {e}", exc_info=True)
             return HealthCheckResult(
                 service="Background Worker",
                 service_type=ServiceType.WORKER,
@@ -395,7 +487,7 @@ class HealthMonitor:
             cpu_percent = psutil.cpu_percent(interval=1)
             memory = psutil.virtual_memory()
             disk = psutil.disk_usage('/')
-            
+
             return {
                 "cpu_percent": cpu_percent,
                 "memory_percent": memory.percent,
@@ -403,8 +495,11 @@ class HealthMonitor:
                 "disk_percent": disk.percent,
                 "disk_free_gb": round(disk.free / 1024 / 1024 / 1024, 2),
             }
+        except (ValueError, TypeError) as e:
+            logger.error(f"System metrics validation error: {e}", exc_info=True)
+            return {}
         except Exception as e:
-            logger.error(f"Failed to get system metrics: {e}")
+            logger.error(f"Failed to get system metrics: {e}", exc_info=True)
             return {}
 
     def _calculate_overall_status(

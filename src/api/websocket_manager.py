@@ -202,8 +202,10 @@ class WebSocketManager:
         for client_id, websocket in list(self.active_connections.items()):
             try:
                 await self.disconnect_client(client_id)
+            except (ConnectionError, BrokenPipeError) as e:
+                logger.error(f"Connection error closing connection for {client_id}: {e}", exc_info=True)
             except Exception as e:
-                logger.error(f"Error closing connection for {client_id}: {e}")
+                logger.error(f"Error closing connection for {client_id}: {e}", exc_info=True)
         
         logger.info("WebSocket Manager stopped")
     
@@ -289,8 +291,12 @@ class WebSocketManager:
         except WebSocketDisconnect:
             logger.info(f"Client {client_id} disconnected during authentication")
             return False
+        except (ConnectionError, BrokenPipeError) as e:
+            logger.error(f"Connection error connecting client {client_id}: {e}", exc_info=True)
+            await websocket.close(code=1011)  # Internal error
+            return False
         except Exception as e:
-            logger.error(f"Error connecting client {client_id}: {e}")
+            logger.error(f"Error connecting client {client_id}: {e}", exc_info=True)
             await websocket.close(code=1011)  # Internal error
             return False
         
@@ -302,8 +308,10 @@ class WebSocketManager:
             websocket = self.active_connections[client_id]
             try:
                 await websocket.close()
+            except (ConnectionError, BrokenPipeError) as e:
+                logger.error(f"Connection error closing websocket for {client_id}: {e}", exc_info=True)
             except Exception as e:
-                logger.error(f"Error closing websocket for {client_id}: {e}")
+                logger.error(f"Error closing websocket for {client_id}: {e}", exc_info=True)
         
         # Clean up resources
         self.active_connections.pop(client_id, None)
@@ -570,9 +578,14 @@ class WebSocketManager:
                 await self.send_interactive_response(
                     client_id, action, task_id, False, f"Unknown action: {action}"
                 )
-                
+
+        except (ValueError, TypeError, KeyError) as e:
+            logger.error(f"Error handling interactive action {action} for task {task_id} (data error): {e}", exc_info=True)
+            await self.send_interactive_response(
+                client_id, action, task_id, False, f"Internal error: {str(e)}"
+            )
         except Exception as e:
-            logger.error(f"Error handling interactive action {action} for task {task_id}: {e}")
+            logger.error(f"Error handling interactive action {action} for task {task_id}: {e}", exc_info=True)
             await self.send_interactive_response(
                 client_id, action, task_id, False, f"Internal error: {str(e)}"
             )
@@ -599,11 +612,13 @@ class WebSocketManager:
                     # Check if connection is still alive
                     if websocket.application_state != WebSocketState.CONNECTED:
                         break
-                        
+
         except WebSocketDisconnect:
             logger.info(f"Client {client_id} disconnected")
+        except (ConnectionError, BrokenPipeError) as e:
+            logger.error(f"Connection error handling messages for client {client_id}: {e}", exc_info=True)
         except Exception as e:
-            logger.error(f"Error handling messages for client {client_id}: {e}")
+            logger.error(f"Error handling messages for client {client_id}: {e}", exc_info=True)
         finally:
             await self.disconnect_client(client_id)
     
@@ -633,11 +648,13 @@ class WebSocketManager:
                 self.last_heartbeat[client_id] = time.time()
             else:
                 logger.warning(f"Unknown message type from client {client_id}: {message_type}")
-                
+
         except json.JSONDecodeError:
             logger.warning(f"Invalid JSON from client {client_id}: {message}")
+        except (ValueError, TypeError, KeyError) as e:
+            logger.error(f"Data error processing message from client {client_id}: {e}", exc_info=True)
         except Exception as e:
-            logger.error(f"Error processing message from client {client_id}: {e}")
+            logger.error(f"Error processing message from client {client_id}: {e}", exc_info=True)
     
     async def _send_message(self, websocket: WebSocket, message_type: WebSocketMessageType, data: Dict[str, Any]):
         """Send a message to a specific websocket."""
@@ -681,8 +698,12 @@ class WebSocketManager:
                     "server_time": time.time()
                 })
                 await asyncio.sleep(self.heartbeat_interval)
+            except (ConnectionError, BrokenPipeError) as e:
+                logger.error(f"Connection error in heartbeat for client {client_id}: {e}", exc_info=True)
+                await self.disconnect_client(client_id)
+                break
             except Exception as e:
-                logger.error(f"Heartbeat failed for client {client_id}: {e}")
+                logger.error(f"Heartbeat failed for client {client_id}: {e}", exc_info=True)
                 await self.disconnect_client(client_id)
                 break
     
@@ -713,11 +734,13 @@ class WebSocketManager:
                     ]
                     if not self.message_rate_limits[client_id]:
                         self.message_rate_limits.pop(client_id, None)
-                        
+
             except asyncio.CancelledError:
                 break
+            except (OperationalError, IntegrityError) as e:
+                logger.error(f"Database error in cleanup loop: {e}", exc_info=True)
             except Exception as e:
-                logger.error(f"Error in cleanup loop: {e}")
+                logger.error(f"Error in cleanup loop: {e}", exc_info=True)
     
     def _check_rate_limit(self, client_id: str) -> bool:
         """Check if client has exceeded message rate limit."""
@@ -784,9 +807,13 @@ class WebSocketManager:
                         f"to access unauthorized task {task_id}"
                     )
                     return False
-                    
+
+        except (OperationalError, IntegrityError) as e:
+            logger.error(f"Database error validating task access: {e}", exc_info=True)
+            # Fail closed - deny access on error
+            return False
         except Exception as e:
-            logger.error(f"Error validating task access: {e}")
+            logger.error(f"Error validating task access: {e}", exc_info=True)
             # Fail closed - deny access on error
             return False
     
@@ -850,9 +877,23 @@ class WebSocketManager:
                     "previous_status": previous_status,
                     "paused_at": task.metadata["paused_at"]
                 }
-                
+
+        except (OperationalError, IntegrityError) as e:
+            logger.error(f"Database error pausing task {task_id}: {e}", exc_info=True)
+            return {
+                "success": False,
+                "message": "Database error occurred",
+                "error_code": "DATABASE_ERROR"
+            }
+        except (KeyError, TypeError, ValueError) as e:
+            logger.error(f"Data error pausing task {task_id}: {e}", exc_info=True)
+            return {
+                "success": False,
+                "message": f"Failed to pause task: {str(e)}",
+                "error_code": "PAUSE_ERROR"
+            }
         except Exception as e:
-            logger.error(f"Error pausing task {task_id}: {e}")
+            logger.error(f"Error pausing task {task_id}: {e}", exc_info=True)
             return {
                 "success": False,
                 "message": f"Failed to pause task: {str(e)}",
@@ -949,9 +990,23 @@ class WebSocketManager:
                     "cancelled_at": task.metadata["cancelled_at"],
                     "cancellation_reason": cancellation_reason
                 }
-                
+
+        except (OperationalError, IntegrityError) as e:
+            logger.error(f"Database error cancelling task {task_id}: {e}", exc_info=True)
+            return {
+                "success": False,
+                "message": "Database error occurred",
+                "error_code": "DATABASE_ERROR"
+            }
+        except (KeyError, TypeError, ValueError) as e:
+            logger.error(f"Data error cancelling task {task_id}: {e}", exc_info=True)
+            return {
+                "success": False,
+                "message": f"Failed to cancel task: {str(e)}",
+                "error_code": "CANCEL_ERROR"
+            }
         except Exception as e:
-            logger.error(f"Error cancelling task {task_id}: {e}")
+            logger.error(f"Error cancelling task {task_id}: {e}", exc_info=True)
             return {
                 "success": False,
                 "message": f"Failed to cancel task: {str(e)}",
@@ -1049,7 +1104,7 @@ class WebSocketManager:
                     previous_priority, 
                     priority_level
                 )
-                
+
                 return {
                     "success": True,
                     "message": f"Task {task_id} priority updated to {priority_level}",
@@ -1057,9 +1112,23 @@ class WebSocketManager:
                     "new_priority": priority_level,
                     "priority_updated_at": task.metadata["priority_updated_at"]
                 }
-                
+
+        except (OperationalError, IntegrityError) as e:
+            logger.error(f"Database error updating task priority {task_id}: {e}", exc_info=True)
+            return {
+                "success": False,
+                "message": "Database error occurred",
+                "error_code": "DATABASE_ERROR"
+            }
+        except (KeyError, TypeError, ValueError) as e:
+            logger.error(f"Data error updating task priority {task_id}: {e}", exc_info=True)
+            return {
+                "success": False,
+                "message": f"Failed to update task priority: {str(e)}",
+                "error_code": "PRIORITY_ERROR"
+            }
         except Exception as e:
-            logger.error(f"Error updating task priority {task_id}: {e}")
+            logger.error(f"Error updating task priority {task_id}: {e}", exc_info=True)
             return {
                 "success": False,
                 "message": f"Failed to update task priority: {str(e)}",

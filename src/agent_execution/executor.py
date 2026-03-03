@@ -583,7 +583,29 @@ Return ONLY the Python code, no markdown."""
                 "output_format": OutputFormat.XLSX,
             }
 
+        except (ValueError, TypeError) as e:
+            logger.error(f"Spreadsheet generation validation error: {e}", exc_info=True)
+            return {
+                "success": False,
+                "message": f"Spreadsheet generation error: {e!s}",
+                "output_format": OutputFormat.XLSX,
+            }
+        except (TimeoutError, asyncio.TimeoutError) as e:
+            logger.error(f"Spreadsheet generation timeout: {e}", exc_info=True)
+            return {
+                "success": False,
+                "message": f"Spreadsheet generation timeout: {e!s}",
+                "output_format": OutputFormat.XLSX,
+            }
+        except (ConnectionError, ConnectionRefusedError) as e:
+            logger.error(f"Spreadsheet generation connection error: {e}", exc_info=True)
+            return {
+                "success": False,
+                "message": f"Spreadsheet generation connection error: {e!s}",
+                "output_format": OutputFormat.XLSX,
+            }
         except Exception as e:
+            logger.error(f"Spreadsheet generation error: {e}", exc_info=True)
             return {
                 "success": False,
                 "message": f"Spreadsheet generation error: {e!s}",
@@ -912,8 +934,22 @@ Return ONLY valid JSON, no markdown formatting, no explanations."""
                 }
 
         except json.JSONDecodeError as e:
+            logger.error(f"JSON parsing error in content generation: {e}", exc_info=True)
             return {"success": False, "message": f"JSON parsing error: {e!s}"}
+        except (ValueError, TypeError) as e:
+            logger.error(f"JSON content validation error: {e}", exc_info=True)
+            return {
+                "success": False,
+                "message": f"Error generating JSON content: {e!s}",
+            }
+        except (TimeoutError, asyncio.TimeoutError) as e:
+            logger.error(f"JSON content generation timeout: {e}", exc_info=True)
+            return {
+                "success": False,
+                "message": f"Error generating JSON content: {e!s}",
+            }
         except Exception as e:
+            logger.error(f"Error generating JSON content: {e}", exc_info=True)
             return {
                 "success": False,
                 "message": f"Error generating JSON content: {e!s}",
@@ -1062,7 +1098,32 @@ Return ONLY valid JSON, no markdown formatting, no explanations."""
                 "generation_method": "template_json",
             }
 
+        except (ValueError, TypeError) as e:
+            logger.error(f"Template document validation error: {e}", exc_info=True)
+            return {
+                "success": False,
+                "message": f"Template document generation error: {e!s}",
+                "output_format": output_format,
+                "generation_method": "template_json",
+            }
+        except (TimeoutError, asyncio.TimeoutError) as e:
+            logger.error(f"Template document generation timeout: {e}", exc_info=True)
+            return {
+                "success": False,
+                "message": f"Template document generation timeout: {e!s}",
+                "output_format": output_format,
+                "generation_method": "template_json",
+            }
+        except (ConnectionError, ConnectionRefusedError) as e:
+            logger.error(f"Template document connection error: {e}", exc_info=True)
+            return {
+                "success": False,
+                "message": f"Template document connection error: {e!s}",
+                "output_format": output_format,
+                "generation_method": "template_json",
+            }
         except Exception as e:
+            logger.error(f"Template document generation error: {e}", exc_info=True)
             return {
                 "success": False,
                 "message": f"Template document generation error: {e!s}",
@@ -1194,7 +1255,32 @@ Return ONLY the Python code, no markdown."""
             # Execute the generation
             return self._execute_generation(code, csv_data, **kwargs)
 
+        except (ValueError, TypeError) as e:
+            logger.error(f"Document generation validation error: {e}", exc_info=True)
+            return {
+                "success": False,
+                "message": f"Document generation error: {e!s}",
+                "output_format": self.output_format,
+                "document_type": "document",
+            }
+        except (TimeoutError, asyncio.TimeoutError) as e:
+            logger.error(f"Document generation timeout: {e}", exc_info=True)
+            return {
+                "success": False,
+                "message": f"Document generation timeout: {e!s}",
+                "output_format": self.output_format,
+                "document_type": "document",
+            }
+        except (ConnectionError, ConnectionRefusedError) as e:
+            logger.error(f"Document generation connection error: {e}", exc_info=True)
+            return {
+                "success": False,
+                "message": f"Document generation connection error: {e!s}",
+                "output_format": self.output_format,
+                "document_type": "document",
+            }
         except Exception as e:
+            logger.error(f"Document generation error: {e}", exc_info=True)
             return {
                 "success": False,
                 "message": f"Document generation error: {e!s}",
@@ -1466,7 +1552,35 @@ Return ONLY the Python code, no markdown."""
 
             return self._parse_result(success, sandbox_result, artifacts, "summary")
 
+        except (ValueError, TypeError) as e:
+            logger.error(f"Summary report validation error: {e}", exc_info=True)
+            return {
+                "success": False,
+                "message": f"Summary report generation error: {e!s}",
+                "output_format": "docx",
+                "document_type": "report",
+                "report_type": "summary",
+            }
+        except (TimeoutError, asyncio.TimeoutError) as e:
+            logger.error(f"Summary report timeout: {e}", exc_info=True)
+            return {
+                "success": False,
+                "message": f"Summary report timeout: {e!s}",
+                "output_format": "docx",
+                "document_type": "report",
+                "report_type": "summary",
+            }
+        except (ConnectionError, ConnectionRefusedError) as e:
+            logger.error(f"Summary report connection error: {e}", exc_info=True)
+            return {
+                "success": False,
+                "message": f"Summary report connection error: {e!s}",
+                "output_format": "docx",
+                "document_type": "report",
+                "report_type": "summary",
+            }
         except Exception as e:
+            logger.error(f"Summary report generation error: {e}", exc_info=True)
             return {
                 "success": False,
                 "message": f"Summary report generation error: {e!s}",
@@ -1535,7 +1649,35 @@ Return ONLY the Python code, no markdown."""
 
             return self._parse_result(success, sandbox_result, artifacts, "detailed")
 
+        except (ValueError, TypeError) as e:
+            logger.error(f"Detailed report validation error: {e}", exc_info=True)
+            return {
+                "success": False,
+                "message": f"Detailed report generation error: {e!s}",
+                "output_format": "docx",
+                "document_type": "report",
+                "report_type": "detailed",
+            }
+        except (TimeoutError, asyncio.TimeoutError) as e:
+            logger.error(f"Detailed report timeout: {e}", exc_info=True)
+            return {
+                "success": False,
+                "message": f"Detailed report timeout: {e!s}",
+                "output_format": "docx",
+                "document_type": "report",
+                "report_type": "detailed",
+            }
+        except (ConnectionError, ConnectionRefusedError) as e:
+            logger.error(f"Detailed report connection error: {e}", exc_info=True)
+            return {
+                "success": False,
+                "message": f"Detailed report connection error: {e!s}",
+                "output_format": "docx",
+                "document_type": "report",
+                "report_type": "detailed",
+            }
         except Exception as e:
+            logger.error(f"Detailed report generation error: {e}", exc_info=True)
             return {
                 "success": False,
                 "message": f"Detailed report generation error: {e!s}",
@@ -1630,7 +1772,35 @@ Return ONLY the Python code, no markdown."""
 
             return self._parse_result(success, sandbox_result, artifacts, "combined")
 
+        except (ValueError, TypeError) as e:
+            logger.error(f"Combined report validation error: {e}", exc_info=True)
+            return {
+                "success": False,
+                "message": f"Combined report generation error: {e!s}",
+                "output_format": "docx",
+                "document_type": "report",
+                "report_type": "combined",
+            }
+        except (TimeoutError, asyncio.TimeoutError) as e:
+            logger.error(f"Combined report timeout: {e}", exc_info=True)
+            return {
+                "success": False,
+                "message": f"Combined report timeout: {e!s}",
+                "output_format": "docx",
+                "document_type": "report",
+                "report_type": "combined",
+            }
+        except (ConnectionError, ConnectionRefusedError) as e:
+            logger.error(f"Combined report connection error: {e}", exc_info=True)
+            return {
+                "success": False,
+                "message": f"Combined report connection error: {e!s}",
+                "output_format": "docx",
+                "document_type": "report",
+                "report_type": "combined",
+            }
         except Exception as e:
+            logger.error(f"Combined report generation error: {e}", exc_info=True)
             return {
                 "success": False,
                 "message": f"Combined report generation error: {e!s}",
@@ -2080,7 +2250,26 @@ Return your review in JSON format."""
 
             return review_result
 
+        except (ValueError, TypeError) as e:
+            logger.error(f"Artifact review validation error: {e}", exc_info=True)
+            return {
+                "approved": True,  # Default to approved on error
+                "feedback": "",
+                "issues": [],
+                "success": False,
+                "error": str(e),
+            }
+        except (TimeoutError, asyncio.TimeoutError) as e:
+            logger.error(f"Artifact review timeout: {e}", exc_info=True)
+            return {
+                "approved": True,  # Default to approved on error
+                "feedback": "",
+                "issues": [],
+                "success": False,
+                "error": str(e),
+            }
         except Exception as e:
+            logger.error(f"Artifact review error: {e}", exc_info=True)
             return {
                 "approved": True,  # Default to approved on error
                 "feedback": "",
@@ -2174,7 +2363,14 @@ Please generate new code that addresses the feedback. Return only the code, no m
 
             return {"code": code, "success": True}
 
+        except (ValueError, TypeError) as e:
+            logger.error(f"Code regeneration validation error: {e}", exc_info=True)
+            return {"code": "", "success": False, "error": str(e)}
+        except (TimeoutError, asyncio.TimeoutError) as e:
+            logger.error(f"Code regeneration timeout: {e}", exc_info=True)
+            return {"code": "", "success": False, "error": str(e)}
         except Exception as e:
+            logger.error(f"Code regeneration error: {e}", exc_info=True)
             return {"code": "", "success": False, "error": str(e)}
 
     def _extract_python_code(self, response: str) -> str:
@@ -2289,7 +2485,14 @@ Please fix the code and return ONLY the corrected Python code. No markdown forma
 
             return {"code": code, "success": True, "error": None}
 
+        except (ValueError, TypeError) as e:
+            logger.error(f"Code fix validation error: {e}", exc_info=True)
+            return {"code": "", "success": False, "error": str(e)}
+        except (TimeoutError, asyncio.TimeoutError) as e:
+            logger.error(f"Code fix timeout: {e}", exc_info=True)
+            return {"code": "", "success": False, "error": str(e)}
         except Exception as e:
+            logger.error(f"Code fix error: {e}", exc_info=True)
             return {"code": "", "success": False, "error": str(e)}
 
     def _extract_python_code(self, response: str) -> str:
@@ -2378,9 +2581,17 @@ class AIResponseGenerator:
                 top_k=2,
             )
             return enhanced_prompt
+        except (ValueError, TypeError) as e:
+            # If few-shot fails, fall back to base prompt
+            logger.warning(f"Few-shot prompt validation error: {e}", exc_info=True)
+            return base_system_prompt
+        except (TimeoutError, asyncio.TimeoutError) as e:
+            # If few-shot fails, fall back to base prompt
+            logger.warning(f"Few-shot prompt timeout: {e}", exc_info=True)
+            return base_system_prompt
         except Exception as e:
             # If few-shot fails, fall back to base prompt
-            logger.warning(f"Few-shot prompt generation failed: {e}")
+            logger.warning(f"Few-shot prompt generation failed: {e}", exc_info=True)
             return base_system_prompt
 
     def generate_visualization_code(
@@ -2466,9 +2677,21 @@ Generate the Python code now. Return only the code, no markdown formatting."""
                 "few_shot_used": use_few_shot,
             }
 
+        except (ValueError, TypeError) as e:
+            # Fallback to basic code generation if LLM fails
+            logger.warning(f"LLM code validation error: {e}", exc_info=True)
+            return self._generate_fallback_code(csv_headers, user_request)
+        except (TimeoutError, asyncio.TimeoutError) as e:
+            # Fallback to basic code generation if LLM fails
+            logger.warning(f"LLM code generation timeout: {e}", exc_info=True)
+            return self._generate_fallback_code(csv_headers, user_request)
+        except (ConnectionError, ConnectionRefusedError) as e:
+            # Fallback to basic code generation if LLM fails
+            logger.warning(f"LLM code connection error: {e}", exc_info=True)
+            return self._generate_fallback_code(csv_headers, user_request)
         except Exception as e:
             # Fallback to basic code generation if LLM fails
-            logger.warning(f"LLM code generation failed, using fallback: {e}")
+            logger.warning(f"LLM code generation failed, using fallback: {e}", exc_info=True)
             return self._generate_fallback_code(csv_headers, user_request)
 
     def _extract_python_code(self, response: str) -> str:
@@ -2724,11 +2947,28 @@ def _execute_code_in_docker(
 
             return (False, f"{error_type}: {error_msg}", None, None)
 
+    except (ValueError, TypeError) as e:
+        error_msg = str(e)
+        logger.error(f"Docker execution validation error: {error_msg}", exc_info=True)
+        # Don't fallback for validation errors
+        return (False, f"ValidationError: {error_msg}", None, None)
+    except (TimeoutError, asyncio.TimeoutError) as e:
+        error_msg = str(e)
+        logger.warning(f"Docker execution timeout: {error_msg}", exc_info=True)
+        # Fall back to E2B for timeouts
+        e2b_api_key = os.environ.get("E2B_API_KEY")
+        return _execute_code_in_e2b(code, e2b_api_key, timeout, output_format)
+    except (ConnectionError, ConnectionRefusedError, OSError) as e:
+        error_msg = str(e)
+        logger.warning(f"Docker execution connection error: {error_msg}", exc_info=True)
+        # Fall back to E2B for connection errors
+        e2b_api_key = os.environ.get("E2B_API_KEY")
+        return _execute_code_in_e2b(code, e2b_api_key, timeout, output_format)
     except Exception as e:
         error_msg = str(e)
 
         # If Docker fails, try to fall back to E2B
-        logger.warning(f"Docker execution failed: {error_msg}")
+        logger.warning(f"Docker execution failed: {error_msg}", exc_info=True)
         logger.info("Falling back to E2B...")
 
         # Get E2B API key from environment
@@ -2776,6 +3016,16 @@ def _execute_code_in_e2b(
             # Extract artifacts from the result
             artifacts = result.artifacts if hasattr(result, "artifacts") else None
             return (True, result, None, artifacts)
+    except (TimeoutError, asyncio.TimeoutError) as e:
+        error_msg = str(e)
+        error_type = "TimeoutError"
+        error_msg = f"SANDBOX_TIMEOUT: Execution timed out after {sandbox_timeout}s. Complex data analysis with cloud models and retries may exceed 2 minutes. Task escalated to human review (Pillar 1.7)."
+        logger.error(f"E2B execution timeout: {error_msg}", exc_info=True)
+        return (False, f"{error_type}: {error_msg}", None, None)
+    except (ConnectionError, ConnectionRefusedError) as e:
+        error_msg = str(e)
+        logger.error(f"E2B connection error: {error_msg}", exc_info=True)
+        return (False, f"ConnectionError: {error_msg}", None, None)
     except Exception as e:
         error_msg = str(e)
 
@@ -2797,6 +3047,9 @@ def _execute_code_in_e2b(
             error_type = "ValueError"
         else:
             error_type = "ExecutionError"
+
+        # Log the error with full traceback
+        logger.error(f"E2B execution error ({error_type}): {error_msg}", exc_info=True)
 
         # Return error message with timeout indicator embedded (for escalation handling)
         return (False, f"{error_type}: {error_msg}", None, None)
@@ -2995,9 +3248,15 @@ def _capture_for_distillation(
 
         logger.info(f"Captured example {example_id} for distillation training")
 
+    except (ValueError, TypeError) as e:
+        # Don't fail the task if distillation capture fails
+        logger.warning(f"Warning: Failed to capture for distillation (validation error): {e}", exc_info=True)
+    except (IOError, OSError) as e:
+        # Don't fail the task if distillation capture fails
+        logger.warning(f"Warning: Failed to capture for distillation (IO error): {e}", exc_info=True)
     except Exception as e:
         # Don't fail the task if distillation capture fails
-        logger.warning(f"Warning: Failed to capture for distillation: {e}")
+        logger.warning(f"Warning: Failed to capture for distillation: {e}", exc_info=True)
 
 
 def _should_retry_execution(error_message: str) -> bool:

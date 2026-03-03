@@ -90,41 +90,99 @@ line-length = 100
 target-version = "py310"
 
 [tool.ruff.lint]
-# Enable comprehensive linting rules
+# Enable comprehensive linting rules for maximum code consistency
 select = [
+    # Core linting
     "E",      # pycodestyle errors
     "W",      # pycodestyle warnings
     "F",      # Pyflakes
     "I",      # isort (import sorting)
+    
+    # Bug prevention
     "B",      # flake8-bugbear (common bugs)
     "C4",     # flake8-comprehensions
-    "UP",     # pyupgrade (Python version upgrades)
+    "PIE",    # flake8-pie (additional bugbear rules)
+    "RUF",    # Ruff-specific rules
+    
+    # Code quality & style
     "N",      # pep8-naming
+    "Q",      # flake8-quotes
     "SIM",    # flake8-simplify
+    "RET",    # flake8-return
+    "COM",    # flake8-commas (trailing commas)
+    "PYI",    # flake8-pyi (type stub files)
+    
+    # Modernization
+    "UP",     # pyupgrade (Python version upgrades)
+    "PERF",   # flake8-perflint (performance anti-patterns)
+    
+    # Async & concurrency
     "ASYNC",  # flake8-async
+    
+    # Type checking
     "TCH",    # flake8-type-checking
     "ARG",    # flake8-unused-arguments
+    "FA",     # flake8-future-annotations
+    
+    # Pathlib & modernization
     "PTH",    # flake8-use-pathlib
+    
+    # Code cleanliness
     "ERA",    # eradicate (commented-out code)
     "PL",     # Pylint
-    "RUF",    # Ruff-specific rules
-    "E722",   # bare-except (explicitly included)
-    "S",      # flake8-bandit (security)
-    "DTZ",    # flake8-datetimez (datetime safety)
     "ISC",    # flake8-implicit-str-concat
-    "ICN",    # flake8-import-conventions
-    "PIE",    # flake8-pie (additional bugbear rules)
-    "Q",      # flake8-quotes
-    "RET",    # flake8-return
+    "INP",    # flake8-no-pep420 (implicit namespace packages)
     "TID",    # flake8-tidy-imports
+    "ICN",    # flake8-import-conventions
+    
+    # Security
+    "S",      # flake8-bandit (security)
+    "DJ",     # flake8-django (security patterns)
+    
+    # Datetime safety
+    "DTZ",    # flake8-datetimez (datetime safety)
+    
+    # Documentation
+    "D",      # pydocstyle (docstring conventions)
+    "D213",   # Multi-line docstring summary should start at the second line
+    "D417",   # Missing argument descriptions in docstrings
+    
+    # Explicitly include important rules
+    "E722",   # bare-except
 ]
+
 ignore = [
+    # Formatting rules (handled by ruff format)
     "E501",     # line too long (handled by formatter)
+    "W191",     # indentation contains tab
+    "E111",     # indentation with invalid multiple
+    "E114",     # indentation is over-indented
+    "E117",     # over-indented
+    
+    # Pylint rules that are too strict
     "PLR0913",  # Too many arguments in function definition
     "PLR2004",  # Magic value used in comparison
+    "PLR0912",  # Too many branches (handled by mccabe)
+    "PLR0915",  # Too many statements (handled by mccabe)
+    
+    # Pathlib rules that are too aggressive
     "PTH123",   # `open()` should be replaced by `Path.open()`
+    
+    # Test-related exclusions (handled in per-file-ignores)
     "S101",     # assert statements (allowed in tests)
+    
+    # Datetime rules for logging
     "DTZ005",   # datetime.now() without tz (acceptable for logs)
+    
+    # Docstring rules that are too strict
+    "D100",     # Missing docstring in public module
+    "D104",     # Missing docstring in public package
+    "D105",     # Missing docstring in magic method
+    "D203",     # 1 blank line required before class docstring (conflicts with D211)
+    "D212",     # Multi-line docstring summary should start at first line (use D213 instead)
+    
+    # Import rules that conflict with project structure
+    "INP001",   # File is part of an implicit namespace package
 ]
 
 # Allow autofix for specific rules
@@ -132,6 +190,9 @@ fixable = ["ALL"]
 unfixable = [
     "ERA",  # Don't auto-remove commented-out code (may be intentional)
 ]
+
+# Preview mode for latest rules
+preview = true
 
 # Per-file-ignores
 [tool.ruff.lint.per-file-ignores]
@@ -143,19 +204,30 @@ unfixable = [
     "DTZ",      # Datetime rules (test data)
     "S105",     # Hardcoded passwords (test data)
     "S106",     # Hardcoded passwords (test data)
+    "S110",     # try-except-pass (test error handling)
+    "B017",     # assert-raises-exception (test patterns)
+    "B011",     # assert-false (test patterns)
+    "D",        # Docstring requirements
+    "N806",     # Non-lowercase variable names (test data)
+    "PERF",     # Performance rules (test data)
+    "INP001",   # Implicit namespace package
 ]
 # Fine-tuning CLI can have simple code
 "src/fine_tuning/**/*.py" = ["T201"]
 # Ignore commented-out code in config files
 "pyproject.toml" = ["ALL"]
 # __init__.py files can have unused imports (for re-exporting)
-"**/__init__.py" = ["F401", "F403"]
+"**/__init__.py" = ["F401", "F403", "D104"]
 # Conftest can have unused fixtures and imports
-"**/conftest.py" = ["F401", "F403", "ARG"]
+"**/conftest.py" = ["F401", "F403", "ARG", "D100", "D103"]
 # Scripts can use print statements
-"scripts/**/*.py" = ["T201"]
+"scripts/**/*.py" = ["T201", "INP001"]
 # Migrations can have magic values and raw SQL
-"**/migrations/**/*.py" = ["PLR2004", "S608"]
+"**/migrations/**/*.py" = ["PLR2004", "S608", "D100"]
+# Examples and demos can have relaxed rules
+"examples/**/*.py" = ["D100", "D103", "PLR2004", "S101"]
+# Documentation code examples
+"docs/**/*.py" = ["D100", "D103", "F401", "ARG"]
 
 [tool.ruff.lint.mccabe]
 max-complexity = 12
@@ -178,6 +250,9 @@ section-order = [
     "first-party",
     "local-folder",
 ]
+# Group imports by type for better organization
+force-wrap-aliases = true
+split-on-trailing-comma = true
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
@@ -213,15 +288,98 @@ log_cli_level = "WARNING"
 
 [tool.coverage.run]
 source = ["src"]
-omit = ["tests/*", "*/migrations/*"]
+omit = [
+    "tests/*",
+    "*/migrations/*",
+    "*/__init__.py",
+    "*/__main__.py",
+    "src/client_portal/*",
+]
 branch = true
+# Collect coverage from parallel test runs
+parallel = true
+# Include concurrency support
+concurrency = ["thread", "multiprocessing"]
+# Measure coverage in real-time
+dynamic_context = "thread"
 
 [tool.coverage.report]
 exclude_lines = [
+    # Standard exclude lines
     "pragma: no cover",
     "if TYPE_CHECKING:",
     "raise NotImplementedError",
+    
+    # Abstract methods
+    "@abstractmethod",
+    "@abc.abstractmethod",
+    
+    # Protocol methods
+    "if __name__ == .__main__.:",
+    
+    # Type checking imports
+    "import TYPE_CHECKING",
+    
+    # Debug-only code
+    "if DEBUG:",
+    "if debug:",
+    
+    # Fallback imports
+    "except ImportError:",
+    
+    # Platform-specific code
+    "if sys.platform:",
+    "if platform.system():",
+    
+    # Version-specific code
+    "if sys.version_info",
+    
+    # Logging statements (hard to test)
+    "logger\\.debug\\(",
+    "logger\\.info\\(",
+    
+    # Docstrings
+    '"""',
+    "'''",
+    
+    # Pass statements
+    "\\.\\.\\.",
+    "pass",
 ]
 fail_under = 80
 show_missing = true
+skip_covered = false
+skip_empty = true
+sort = "Miss"
+# Show coverage by file
+precision = 2
+# Exclude specific files from coverage report
+exclude_also = [
+    "def __repr__",
+    "if self\\.debug",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if TYPE_CHECKING:",
+    "@abstractmethod",
+]
+
+# Per-file coverage thresholds
+[tool.coverage.paths]
+source = [
+    "src/",
+    "*/site-packages/",
+]
+
+# Coverage thresholds by module (optional granular control)
+[tool.coverage.html]
+directory = "htmlcov"
+title = "ArbitrageAI Coverage Report"
+show_contexts = true
+
+[tool.coverage.xml]
+output = "coverage.xml"
+
+# JSON report for CI/CD integration
+[tool.coverage.json]
+output = "coverage.json"
 

@@ -228,8 +228,14 @@ class MarketScanner:
                 logger.info(
                     f"MarketScanner initialized with LLM model: {EVALUATION_MODEL}"
                 )
+            except (ValueError, TypeError) as e:
+                logger.warning(f"Failed to initialize LLM service (validation error): {e}", exc_info=True)
+            except (TimeoutError, asyncio.TimeoutError) as e:
+                logger.warning(f"Failed to initialize LLM service (timeout): {e}", exc_info=True)
+            except (ConnectionError, ConnectionRefusedError) as e:
+                logger.warning(f"Failed to initialize LLM service (connection error): {e}", exc_info=True)
             except Exception as e:
-                logger.warning(f"Failed to initialize LLM service: {e}")
+                logger.warning(f"Failed to initialize LLM service: {e}", exc_info=True)
 
     def _load_marketplaces_from_config(self) -> None:
         """Load active marketplace URLs from the marketplaces.json config file."""
@@ -260,8 +266,17 @@ class MarketScanner:
                 f"Loaded {len(self.marketplace_urls)} marketplace URLs from config"
             )
 
+        except (json.JSONDecodeError, ValueError) as e:
+            logger.error(f"Failed to load marketplaces from config (JSON error): {e}", exc_info=True)
+            self.marketplace_urls = [DEFAULT_MARKETPLACE_URL]
+        except (FileNotFoundError, IOError, OSError) as e:
+            logger.error(f"Failed to load marketplaces from config (file error): {e}", exc_info=True)
+            self.marketplace_urls = [DEFAULT_MARKETPLACE_URL]
+        except (KeyError, TypeError) as e:
+            logger.error(f"Failed to load marketplaces from config (data error): {e}", exc_info=True)
+            self.marketplace_urls = [DEFAULT_MARKETPLACE_URL]
         except Exception as e:
-            logger.error(f"Failed to load marketplaces from config: {e}")
+            logger.error(f"Failed to load marketplaces from config: {e}", exc_info=True)
             self.marketplace_urls = [DEFAULT_MARKETPLACE_URL]
 
     async def __aenter__(self):
@@ -294,14 +309,26 @@ class MarketScanner:
             # Ensure pool is started
             try:
                 await pool.start()
+            except (TimeoutError, asyncio.TimeoutError) as e:
+                logger.warning(f"BrowserPool start timeout: {e}", exc_info=True)
+            except (ConnectionError, ConnectionRefusedError) as e:
+                logger.warning(f"BrowserPool connection error: {e}", exc_info=True)
             except Exception as e:
-                logger.warning(f"BrowserPool start failed, will retry on acquire: {e}")
+                logger.warning(f"BrowserPool start failed, will retry on acquire: {e}", exc_info=True)
 
             self.browser = await pool.acquire_browser()
 
             logger.info("MarketScanner started successfully using BrowserPool")
+        except (TimeoutError, asyncio.TimeoutError) as e:
+            logger.error(f"Failed to start scanner (timeout): {e}", exc_info=True)
+            await self.stop()  # Cleanup on failure
+            raise
+        except (ConnectionError, ConnectionRefusedError) as e:
+            logger.error(f"Failed to start scanner (connection error): {e}", exc_info=True)
+            await self.stop()  # Cleanup on failure
+            raise
         except Exception as e:
-            logger.error(f"Failed to start scanner with BrowserPool: {e}")
+            logger.error(f"Failed to start scanner with BrowserPool: {e}", exc_info=True)
             await self.stop()  # Cleanup on failure
             raise
 
@@ -314,8 +341,10 @@ class MarketScanner:
             if self.page:
                 try:
                     await self.page.close()
+                except (TimeoutError, asyncio.TimeoutError) as e:
+                    logger.warning(f"Error closing page (timeout): {e}", exc_info=True)
                 except Exception as e:
-                    logger.warning(f"Error closing page: {e}")
+                    logger.warning(f"Error closing page: {e}", exc_info=True)
 
             if self.browser:
                 # Release browser back to pool instead of closing (Issue #4)
@@ -323,8 +352,12 @@ class MarketScanner:
                 await pool.release_browser(self.browser)
 
             logger.info("MarketScanner resources released back to pool")
+        except (TimeoutError, asyncio.TimeoutError) as e:
+            logger.warning(f"Error releasing MarketScanner resources (timeout): {e}", exc_info=True)
+        except (ConnectionError, ConnectionRefusedError) as e:
+            logger.warning(f"Error releasing MarketScanner resources (connection error): {e}", exc_info=True)
         except Exception as e:
-            logger.warning(f"Error releasing MarketScanner resources: {e}")
+            logger.warning(f"Error releasing MarketScanner resources: {e}", exc_info=True)
         finally:
             self.page = None
             self.browser = None
@@ -407,14 +440,25 @@ class MarketScanner:
                     posting = await self._extract_job_posting(element, i)
                     if posting:
                         job_postings.append(posting)
+                except (TimeoutError, asyncio.TimeoutError) as e:
+                    logger.warning(f"Failed to extract job posting {i} (timeout): {e}", exc_info=True)
+                    continue
                 except Exception as e:
-                    logger.warning(f"Failed to extract job posting {i}: {e}")
+                    logger.warning(f"Failed to extract job posting {i}: {e}", exc_info=True)
                     continue
 
             logger.info(f"Extracted {len(job_postings)} job postings")
 
+        except (TimeoutError, asyncio.TimeoutError) as e:
+            logger.error(f"Error fetching job postings (timeout): {e}", exc_info=True)
+            # Return mock data for graceful degradation
+            return self._get_mock_job_postings(max_posts)
+        except (ConnectionError, ConnectionRefusedError) as e:
+            logger.error(f"Error fetching job postings (connection error): {e}", exc_info=True)
+            # Return mock data for graceful degradation
+            return self._get_mock_job_postings(max_posts)
         except Exception as e:
-            logger.error(f"Error fetching job postings: {e}")
+            logger.error(f"Error fetching job postings: {e}", exc_info=True)
             # Return mock data for graceful degradation
             return self._get_mock_job_postings(max_posts)
 
@@ -423,8 +467,10 @@ class MarketScanner:
             if page:
                 try:
                     await page.close()
+                except (TimeoutError, asyncio.TimeoutError) as e:
+                    logger.warning(f"Error closing page during cleanup (timeout): {e}", exc_info=True)
                 except Exception as e:
-                    logger.warning(f"Error closing page during cleanup: {e}")
+                    logger.warning(f"Error closing page during cleanup: {e}", exc_info=True)
 
         return job_postings
 
@@ -481,8 +527,11 @@ class MarketScanner:
                 url=url,
             )
 
+        except (TimeoutError, asyncio.TimeoutError) as e:
+            logger.warning(f"Failed to extract job posting (timeout): {e}", exc_info=True)
+            return None
         except Exception as e:
-            logger.warning(f"Failed to extract job posting: {e}")
+            logger.warning(f"Failed to extract job posting: {e}", exc_info=True)
             return None
 
     def _get_mock_job_postings(self, max_posts: int) -> list[JobPosting]:
@@ -633,8 +682,17 @@ Evaluate this job posting and return JSON."""
             logger.warning("Failed to parse LLM response, using fallback evaluation")
             return self._evaluate_fallback(title, description, task_id)
 
+        except (ValueError, TypeError) as e:
+            logger.error(f"LLM evaluation validation error: {e}", exc_info=True)
+            return self._evaluate_fallback(title, description, task_id)
+        except (TimeoutError, asyncio.TimeoutError) as e:
+            logger.error(f"LLM evaluation timeout: {e}", exc_info=True)
+            return self._evaluate_fallback(title, description, task_id)
+        except (ConnectionError, ConnectionRefusedError) as e:
+            logger.error(f"LLM evaluation connection error: {e}", exc_info=True)
+            return self._evaluate_fallback(title, description, task_id)
         except Exception as e:
-            logger.error(f"LLM evaluation failed: {e}")
+            logger.error(f"LLM evaluation failed: {e}", exc_info=True)
             return self._evaluate_fallback(title, description, task_id)
 
     def _evaluate_fallback(
@@ -826,8 +884,38 @@ Evaluate this job posting and return JSON."""
                 "scanned_at": datetime.now().isoformat(),
             }
 
+        except (ValueError, TypeError) as e:
+            logger.error(f"Scan validation error: {e}", exc_info=True)
+            return {
+                "success": False,
+                "message": f"Scan failed: {e!s}",
+                "postings": [],
+                "evaluations": [],
+                "scan_time": 0,
+                "error": str(e),
+            }
+        except (TimeoutError, asyncio.TimeoutError) as e:
+            logger.error(f"Scan timeout: {e}", exc_info=True)
+            return {
+                "success": False,
+                "message": f"Scan timeout: {e!s}",
+                "postings": [],
+                "evaluations": [],
+                "scan_time": 0,
+                "error": str(e),
+            }
+        except (ConnectionError, ConnectionRefusedError) as e:
+            logger.error(f"Scan connection error: {e}", exc_info=True)
+            return {
+                "success": False,
+                "message": f"Scan connection error: {e!s}",
+                "postings": [],
+                "evaluations": [],
+                "scan_time": 0,
+                "error": str(e),
+            }
         except Exception as e:
-            logger.error(f"Scan and evaluation failed: {e}")
+            logger.error(f"Scan and evaluation failed: {e}", exc_info=True)
             return {
                 "success": False,
                 "message": f"Scan failed: {e!s}",
@@ -899,8 +987,14 @@ Evaluate this job posting and return JSON."""
                             job["marketplace_url"] = url
                             all_suitable_jobs.append(job)
 
+                except (TimeoutError, asyncio.TimeoutError) as e:
+                    logger.error(f"Failed to scan {url} (timeout): {e}", exc_info=True)
+                    marketplace_results[url] = {"success": False, "error": str(e)}
+                except (ConnectionError, ConnectionRefusedError) as e:
+                    logger.error(f"Failed to scan {url} (connection error): {e}", exc_info=True)
+                    marketplace_results[url] = {"success": False, "error": str(e)}
                 except Exception as e:
-                    logger.error(f"Failed to scan {url}: {e}")
+                    logger.error(f"Failed to scan {url}: {e}", exc_info=True)
                     marketplace_results[url] = {"success": False, "error": str(e)}
 
             scan_duration = (datetime.now() - start_time).total_seconds()
@@ -918,8 +1012,38 @@ Evaluate this job posting and return JSON."""
                 "scanned_at": datetime.now().isoformat(),
             }
 
+        except (ValueError, TypeError) as e:
+            logger.error(f"Multi-marketplace scan validation error: {e}", exc_info=True)
+            return {
+                "success": False,
+                "message": f"Multi-marketplace scan failed: {e!s}",
+                "marketplaces_scanned": 0,
+                "total_postings": 0,
+                "suitable_jobs": [],
+                "error": str(e),
+            }
+        except (TimeoutError, asyncio.TimeoutError) as e:
+            logger.error(f"Multi-marketplace scan timeout: {e}", exc_info=True)
+            return {
+                "success": False,
+                "message": f"Multi-marketplace scan timeout: {e!s}",
+                "marketplaces_scanned": 0,
+                "total_postings": 0,
+                "suitable_jobs": [],
+                "error": str(e),
+            }
+        except (ConnectionError, ConnectionRefusedError) as e:
+            logger.error(f"Multi-marketplace scan connection error: {e}", exc_info=True)
+            return {
+                "success": False,
+                "message": f"Multi-marketplace scan connection error: {e!s}",
+                "marketplaces_scanned": 0,
+                "total_postings": 0,
+                "suitable_jobs": [],
+                "error": str(e),
+            }
         except Exception as e:
-            logger.error(f"Multi-marketplace scan failed: {e}")
+            logger.error(f"Multi-marketplace scan failed: {e}", exc_info=True)
             return {
                 "success": False,
                 "message": f"Multi-marketplace scan failed: {e!s}",
@@ -982,8 +1106,14 @@ async def run_continuous_scan(
                 result["iteration"] = iteration
                 yield result
 
+        except (TimeoutError, asyncio.TimeoutError) as e:
+            logger.error(f"Scan iteration {iteration} timeout: {e}", exc_info=True)
+            yield {"success": False, "error": str(e), "iteration": iteration}
+        except (ConnectionError, ConnectionRefusedError) as e:
+            logger.error(f"Scan iteration {iteration} connection error: {e}", exc_info=True)
+            yield {"success": False, "error": str(e), "iteration": iteration}
         except Exception as e:
-            logger.error(f"Scan iteration {iteration} failed: {e}")
+            logger.error(f"Scan iteration {iteration} failed: {e}", exc_info=True)
             yield {"success": False, "error": str(e), "iteration": iteration}
 
         # Wait before next scan
@@ -1105,8 +1235,17 @@ async def place_bid_on_posting(
                             f"No adapter for {marketplace_id}, bid recorded but not submitted"
                         )
                         return True
+                except (ValueError, TypeError) as adapter_error:
+                    logger.error(f"Adapter bid validation error: {adapter_error}", exc_info=True)
+                    return False
+                except (TimeoutError, asyncio.TimeoutError) as adapter_error:
+                    logger.error(f"Adapter bid timeout: {adapter_error}", exc_info=True)
+                    return False
+                except (ConnectionError, ConnectionRefusedError) as adapter_error:
+                    logger.error(f"Adapter connection error: {adapter_error}", exc_info=True)
+                    return False
                 except Exception as adapter_error:
-                    logger.error(f"Adapter bid submission failed: {adapter_error}")
+                    logger.error(f"Adapter bid submission failed: {adapter_error}", exc_info=True)
                     # Keep as ACTIVE/PENDING for retry later
                     return False
 
@@ -1118,8 +1257,14 @@ async def place_bid_on_posting(
             f"Lock timeout for {marketplace_id}:{posting_id} - someone else is bidding"
         )
         return False
+    except (ValueError, TypeError) as e:
+        logger.error(f"Bid placement validation error for {marketplace_id}:{posting_id}: {e}", exc_info=True)
+        return False
+    except (ConnectionError, ConnectionRefusedError) as e:
+        logger.error(f"Bid placement connection error for {marketplace_id}:{posting_id}: {e}", exc_info=True)
+        return False
     except Exception as e:
-        logger.error(f"Error in bid placement for {marketplace_id}:{posting_id}: {e}")
+        logger.error(f"Error in bid placement for {marketplace_id}:{posting_id}: {e}", exc_info=True)
         return False
 
 
