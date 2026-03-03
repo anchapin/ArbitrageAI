@@ -6,11 +6,13 @@ Provides validation and audit logging for configuration changes.
 
 import os
 import logging
+import sys
 from typing import Any, Optional, Dict
 
 # Import logger
 try:
     from ..utils.logger import get_logger
+    from ..utils.secrets import load_or_create_secrets, is_insecure_default, validate_secret_security
 
     logger = get_logger(__name__)
 except (ImportError, ValueError):
@@ -107,12 +109,15 @@ class ConfigManager:
         # Infrastructure
         "REDIS_URL": "redis://localhost:6379/0",
         "DATABASE_URL": "sqlite:///./data/tasks.db",
-        # Authentication
-        "JWT_SECRET_KEY": "CHANGE_ME_IN_PRODUCTION_generate_a_secure_random_32_byte_key",
+        # Authentication - Auto-loaded from secure storage or environment
+        # JWT_SECRET_KEY is loaded from secrets or environment (not hardcoded)
     }
 
     def __init__(self):
         """Initialize ConfigManager and load all values into attributes."""
+        # Load secure secrets first
+        self._load_secure_secrets()
+        # Then load all other configuration
         self._load_all()
 
     def _load_all(self):
@@ -138,6 +143,46 @@ class ConfigManager:
             raise ValidationError(
                 f"LLM_HEALTH_CHECK_INITIAL_DELAY_MS ({self.LLM_HEALTH_CHECK_INITIAL_DELAY_MS}) cannot exceed LLM_HEALTH_CHECK_MAX_DELAY_MS ({self.LLM_HEALTH_CHECK_MAX_DELAY_MS})"
             )
+
+    def _load_secure_secrets(self):
+        """
+        Load secure secrets from secure storage or environment variables.
+        
+        This method:
+        1. Attempts to load secrets from secure file storage
+        2. Falls back to environment variables if not found
+        3. Auto-generates new secrets if neither exists (development mode)
+        4. Sets environment variables for use by the rest of the application
+        """
+        try:
+            # Try to load from secure storage
+            secrets = load_or_create_secrets()
+            
+            # Set environment variables from loaded secrets
+            # Only set if not already overridden by environment
+            for key, value in secrets.items():
+                if key not in os.environ:
+                    os.environ[key] = value
+            
+            logger.info("✅ Loaded secrets from secure storage")
+            
+        except Exception as e:
+            logger.warning(f"Failed to load secrets from storage: {e}")
+            logger.info("Using environment variables for secrets")
+            
+            # Check if critical secrets are set in environment
+            critical_secrets = ["JWT_SECRET_KEY", "CLIENT_AUTH_SECRET"]
+            missing = []
+            
+            for secret in critical_secrets:
+                if secret not in os.environ:
+                    missing.append(secret)
+            
+            if missing:
+                logger.warning(
+                    f"Critical secrets not set in environment: {', '.join(missing)}\n"
+                    f"Run: python scripts/generate_secrets.py"
+                )
 
     @classmethod
     def get(cls, key: str, default: Any = None) -> Any:
@@ -212,6 +257,73 @@ class ConfigManager:
         """Convert all configuration to dictionary."""
         return {key: getattr(self, key) for key in self._DEFAULTS.keys()}
 
+    @staticmethod
+    def validate_production_configuration() -> None:
+        """
+        Validate production configuration and fail fast on insecure defaults.
+        
+        This function should be called during application startup,
+        before any sensitive operations are performed.
+        
+        Raises:
+            SystemExit: If critical security requirements are not met
+        """
+        if os.getenv("ENVIRONMENT") != "production":
+            logger.info("Skipping production validation (not in production mode)")
+            return
+        
+        errors = []
+        warnings = []
+        
+        # Critical secrets that MUST be secure in production
+        critical_secrets = {
+            "JWT_SECRET_KEY": "JWT signing secret",
+            "CLIENT_AUTH_SECRET": "Client authentication secret",
+            "STRIPE_SECRET_KEY": "Stripe payment processing secret",
+            "STRIPE_WEBHOOK_SECRET": "Stripe webhook verification secret",
+        }
+        
+        for env_var, description in critical_secrets.items():
+            value = os.getenv(env_var, "")
+            
+            if not value:
+                errors.append(f"❌ {env_var} is not set ({description})")
+            elif is_insecure_default(value):
+                errors.append(
+                    f"❌ {env_var} appears to be an insecure default ({description})\n"
+                    f"   Current value: {value[:20]}...\n"
+                    f"   Action: Generate a secure random value"
+                )
+        
+        # Important but not critical
+        if not os.getenv("DATABASE_URL"):
+            warnings.append("⚠️  DATABASE_URL not set, using default SQLite")
+        
+        # Log warnings
+        for warning in warnings:
+            logger.warning(warning)
+        
+        # Fail on errors
+        if errors:
+            logger.critical("\n" + "="*70)
+            logger.critical("🚨 PRODUCTION SECURITY VALIDATION FAILED 🚨")
+            logger.critical("="*70)
+            logger.critical("\nThe following security issues must be resolved:\n")
+            
+            for error in errors:
+                logger.critical(error)
+            
+            logger.critical("\n" + "="*70)
+            logger.critical("ACTION REQUIRED:")
+            logger.critical("1. Generate secure secrets: python scripts/generate_secrets.py")
+            logger.critical("2. Set environment variables securely")
+            logger.critical("3. Never commit secrets to version control")
+            logger.critical("="*70 + "\n")
+            
+            sys.exit(1)
+        
+        logger.info("✅ Production security validation passed")
+
 
 # Singleton getter
 def get_config() -> ConfigManager:
@@ -223,3 +335,9 @@ def get_config() -> ConfigManager:
 def reset_instance():
     """Reset the configuration cache and singleton instance."""
     ConfigManager.reset_instance()
+
+
+# Convenience export for validation function
+def validate_production_configuration() -> None:
+    """Validate production configuration and fail fast on insecure defaults."""
+    ConfigManager.validate_production_configuration()
