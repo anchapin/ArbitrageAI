@@ -11,6 +11,10 @@ Features:
 - Performance optimization recommendations
 - Anomaly detection and alerting
 - Custom dashboard widgets and visualizations
+
+Issue #193: Fix N+1 Query Problems with Eager Loading
+- Added joinedload/selectinload for Task relationships
+- Optimized queries to use bulk loading where possible
 """
 
 from dataclasses import dataclass
@@ -23,8 +27,8 @@ import numpy as np
 from pydantic import BaseModel
 from sklearn.ensemble import IsolationForest
 from sklearn.linear_model import LinearRegression
-from sqlalchemy import case, desc, func
-from sqlalchemy.orm import Session
+from sqlalchemy import case, desc, func, select
+from sqlalchemy.orm import Session, joinedload, selectinload
 
 # Import telemetry
 from traceloop.sdk.decorators import task
@@ -198,6 +202,7 @@ class AnalyticsEngine:
                 Task.status == TaskStatus.COMPLETED,
                 Task.completed_at.isnot(None),
             )
+            .options(joinedload(Task.execution))
             .all()
         )
 

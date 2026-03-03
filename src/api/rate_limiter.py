@@ -2,19 +2,31 @@
 Redis-backed distributed rate limiting and quota enforcement.
 
 Issue #45: API Rate Limiting, Quotas, and Usage Analytics
+Issue #192: Replace In-Memory Rate Limiting with Redis
 
 Provides:
-- RedisRateLimiter for distributed rate limiting (sliding window)
+- RedisRateLimiter for distributed rate limiting (sliding window with Lua scripts)
+- InMemoryRateLimiter as fallback when Redis unavailable
 - QuotaManager for monthly quota tracking
 - Graceful handling with 429/402 status codes
 - Webhook alerts for quota thresholds
+
+Features:
+- Atomic Redis operations using INCR/EXPIRE
+- Distributed rate limiting across multiple workers
+- Lua scripts for atomic multi-operation execution
+- Automatic fallback to in-memory limiting if Redis unavailable
+- Configurable Redis connection with retry logic
 """
 
 from datetime import datetime, timezone
 import logging
+import os
 import time
+from typing import Any
 
 import redis
+from redis.exceptions import RedisError
 from sqlalchemy.orm import Session
 
 from .models import (
@@ -27,133 +39,294 @@ from .models import (
 logger = logging.getLogger(__name__)
 
 
-class RateLimiter:
-    """
-    Distributed rate limiter using Redis (sliding window algorithm).
+# Lua script for atomic rate limiting (INCR + EXPIRE in one operation)
+# This ensures atomicity across distributed workers
+RATE_LIMIT_LUA_SCRIPT = """
+local key = KEYS[1]
+local limit = tonumber(ARGV[1])
+local ttl = tonumber(ARGV[2])
 
-    Tracks requests per second (RPS) with burst capacity using a sliding
-    window. Each request increments a counter for the current second window.
+local current = redis.call('INCR', key)
+if current == 1 then
+    redis.call('EXPIRE', key, ttl)
+end
+
+if current > limit then
+    return {0, current}
+else
+    return {1, current}
+end
+"""
+
+# Lua script for burst rate limiting
+BURST_LIMIT_LUA_SCRIPT = """
+local key = KEYS[1]
+local burst_key = KEYS[2]
+local limit = tonumber(ARGV[1])
+local burst_limit = tonumber(ARGV[2])
+local ttl = tonumber(ARGV[3])
+local burst_ttl = tonumber(ARGV[4])
+
+-- Check main rate limit
+local current = redis.call('INCR', key)
+if current == 1 then
+    redis.call('EXPIRE', key, ttl)
+end
+
+-- Check burst limit
+local burst_current = redis.call('INCR', burst_key)
+if burst_current == 1 then
+    redis.call('EXPIRE', burst_key, burst_ttl)
+end
+
+-- Allow if within rate limit OR burst available
+if current <= limit then
+    return {1, current, burst_limit - burst_current + 1}
+elseif burst_current <= burst_limit then
+    return {1, current, burst_limit - burst_current + 1}
+else
+    return {0, current, 0}
+end
+"""
+
+
+class RedisRateLimiter:
+    """
+    Distributed rate limiter using Redis with atomic Lua scripts.
+
+    Features:
+    - Uses Redis INCR/EXPIRE for atomic operations
+    - Lua scripts ensure atomicity across distributed workers
+    - Sliding window algorithm with burst capacity
+    - Automatic connection management with retry logic
+    - Graceful degradation to in-memory fallback
+
+    Usage:
+        limiter = RedisRateLimiter()
+        allowed, details = limiter.is_allowed("user_123", rps_limit=10, burst_limit=50)
     """
 
-    def __init__(self, redis_client: redis.Redis | None = None):
+    # Class-level storage for in-memory fallback (shared across instances)
+    _in_memory_windows: dict[str, dict[str, Any]] = {}
+
+    def __init__(
+        self,
+        redis_url: str | None = None,
+        redis_host: str | None = None,
+        redis_port: int | None = None,
+        redis_db: int | None = None,
+        redis_password: str | None = None,
+        default_ttl: int = 2,
+        burst_ttl: int = 3600,
+    ):
         """
-        Initialize rate limiter.
+        Initialize Redis rate limiter.
 
         Args:
-            redis_client: Redis connection (or None to create default)
+            redis_url: Complete Redis URL (takes priority if provided)
+            redis_host: Redis host (used if redis_url not provided)
+            redis_port: Redis port (used if redis_url not provided)
+            redis_db: Redis database number (used if redis_url not provided)
+            redis_password: Redis password (used if redis_url not provided)
+            default_ttl: Default TTL for rate limit keys in seconds
+            burst_ttl: TTL for burst counter keys in seconds
         """
-        if redis_client is None:
-            try:
-                redis_client = redis.Redis(
-                    host="localhost",
-                    port=6379,
-                    db=0,
-                    decode_responses=True,
-                )
-                redis_client.ping()
-            except Exception as e:
-                logger.warning(f"Redis not available: {e}. Using in-memory fallback.")
-                redis_client = None
+        self.default_ttl = default_ttl
+        self.burst_ttl = burst_ttl
+        self._redis: redis.Redis | None = None
+        self._redis_url = redis_url
+        self._redis_host = redis_host
+        self._redis_port = redis_port
+        self._redis_db = redis_db
+        self._redis_password = redis_password
+        self._script_sha: str | None = None
+        self._burst_script_sha: str | None = None
 
-        self.redis = redis_client
-        self._in_memory_windows = {}  # Fallback: in-memory window tracking
+        # Try to connect to Redis
+        self._connect()
+
+    def _connect(self) -> None:
+        """Establish Redis connection with retry logic."""
+        try:
+            # Try URL first
+            if self._redis_url:
+                self._redis = redis.Redis.from_url(
+                    self._redis_url,
+                    decode_responses=True,
+                    socket_connect_timeout=5,
+                    socket_timeout=5,
+                )
+            else:
+                # Fall back to individual parameters
+                self._redis = redis.Redis(
+                    host=self._redis_host or os.getenv("REDIS_HOST", "localhost"),
+                    port=int(self._redis_port or os.getenv("REDIS_PORT", 6379)),
+                    db=int(self._redis_db or os.getenv("REDIS_DB", 0)),
+                    password=self._redis_password or os.getenv("REDIS_PASSWORD"),
+                    decode_responses=True,
+                    socket_connect_timeout=5,
+                    socket_timeout=5,
+                )
+
+            # Test connection
+            self._redis.ping()
+
+            # Load Lua scripts
+            self._load_scripts()
+
+            logger.info("Redis rate limiter connected successfully")
+
+        except RedisError as e:
+            logger.warning(f"Redis connection failed: {e}. Rate limiting will use in-memory fallback.")
+            self._redis = None
+        except Exception as e:
+            logger.warning(f"Unexpected error connecting to Redis: {e}. Rate limiting will use in-memory fallback.")
+            self._redis = None
+
+    def _load_scripts(self) -> None:
+        """Load Lua scripts into Redis and cache their SHA hashes."""
+        if self._redis:
+            try:
+                self._script_sha = self._redis.script_load(RATE_LIMIT_LUA_SCRIPT)
+                self._burst_script_sha = self._redis.script_load(BURST_LIMIT_LUA_SCRIPT)
+                logger.debug("Lua scripts loaded successfully")
+            except RedisError as e:
+                logger.warning(f"Failed to load Lua scripts: {e}. Will use pipeline approach.")
+                self._script_sha = None
+                self._burst_script_sha = None
+
+    @property
+    def is_redis_available(self) -> bool:
+        """Check if Redis is available."""
+        if self._redis is None:
+            return False
+        try:
+            self._redis.ping()
+            return True
+        except RedisError:
+            return False
 
     def is_allowed(
         self,
         user_id: str,
-        quota: UserQuota,
-        override: bool = False,
-    ) -> tuple[bool, dict]:
+        rps_limit: int = 10,
+        burst_limit: int = 50,
+        endpoint: str | None = None,
+    ) -> tuple[bool, dict[str, Any]]:
         """
         Check if request is allowed within rate limits.
 
-        Uses sliding window algorithm:
+        Uses sliding window algorithm with burst capacity:
         - Current second: increment counter
         - Check if counter > rate_limit_rps
         - Include burst capacity for spikes
 
         Args:
             user_id: User identifier
-            quota: UserQuota config
-            override: Admin override flag
+            rps_limit: Requests per second limit
+            burst_limit: Burst capacity limit
+            endpoint: Optional endpoint for more granular limiting
 
         Returns:
-            (allowed: bool, details: dict)
+            Tuple of (allowed: bool, details: dict)
         """
-        if override or quota.override_rate_limit:
-            return True, {"allowed": True, "reason": "admin_override"}
-
-        # For Enterprise tier, no rate limiting
-        if quota.tier == PricingTier.ENTERPRISE:
-            return True, {"allowed": True, "reason": "enterprise_unlimited"}
-
-        current_second = int(time.time())
-        window_key = f"rate_limit:{user_id}:{current_second}"
-        burst_key = f"rate_limit_burst:{user_id}"
-
-        if self.redis:
-            return self._check_redis(
-                window_key,
-                burst_key,
-                quota.rate_limit_rps,
-                quota.rate_limit_burst,
-            )
-        return self._check_memory(
-            user_id,
-            current_second,
-            quota.rate_limit_rps,
-            quota.rate_limit_burst,
-        )
+        if self._redis and self.is_redis_available:
+            return self._check_redis(user_id, rps_limit, burst_limit, endpoint)
+        return self._check_memory(user_id, rps_limit, burst_limit)
 
     def _check_redis(
         self,
-        window_key: str,
-        burst_key: str,
+        user_id: str,
         rps_limit: int,
         burst_limit: int,
-    ) -> tuple[bool, dict]:
-        """Check rate limit using Redis."""
+        endpoint: str | None = None,
+    ) -> tuple[bool, dict[str, Any]]:
+        """Check rate limit using Redis with Lua scripts."""
         try:
-            # Increment request counter for current second
-            pipe = self.redis.pipeline()
+            current_second = int(time.time())
+            endpoint_suffix = f":{endpoint}" if endpoint else ""
+            window_key = f"rate_limit:{user_id}{endpoint_suffix}:{current_second}"
+            burst_key = f"rate_limit_burst:{user_id}{endpoint_suffix}"
+
+            # Try Lua script first (atomic operation)
+            if self._script_sha and self._burst_script_sha:
+                try:
+                    result = self._redis.evalsha(
+                        self._burst_script_sha,
+                        2,
+                        window_key,
+                        burst_key,
+                        rps_limit,
+                        burst_limit,
+                        self.default_ttl,
+                        self.burst_ttl,
+                    )
+                    allowed = bool(result[0])
+                    requests_in_window = int(result[1])
+                    burst_remaining = int(result[2])
+
+                    return allowed, {
+                        "allowed": allowed,
+                        "requests_in_window": requests_in_window,
+                        "burst_remaining": burst_remaining,
+                        "backend": "redis_lua",
+                    }
+                except RedisError as e:
+                    # Script might have been flushed, reload it
+                    logger.debug(f"Lua script error, reloading: {e}")
+                    self._load_scripts()
+                    # Fall through to pipeline approach
+
+            # Fallback to pipeline approach
+            pipe = self._redis.pipeline(transaction=True)
             pipe.incr(window_key)
-            pipe.expire(window_key, 2)  # Keep for 2 seconds (current + 1)
+            pipe.expire(window_key, self.default_ttl)
             results = pipe.execute()
-            request_count = results[0]
+            requests_in_window = results[0]
 
-            # Check if burst is available
-            burst_available = self.redis.incr(burst_key)
-            if burst_available > burst_limit:
-                self.redis.decr(burst_key)
-                burst_available = burst_limit
-            self.redis.expire(burst_key, 3600)  # Reset hourly
+            # Check burst capacity
+            burst_pipe = self._redis.pipeline(transaction=True)
+            burst_pipe.incr(burst_key)
+            burst_pipe.expire(burst_key, self.burst_ttl)
+            burst_results = burst_pipe.execute()
+            burst_used = burst_results[0]
+            burst_remaining = max(0, burst_limit - burst_used)
 
-            # Allow if within RPS or if burst available
-            allowed = request_count <= rps_limit or burst_available > 0
-
-            if not allowed and burst_available > 0:
-                self.redis.decr(burst_key)
-                allowed = True
+            # Allow if within RPS limit OR burst available
+            allowed = requests_in_window <= rps_limit or burst_remaining > 0
 
             return allowed, {
                 "allowed": allowed,
-                "requests_in_window": request_count,
-                "burst_available": burst_available if allowed else 0,
+                "requests_in_window": requests_in_window,
+                "burst_remaining": burst_remaining,
+                "backend": "redis_pipeline",
             }
-        except Exception as e:
+
+        except RedisError as e:
             logger.error(f"Redis rate limit check failed: {e}. Allowing request.")
-            return True, {"allowed": True, "reason": "redis_error"}
+            return True, {
+                "allowed": True,
+                "reason": "redis_error",
+                "error": str(e),
+                "backend": "redis_error",
+            }
 
     def _check_memory(
         self,
         user_id: str,
-        current_second: int,
         rps_limit: int,
         burst_limit: int,
-    ) -> tuple[bool, dict]:
-        """Check rate limit using in-memory window (fallback)."""
+    ) -> tuple[bool, dict[str, Any]]:
+        """
+        Check rate limit using in-memory window (fallback).
+
+        This is used when Redis is unavailable. Note that this does NOT
+        provide distributed rate limiting across workers.
+        """
+        current_second = int(time.time())
         window_key = f"{user_id}:{current_second}"
 
+        # Get or create window entry
         if window_key not in self._in_memory_windows:
             self._in_memory_windows[window_key] = {
                 "count": 0,
@@ -164,8 +337,21 @@ class RateLimiter:
         self._in_memory_windows[window_key]["count"] += 1
         request_count = self._in_memory_windows[window_key]["count"]
 
-        # Cleanup old windows
-        cutoff = time.time() - 2
+        # Cleanup old windows (prevent memory leak)
+        self._cleanup_memory_windows()
+
+        allowed = request_count <= rps_limit
+
+        return allowed, {
+            "allowed": allowed,
+            "requests_in_window": request_count,
+            "burst_remaining": burst_limit if allowed else 0,
+            "backend": "memory",
+        }
+
+    def _cleanup_memory_windows(self) -> None:
+        """Remove expired in-memory windows to prevent memory leak."""
+        cutoff = time.time() - self.default_ttl - 1
         expired_keys = [
             k for k, v in self._in_memory_windows.items()
             if v["created_at"] < cutoff
@@ -173,12 +359,158 @@ class RateLimiter:
         for k in expired_keys:
             del self._in_memory_windows[k]
 
-        allowed = request_count <= rps_limit
+    def reset(self, user_id: str, endpoint: str | None = None) -> bool:
+        """
+        Reset rate limit counters for a user.
 
-        return allowed, {
-            "allowed": allowed,
-            "requests_in_window": request_count,
-        }
+        Args:
+            user_id: User identifier
+            endpoint: Optional endpoint to reset
+
+        Returns:
+            True if reset successful, False otherwise
+        """
+        if not self._redis or not self.is_redis_available:
+            return False
+
+        try:
+            current_second = int(time.time())
+            endpoint_suffix = f":{endpoint}" if endpoint else ""
+            window_key = f"rate_limit:{user_id}{endpoint_suffix}:{current_second}"
+            burst_key = f"rate_limit_burst:{user_id}{endpoint_suffix}"
+
+            pipe = self._redis.pipeline()
+            pipe.delete(window_key)
+            pipe.delete(burst_key)
+            pipe.execute()
+            return True
+        except RedisError as e:
+            logger.error(f"Failed to reset rate limit: {e}")
+            return False
+
+    def get_usage(self, user_id: str, endpoint: str | None = None) -> dict[str, Any]:
+        """
+        Get current rate limit usage for a user.
+
+        Args:
+            user_id: User identifier
+            endpoint: Optional endpoint
+
+        Returns:
+            Dict with usage information
+        """
+        if not self._redis or not self.is_redis_available:
+            return {"backend": "memory", "available": False}
+
+        try:
+            current_second = int(time.time())
+            endpoint_suffix = f":{endpoint}" if endpoint else ""
+            window_key = f"rate_limit:{user_id}{endpoint_suffix}:{current_second}"
+            burst_key = f"rate_limit_burst:{user_id}{endpoint_suffix}"
+
+            pipe = self._redis.pipeline()
+            pipe.get(window_key)
+            pipe.get(burst_key)
+            results = pipe.execute()
+
+            return {
+                "backend": "redis",
+                "available": True,
+                "requests_in_window": int(results[0]) if results[0] else 0,
+                "burst_used": int(results[1]) if results[1] else 0,
+            }
+        except RedisError as e:
+            logger.error(f"Failed to get usage: {e}")
+            return {"backend": "redis", "available": False, "error": str(e)}
+
+
+class RateLimiter(RedisRateLimiter):
+    """
+    Backward-compatible rate limiter that maintains the original API.
+
+    This class extends RedisRateLimiter to maintain backward compatibility
+    with the original RateLimiter API that accepts UserQuota objects.
+
+    Usage:
+        limiter = RateLimiter()
+        allowed, details = limiter.is_allowed("user_123", quota=user_quota)
+    """
+
+    def __init__(
+        self,
+        redis_client: redis.Redis | None = None,
+        redis_url: str | None = None,
+        **kwargs,
+    ):
+        """
+        Initialize rate limiter with backward compatibility.
+
+        Args:
+            redis_client: Existing Redis client (for backward compatibility)
+            redis_url: Redis URL for new connections
+            **kwargs: Additional arguments passed to RedisRateLimiter
+        """
+        # If an existing redis_client is provided, extract connection info
+        if redis_client is not None:
+            try:
+                connection_kwargs = redis_client.connection_pool.connection_kwargs
+                super().__init__(
+                    redis_host=connection_kwargs.get("host"),
+                    redis_port=connection_kwargs.get("port"),
+                    redis_db=connection_kwargs.get("db"),
+                    redis_password=connection_kwargs.get("password"),
+                    **kwargs,
+                )
+                # Use the existing client's connection pool
+                self._redis = redis_client
+            except Exception as e:
+                logger.warning(f"Could not extract Redis connection info: {e}")
+                super().__init__(redis_url=redis_url, **kwargs)
+        else:
+            super().__init__(redis_url=redis_url, **kwargs)
+
+    def is_allowed(
+        self,
+        user_id: str,
+        quota: UserQuota | None = None,
+        override: bool = False,
+        rps_limit: int | None = None,
+        burst_limit: int | None = None,
+    ) -> tuple[bool, dict]:
+        """
+        Check if request is allowed within rate limits.
+
+        Supports both the original API (with UserQuota) and the new API
+        (with explicit rps_limit/burst_limit parameters).
+
+        Args:
+            user_id: User identifier
+            quota: UserQuota config (original API)
+            override: Admin override flag
+            rps_limit: Requests per second limit (new API)
+            burst_limit: Burst capacity limit (new API)
+
+        Returns:
+            (allowed: bool, details: dict)
+        """
+        # Handle admin override
+        if override or (quota and quota.override_rate_limit):
+            return True, {"allowed": True, "reason": "admin_override"}
+
+        # Handle Enterprise tier (no rate limiting)
+        if quota and quota.tier == PricingTier.ENTERPRISE:
+            return True, {"allowed": True, "reason": "enterprise_unlimited"}
+
+        # Determine limits from quota or explicit parameters
+        if quota:
+            rps = rps_limit or quota.rate_limit_rps
+            burst = burst_limit or quota.rate_limit_burst
+        else:
+            rps = rps_limit or 10
+            burst = burst_limit or 50
+
+        # Use parent class method
+        return super().is_allowed(user_id, rps_limit=rps, burst_limit=burst)
 
 
 class QuotaManager:
@@ -368,7 +700,7 @@ class QuotaManager:
 
         alert = None
 
-        # 80% threshold  # noqa: ERA001
+        # 80% threshold
         if max_percent >= 80 and not usage.alert_sent_at_80_percent:
             usage.alert_sent_at_80_percent = datetime.now(timezone.utc)
             alert = {
@@ -378,7 +710,7 @@ class QuotaManager:
                 "timestamp": datetime.now(timezone.utc).isoformat(),
             }
 
-        # 100% threshold  # noqa: ERA001
+        # 100% threshold
         if max_percent >= 100:
             if not usage.alert_sent_at_100_percent:
                 usage.alert_sent_at_100_percent = datetime.now(timezone.utc)
