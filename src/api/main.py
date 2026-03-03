@@ -1216,7 +1216,7 @@ class TaskSubmission(BaseModel):
                 )
             except ValueError as e:
                 # Propagate validation errors as Pydantic errors (returns 422 to client)
-                raise ValueError(f"File validation failed: {str(e)}") from Pydantic
+                raise ValueError(f"File validation failed: {str(e)}") from e
 
         return v
 
