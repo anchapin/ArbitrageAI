@@ -1,5 +1,5 @@
 """
-Financial Summary Template
+Financial Summary Template.
 
 This template provides a pre-tested Python script for generating financial documents
 such as financial summaries, reports, and accounting documents.
@@ -8,16 +8,16 @@ The LLM generates structured JSON content which is injected into this template,
 ensuring proper financial formatting without Python errors.
 """
 
+import base64
+from datetime import datetime
 import io
 import json
-import base64
-import pandas as pd
-from datetime import datetime
-from typing import Dict, Any, List
+from typing import Any
 
 from docx import Document
-from docx.shared import Inches, Pt
 from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.shared import Inches, Pt
+import pandas as pd
 
 
 class FinancialSummaryTemplate:
@@ -48,7 +48,7 @@ class FinancialSummaryTemplate:
 
     def generate(
         self,
-        content_json: Dict[str, Any],
+        content_json: dict[str, Any],
         csv_data: str,
         output_format: str = "docx",
         **kwargs,
@@ -91,7 +91,7 @@ class FinancialSummaryTemplate:
         except Exception as e:
             return {
                 "success": False,
-                "message": f"Financial document generation error: {str(e)}",
+                "message": f"Financial document generation error: {e!s}",
                 "output_format": output_format,
                 "document_type": "financial_summary",
             }
@@ -116,7 +116,7 @@ class FinancialSummaryTemplate:
 
         # Subtitle/Date
         subtitle = content.get(
-            "subtitle", f"Report Date: {datetime.now().strftime('%B %d, %Y')}"
+            "subtitle", f"Report Date: {datetime.now().strftime('%B %d, %Y')}",
         )
         self.add_paragraph(subtitle, align="center")
 
@@ -158,7 +158,7 @@ class FinancialSummaryTemplate:
 
         self.document.add_paragraph()
 
-    def _add_key_metrics(self, metrics: Dict[str, Any]):
+    def _add_key_metrics(self, metrics: dict[str, Any]):
         """Add key financial metrics section."""
         self.add_heading("Key Financial Metrics", level=1)
 
@@ -190,7 +190,7 @@ class FinancialSummaryTemplate:
 
         self.document.add_paragraph()
 
-    def _add_highlights(self, highlights: List[Dict[str, Any]]):
+    def _add_highlights(self, highlights: list[dict[str, Any]]):
         """Add financial highlights section."""
         self.add_heading("Financial Highlights", level=1)
 
@@ -209,7 +209,7 @@ class FinancialSummaryTemplate:
                 run = para.add_run(str(value))
                 run.font.size = Pt(self.SUBHEADING_SIZE)
 
-                # Change (optional)
+                # Change (optional)  # noqa: ERA001
                 if change:
                     run = para.add_run(f" ({change})")
                     # Note: Color not fully supported in basic python-docx
@@ -223,7 +223,7 @@ class FinancialSummaryTemplate:
 
         self.document.add_paragraph()
 
-    def _add_analysis(self, analysis: List[Dict[str, Any]]):
+    def _add_analysis(self, analysis: list[dict[str, Any]]):
         """Add detailed analysis section."""
         self.add_heading("Detailed Analysis", level=1)
 
@@ -246,7 +246,7 @@ class FinancialSummaryTemplate:
 
         self.document.add_paragraph()
 
-    def _add_data_tables(self, tables: List[Dict[str, Any]]):
+    def _add_data_tables(self, tables: list[dict[str, Any]]):
         """Add data tables to the document."""
         for table_info in tables:
             if isinstance(table_info, dict):
@@ -263,7 +263,7 @@ class FinancialSummaryTemplate:
 
         self.document.add_paragraph()
 
-    def _create_table_from_data(self, table_data: List):
+    def _create_table_from_data(self, table_data: list):
         """Create a table from data."""
         if not table_data or len(table_data) == 0:
             return
@@ -307,7 +307,7 @@ class FinancialSummaryTemplate:
                         else str(value)
                     )
 
-    def _add_conclusions(self, conclusions: List[str]):
+    def _add_conclusions(self, conclusions: list[str]):
         """Add conclusions section."""
         self.add_heading("Conclusions", level=1)
 
@@ -357,7 +357,7 @@ class FinancialSummaryTemplate:
 
         return heading
 
-    def add_paragraph(self, text: str, align: str = None):
+    def add_paragraph(self, text: str, align: str | None = None):
         """Add a paragraph to the document."""
         para = self.document.add_paragraph(text)
 
@@ -397,7 +397,7 @@ class FinancialSummaryTemplate:
         except Exception as e:
             return {
                 "success": False,
-                "message": f"Error reading output file: {str(e)}",
+                "message": f"Error reading output file: {e!s}",
                 "output_format": output_format,
             }
 
@@ -429,30 +429,30 @@ output_format = "{output_format}"
 def generate_financial_document():
     # Parse CSV
     df = pd.read_csv(io.StringIO(csv_data))
-    
+
     # Create document
     doc = Document()
-    
+
     # Set margins
     for section in doc.sections:
         section.top_margin = Inches(1.0)
         section.bottom_margin = Inches(1.0)
         section.left_margin = Inches(1.0)
         section.right_margin = Inches(1.0)
-    
+
     content = CONTENT_JSON
-    
+
     FONT_NAME = "Calibri"
     HEADING_SIZE = 14
     BODY_SIZE = 11
-    
+
     def add_heading(text, level=1):
         heading = doc.add_heading(text, level=level)
         for run in heading.runs:
             run.font.name = FONT_NAME
             run.font.size = Pt(HEADING_SIZE if level <= 1 else 12)
         return heading
-    
+
     def add_paragraph(text, align=None):
         para = doc.add_paragraph(text)
         for run in para.runs:
@@ -461,18 +461,18 @@ def generate_financial_document():
         if align == "center":
             para.alignment = WD_ALIGN_PARAGRAPH.CENTER
         return para
-    
+
     def format_currency(value):
         try:
             return f"${float(value):,.2f}"
         except (ValueError, TypeError):
             return str(value)
-    
+
     # Title
     add_heading(content.get("title", "Financial Summary Report"), level=0)
     add_paragraph(content.get("subtitle", f"Report Date: {datetime.now().strftime('%B %d, %Y')}"), align="center")
     doc.add_paragraph()
-    
+
     # Executive Summary
     if "executive_summary" in content:
         add_heading("Executive Summary", level=1)
@@ -483,7 +483,7 @@ def generate_financial_document():
         else:
             add_paragraph(str(summary))
         doc.add_paragraph()
-    
+
     # Key Metrics
     if "key_metrics" in content:
         add_heading("Key Financial Metrics", level=1)
@@ -491,7 +491,7 @@ def generate_financial_document():
         if metrics:
             table = doc.add_table(rows=len(metrics) + 1, cols=2)
             table.style = "Table Grid"
-            
+
             # Headers
             table.rows[0].cells[0].text = "Metric"
             table.rows[0].cells[1].text = "Value"
@@ -499,13 +499,13 @@ def generate_financial_document():
                 for para in cell.paragraphs:
                     for run in para.runs:
                         run.font.bold = True
-            
+
             # Data
             for i, (metric, value) in enumerate(metrics.items(), 1):
                 table.rows[i].cells[0].text = str(metric)
                 table.rows[i].cells[1].text = str(value)
         doc.add_paragraph()
-    
+
     # Highlights
     if "highlights" in content:
         add_heading("Financial Highlights", level=1)
@@ -520,7 +520,7 @@ def generate_financial_document():
             else:
                 add_paragraph(str(highlight))
         doc.add_paragraph()
-    
+
     # Tables
     if "tables" in content:
         for table_info in content["tables"]:
@@ -530,38 +530,38 @@ def generate_financial_document():
                 data = table_info.get("data", [])
             else:
                 data = table_info
-            
+
             if data and len(data) > 0:
                 if isinstance(data[0], dict):
                     headers = list(data[0].keys())
                     table = doc.add_table(rows=len(data) + 1, cols=len(headers))
                     table.style = "Table Grid"
-                    
+
                     # Headers
                     for i, h in enumerate(headers):
                         table.rows[0].cells[i].text = str(h)
                         for para in table.rows[0].cells[i].paragraphs:
                             for run in para.runs:
                                 run.font.bold = True
-                    
+
                     # Data
                     for row_idx, row in enumerate(data):
                         for col_idx, h in enumerate(headers):
                             if col_idx < len(table.rows[row_idx + 1].cells):
                                 table.rows[row_idx + 1].cells[col_idx].text = str(row.get(h, ""))
         doc.add_paragraph()
-    
+
     # Conclusions
     if "conclusions" in content:
         add_heading("Conclusions", level=1)
         for conclusion in content["conclusions"]:
             add_paragraph(str(conclusion))
         doc.add_paragraph()
-    
+
     # Save
     output_filename = f"output.{{output_format}}"
     doc.save(output_filename)
-    
+
     return output_filename
 
 if __name__ == "__main__":
@@ -571,15 +571,11 @@ if __name__ == "__main__":
 
 
 def get_financial_template_code(
-    content_json: Dict[str, Any], csv_data: str, output_format: str = "docx"
+    content_json: dict[str, Any], csv_data: str, output_format: str = "docx",
 ) -> str:
-    """
-    Get the executable financial template code with injected content.
-    """
+    """Get the executable financial template code with injected content."""
     content_str = json.dumps(content_json)
 
-    template = FINANCIAL_SUMMARY_TEMPLATE_CODE.replace("{content_json}", content_str)
+    template = FINANCIAL_SUMMARY_TEMPLATE_CODE.replace(f"{content_json}", content_str)
     template = template.replace("{csv_data}", csv_data)
-    template = template.replace("{output_format}", output_format)
-
-    return template
+    return template.replace("{output_format}", output_format)

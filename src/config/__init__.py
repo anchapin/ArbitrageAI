@@ -1,12 +1,13 @@
 """
-Configuration Management
+Configuration Management.
 
 Centralized configuration loading from environment variables with defaults.
 Supports both local development and production deployments.
 """
 
 import os
-from .config_manager import ConfigManager, get_config, ValidationError
+
+from .config_manager import ConfigManager, ValidationError, get_config
 
 # Alias for backward compatibility
 Config = ConfigManager
@@ -40,8 +41,7 @@ def get_redis_url() -> str:
 
     if password:
         return f"redis://:{password}@{host}:{port}/{db}"
-    else:
-        return f"redis://{host}:{port}/{db}"
+    return f"redis://{host}:{port}/{db}"
 
 
 def get_database_url() -> str:
@@ -82,7 +82,7 @@ def get_stripe_webhook_secret() -> str:
 
 def is_debug() -> bool:
     """Check if debug mode is enabled."""
-    return os.getenv("DEBUG", "false").lower() in ("true", "1", "yes")
+    return os.getenv("DEBUG", "false").lower() in {"true", "1", "yes"}
 
 
 def get_log_level() -> str:
@@ -115,7 +115,7 @@ def should_use_redis_locks() -> bool:
     # Explicit override
     use_redis = os.getenv("USE_REDIS_LOCKS")
     if use_redis is not None:
-        return use_redis.lower() in ("true", "1", "yes")
+        return use_redis.lower() in {"true", "1", "yes"}
 
     # Check if REDIS_URL or Redis config is available
     if os.getenv("REDIS_URL"):
@@ -185,9 +185,9 @@ def validate_urls() -> None:
         if not url:
             raise ValueError(f"{name} is not configured")
 
-        if not (url.startswith("http://") or url.startswith("https://")):
+        if not (url.startswith(("http://", "https://"))):
             raise ValueError(
-                f"{name}={url} is invalid. Must start with http:// or https://"
+                f"{name}={url} is invalid. Must start with http:// or https://",
             )
 
 
@@ -212,7 +212,7 @@ def validate_critical_env_vars() -> None:
     # Either API_KEY or OPENAI_API_KEY must be set for cloud models
     if not os.getenv("API_KEY") and not os.getenv("OPENAI_API_KEY"):
         errors.append(
-            "LLM API key not configured: set either API_KEY or OPENAI_API_KEY"
+            "LLM API key not configured: set either API_KEY or OPENAI_API_KEY",
         )
 
     # Check for Stripe configuration in non-development mode
@@ -233,7 +233,7 @@ def validate_critical_env_vars() -> None:
         if env_type == "production":
             errors.append(
                 "CLIENT_AUTH_SECRET using insecure default in production. "
-                "Generate a secure key: openssl rand -hex 32"
+                "Generate a secure key: openssl rand -hex 32",
             )
 
     # Validate delivery token configuration
@@ -253,7 +253,7 @@ def validate_critical_env_vars() -> None:
         if min_bid > max_bid:
             errors.append(
                 f"Invalid bid amounts: MIN_BID_AMOUNT ({min_bid}) > "
-                f"MAX_BID_AMOUNT ({max_bid})"
+                f"MAX_BID_AMOUNT ({max_bid})",
             )
     except ValueError as e:
         errors.append(f"Invalid bid amount configuration: {e}")
@@ -274,7 +274,7 @@ def validate_critical_env_vars() -> None:
         "ENABLE_DISTILLATION_CAPTURE",
     ]:
         value = os.getenv(flag, "").lower()
-        if value and value not in ("true", "false", "yes", "no", "1", "0"):
+        if value and value not in {"true", "false", "yes", "no", "1", "0"}:
             errors.append(f"Invalid boolean value for {flag}={value}")
 
     # Validate logging level
@@ -282,7 +282,7 @@ def validate_critical_env_vars() -> None:
     log_level = os.getenv("LOG_LEVEL", "INFO").upper()
     if log_level not in valid_log_levels:
         errors.append(
-            f"Invalid LOG_LEVEL={log_level}. Must be one of {valid_log_levels}"
+            f"Invalid LOG_LEVEL={log_level}. Must be one of {valid_log_levels}",
         )
 
     # Raise all errors at once for better visibility
@@ -406,22 +406,22 @@ def get_all_configured_env_vars() -> dict:
 
 __all__ = [
     "ConfigManager",
-    "get_config",
     "ValidationError",
-    "get_redis_url",
+    "get_all_configured_env_vars",
+    "get_config",
     "get_database_url",
-    "get_ollama_url",
-    "get_traceloop_url",
-    "get_telegram_api_url",
-    "get_openai_api_key",
-    "get_stripe_secret_key",
-    "get_stripe_webhook_secret",
     "get_log_level",
     "get_max_bid_amount",
     "get_min_bid_amount",
-    "validate_critical_env_vars",
-    "validate_urls",
-    "get_all_configured_env_vars",
+    "get_ollama_url",
+    "get_openai_api_key",
+    "get_redis_url",
+    "get_stripe_secret_key",
+    "get_stripe_webhook_secret",
+    "get_telegram_api_url",
+    "get_traceloop_url",
     "is_debug",
     "should_use_redis_locks",
+    "validate_critical_env_vars",
+    "validate_urls",
 ]

@@ -1,14 +1,14 @@
 """
-Fine-Tuned Model Evaluator
+Fine-Tuned Model Evaluator.
 
 Evaluates model performance on test sets and compares metrics.
 """
 
-import json
-from dataclasses import dataclass, asdict
-from typing import Optional, Dict, Any, List
+from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
+import json
 import logging
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +27,7 @@ class EvaluationResult:
     cost_per_inference: float
     timestamp: str
     test_set_size: int
-    metadata: Dict[str, Any]
+    metadata: dict[str, Any]
 
 
 class ModelEvaluator:
@@ -43,17 +43,17 @@ class ModelEvaluator:
 
     def __init__(self):
         """Initialize the evaluator."""
-        self.results: List[EvaluationResult] = []
+        self.results: list[EvaluationResult] = []
 
     def evaluate_exact_match(
         self,
-        predictions: List[str],
-        references: List[str],
+        predictions: list[str],
+        references: list[str],
         model_name: str,
         model_type: str = "base",
-        latencies_ms: Optional[List[float]] = None,
+        latencies_ms: list[float] | None = None,
         cost_per_inference: float = 0.0,
-        metadata: Optional[Dict[str, Any]] = None,
+        metadata: dict[str, Any] | None = None,
     ) -> EvaluationResult:
         """
         Evaluate model using exact match accuracy.
@@ -73,11 +73,11 @@ class ModelEvaluator:
         if len(predictions) != len(references):
             raise ValueError(
                 f"Predictions ({len(predictions)}) and references "
-                f"({len(references)}) must have same length"
+                f"({len(references)}) must have same length",
             )
 
         # Calculate exact match accuracy
-        correct = sum(1 for p, r in zip(predictions, references) if p.strip() == r.strip())
+        correct = sum(1 for p, r in zip(predictions, references, strict=False) if p.strip() == r.strip())
         accuracy = correct / len(predictions) if predictions else 0.0
 
         # For exact match, precision and recall same as accuracy
@@ -108,13 +108,13 @@ class ModelEvaluator:
 
     def evaluate_substring_match(
         self,
-        predictions: List[str],
-        references: List[str],
+        predictions: list[str],
+        references: list[str],
         model_name: str,
         model_type: str = "base",
-        latencies_ms: Optional[List[float]] = None,
+        latencies_ms: list[float] | None = None,
         cost_per_inference: float = 0.0,
-        metadata: Optional[Dict[str, Any]] = None,
+        metadata: dict[str, Any] | None = None,
     ) -> EvaluationResult:
         """
         Evaluate model using substring matching.
@@ -136,13 +136,13 @@ class ModelEvaluator:
         if len(predictions) != len(references):
             raise ValueError(
                 f"Predictions ({len(predictions)}) and references "
-                f"({len(references)}) must have same length"
+                f"({len(references)}) must have same length",
             )
 
         # Calculate substring match accuracy
         correct = sum(
             1
-            for p, r in zip(predictions, references)
+            for p, r in zip(predictions, references, strict=False)
             if p.strip().lower() in r.strip().lower()
         )
         accuracy = correct / len(predictions) if predictions else 0.0
@@ -174,8 +174,8 @@ class ModelEvaluator:
         return result
 
     def compare_models(
-        self, base_result: EvaluationResult, finetuned_result: EvaluationResult
-    ) -> Dict[str, Any]:
+        self, base_result: EvaluationResult, finetuned_result: EvaluationResult,
+    ) -> dict[str, Any]:
         """
         Compare base and fine-tuned models.
 
@@ -223,7 +223,7 @@ class ModelEvaluator:
         finetuned_cost: float,
         accuracy_improvement: float,
         inference_count: int,
-    ) -> Dict[str, float]:
+    ) -> dict[str, float]:
         """
         Calculate ROI of fine-tuning.
 
@@ -261,7 +261,7 @@ class ModelEvaluator:
             ),
         }
 
-    def get_results_summary(self) -> Dict[str, Any]:
+    def get_results_summary(self) -> dict[str, Any]:
         """
         Get summary of all evaluation results.
 
@@ -307,6 +307,6 @@ class ModelEvaluator:
             filepath: Path to save results
         """
         results_data = [asdict(r) for r in self.results]
-        with open(filepath, "w") as f:
+        with open(filepath, "w", encoding="utf-8") as f:
             json.dump(results_data, f, indent=2)
         logger.info(f"Exported {len(self.results)} evaluation results to {filepath}")

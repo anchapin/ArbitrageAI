@@ -1,5 +1,5 @@
 """
-Research & Planning Module
+Research & Planning Module.
 
 This module implements the "Research & Plan" step for the autonomy workflow:
 1. Agent analyzes uploaded files (PDF/Excel) to extract context
@@ -20,6 +20,7 @@ CLIENT PREFERENCE MEMORY (Pillar 2.5 Gap):
 """
 
 from datetime import datetime, timezone
+import json
 import logging
 from typing import Any
 
@@ -37,7 +38,7 @@ from traceloop.sdk.decorators import task, workflow
 
 
 def get_client_preferences_from_tasks(
-    client_email: str, db_session=None
+    client_email: str, db_session=None,
 ) -> dict[str, Any]:
     """
     Query the Task table for previous review_feedback from the same client_email.
@@ -120,7 +121,7 @@ def get_client_preferences_from_tasks(
                             "created_at": task.created_at.isoformat()
                             if task.created_at
                             else None,
-                        }
+                        },
                     )
 
                     # Count success/failure
@@ -135,7 +136,7 @@ def get_client_preferences_from_tasks(
 
             # Generate summary for LLM prompts
             preferences["preferences_summary"] = _generate_preferences_summary(
-                preferences
+                preferences,
             )
 
         finally:
@@ -288,7 +289,7 @@ def _generate_preferences_summary(preferences: dict[str, Any]) -> str:
 
     if preferences.get("preferred_output_formats"):
         parts.append(
-            f"Output formats: {', '.join(preferences['preferred_output_formats'])}"
+            f"Output formats: {', '.join(preferences['preferred_output_formats'])}",
         )
 
     style = preferences.get("style_preferences", {})
@@ -404,7 +405,7 @@ def save_client_preferences(
                     "feedback": review_feedback,
                     "approved": review_approved,
                     "timestamp": datetime.now(timezone.utc).isoformat(),
-                }
+                },
             )
             # Keep only last 20 feedback entries
             profile.feedback_history = history[-20:]
@@ -469,7 +470,7 @@ class ContextExtractor:
         # Handle file content (Excel/PDF)
         if file_content and filename:
             parsed = parse_file(
-                file_content=file_content, filename=filename, file_type=file_type
+                file_content=file_content, filename=filename, file_type=file_type,
             )
 
             if parsed.get("success"):
@@ -515,10 +516,10 @@ class ContextExtractor:
                         col: str(dtype) for col, dtype in df.dtypes.items()
                     },
                     "numeric_columns": df.select_dtypes(
-                        include=["number"]
+                        include=["number"],
                     ).columns.tolist(),
                     "categorical_columns": df.select_dtypes(
-                        include=["object"]
+                        include=["object"],
                     ).columns.tolist(),
                     "sample_data": df.head(5).to_dict("records"),
                 }
@@ -540,7 +541,7 @@ class ContextExtractor:
         ):
             enhanced_context = self._enhance_with_llm(context, domain)
             context["key_insights"] = enhanced_context.get(
-                "key_insights", context.get("key_insights", [])
+                "key_insights", context.get("key_insights", []),
             )
             context["data_summary"]["llm_analysis"] = enhanced_context.get("analysis")
 
@@ -548,19 +549,12 @@ class ContextExtractor:
 
     def _extract_basic_insights(self, df) -> list[str]:
         """Extract basic statistical insights from the data."""
-        insights = []
-
         # Numeric column statistics
         numeric_cols = df.select_dtypes(include=["number"]).columns
-        for col in numeric_cols:
-            insights.append(
-                f"{col}: min={df[col].min()}, max={df[col].max()}, mean={df[col].mean():.2f}"
-            )
-
-        return insights
+        return [f"{col}: min={df[col].min()}, max={df[col].max()}, mean={df[col].mean():.2f}" for col in numeric_cols]
 
     def _enhance_with_llm(
-        self, context: dict[str, Any], domain: str | None
+        self, context: dict[str, Any], domain: str | None,
     ) -> dict[str, Any]:
         """
         Use LLM to enhance context understanding.
@@ -761,20 +755,19 @@ Generate the work plan as JSON."""
 
         if data_summary.get("numeric_columns"):
             parts.append(
-                f"Numeric Columns: {', '.join(data_summary['numeric_columns'])}"
+                f"Numeric Columns: {', '.join(data_summary['numeric_columns'])}",
             )
 
         if data_summary.get("categorical_columns"):
             parts.append(
-                f"Categorical Columns: {', '.join(data_summary['categorical_columns'])}"
+                f"Categorical Columns: {', '.join(data_summary['categorical_columns'])}",
             )
 
         # Key insights
         insights = context.get("key_insights", [])
         if insights:
             parts.append("Key Insights:")
-            for insight in insights[:5]:
-                parts.append(f"  - {insight}")
+            parts.extend(f"  - {insight}" for insight in insights[:5])
 
         return "\n".join(parts) if parts else "No context available"
 
@@ -842,7 +835,7 @@ class PlanExecutor:
         user_request = work_plan.get("user_request", "")
         task_type = self._infer_task_type(work_plan)
         output_format = work_plan.get("output_format") or self._infer_output_format(
-            work_plan
+            work_plan,
         )
 
         execution_log = {
@@ -853,7 +846,7 @@ class PlanExecutor:
 
         try:
             # Determine execution approach based on output format
-            if output_format in ["docx", "pdf"]:
+            if output_format in {"docx", "pdf"}:
                 # Use TaskRouter for document generation
                 router = TaskRouter(llm_service=self.llm)
                 result = router.route(
@@ -908,18 +901,18 @@ class PlanExecutor:
     def _infer_task_type(self, plan: dict[str, Any]) -> str:
         """Infer task type from work plan."""
         recommended = plan.get("recommended_chart_type", "")
-        if recommended in ["bar", "line", "pie", "scatter", "histogram"]:
+        if recommended in {"bar", "line", "pie", "scatter", "histogram"}:
             return "visualization"
-        elif recommended == "table":
+        if recommended == "table":
             return "spreadsheet"
-        elif recommended == "document":
+        if recommended == "document":
             return "document"
         return "auto"
 
     def _infer_output_format(self, plan: dict[str, Any]) -> str:
         """Infer output format from work plan."""
         output_format = plan.get("output_format", "")
-        if output_format in ["image", "docx", "xlsx", "pdf"]:
+        if output_format in {"image", "docx", "xlsx", "pdf"}:
             return output_format
         return "image"
 
@@ -1130,7 +1123,7 @@ def _get_llm_for_task(domain: str | None) -> LLMService:
     domain_lower = (domain or "").lower().strip()
 
     # Legal and Accounting require high accuracy - use cloud models
-    if domain_lower in ["legal", "accounting"]:
+    if domain_lower in {"legal", "accounting"}:
         logger.info(f"Using cloud model for {domain} task (high accuracy required)")
         return LLMService.for_complex_task()
 
@@ -1160,7 +1153,7 @@ class ResearchAndPlanOrchestrator:
     """
 
     def __init__(
-        self, llm_service: LLMService | None = None, domain: str | None = None
+        self, llm_service: LLMService | None = None, domain: str | None = None,
     ):
         """
         Initialize the orchestrator.
@@ -1248,7 +1241,7 @@ class ResearchAndPlanOrchestrator:
         if not plan_result.get("success"):
             workflow_result["failed_at"] = "plan_generation"
             workflow_result["error"] = plan_result.get(
-                "error", "Plan generation failed"
+                "error", "Plan generation failed",
             )
             return workflow_result
 
@@ -1308,7 +1301,7 @@ class ResearchAndPlanOrchestrator:
 
             if not approved and review_attempts < max_review_attempts:
                 logger.info(
-                    f"Review not approved, attempt {review_attempts + 1}/{max_review_attempts}"
+                    f"Review not approved, attempt {review_attempts + 1}/{max_review_attempts}",
                 )
                 logger.info(f"Feedback: {current_feedback}")
 

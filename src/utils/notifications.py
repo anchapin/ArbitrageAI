@@ -1,5 +1,5 @@
 """
-Telegram Notifications Module
+Telegram Notifications Module.
 
 Provides Telegram notification functionality for urgent alerts and human-in-the-loop requests.
 Uses httpx for async HTTP requests to the Telegram Bot API.
@@ -18,12 +18,13 @@ Usage:
 
 import asyncio
 import os
+
 import httpx
-from typing import Optional
+
+from src.config import get_telegram_api_url
 
 # Import logging module
-from .logger import get_logger
-from ..config import get_telegram_api_url
+from src.utils.logger import get_logger
 
 # Retry configuration for Telegram notifications
 MAX_NOTIFICATION_RETRIES = 3
@@ -49,11 +50,11 @@ class TelegramNotifier:
         if not self.bot_token or not self.chat_id:
             self.logger.warning(
                 "Telegram credentials not configured. "
-                "Set TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID environment variables."
+                "Set TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID environment variables.",
             )
         else:
             self.logger.info(
-                f"TelegramNotifier initialized for chat_id: {self.chat_id}"
+                f"TelegramNotifier initialized for chat_id: {self.chat_id}",
             )
 
     def _get_api_url(self, method: str) -> str:
@@ -74,7 +75,7 @@ class TelegramNotifier:
         """
         if not self.bot_token or not self.chat_id:
             self.logger.warning(
-                "Telegram credentials not configured, skipping notification"
+                "Telegram credentials not configured, skipping notification",
             )
             return False
 
@@ -94,19 +95,18 @@ class TelegramNotifier:
                     if result.get("ok"):
                         self.logger.info("Telegram message sent successfully")
                         return True
-                    else:
-                        last_error = result.get("description", "Unknown API error")
-                        self.logger.error(f"Telegram API error: {last_error}")
+                    last_error = result.get("description", "Unknown API error")
+                    self.logger.error(f"Telegram API error: {last_error}")
 
             except httpx.HTTPError as e:
                 last_error = str(e)
                 self.logger.error(
-                    f"HTTP error sending Telegram message (attempt {attempt}/{MAX_NOTIFICATION_RETRIES}): {e}"
+                    f"HTTP error sending Telegram message (attempt {attempt}/{MAX_NOTIFICATION_RETRIES}): {e}",
                 )
             except Exception as e:
                 last_error = str(e)
                 self.logger.error(
-                    f"Error sending Telegram message (attempt {attempt}/{MAX_NOTIFICATION_RETRIES}): {e}"
+                    f"Error sending Telegram message (attempt {attempt}/{MAX_NOTIFICATION_RETRIES}): {e}",
                 )
 
             if attempt < MAX_NOTIFICATION_RETRIES:
@@ -116,7 +116,7 @@ class TelegramNotifier:
 
         self.logger.error(
             f"Failed to send Telegram notification after {MAX_NOTIFICATION_RETRIES} attempts. "
-            f"Last error: {last_error}"
+            f"Last error: {last_error}",
         )
         return False
 
@@ -139,9 +139,9 @@ class TelegramNotifier:
         self,
         task_id: str,
         context: str,
-        amount_paid: Optional[int] = None,
-        domain: Optional[str] = None,
-        client_email: Optional[str] = None,
+        amount_paid: int | None = None,
+        domain: str | None = None,
+        client_email: str | None = None,
     ) -> bool:
         """
         Request human assistance for an escalated task.
@@ -185,7 +185,7 @@ class TelegramNotifier:
                 "",
                 "*Context:*",
                 context[:500],  # Limit context length
-            ]
+            ],
         )
 
         formatted_message = "\n".join(message_parts)
@@ -196,7 +196,7 @@ class TelegramNotifier:
 
 # Module-level instance for convenience
 # Initialize lazily when needed
-_notifier: Optional[TelegramNotifier] = None
+_notifier: TelegramNotifier | None = None
 
 
 def get_notifier() -> TelegramNotifier:
@@ -206,7 +206,7 @@ def get_notifier() -> TelegramNotifier:
     Returns:
         The TelegramNotifier instance
     """
-    global _notifier
+    global _notifier  # noqa: PLW0603
     if _notifier is None:
         _notifier = TelegramNotifier()
     return _notifier

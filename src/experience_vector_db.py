@@ -1,5 +1,5 @@
 """
-Experience Vector Database (RAG for Few-Shot Learning)
+Experience Vector Database (RAG for Few-Shot Learning).
 
 This module provides a vector database for storing and retrieving successful task experiences.
 When a task is marked as COMPLETED and approved, the user_request and final successful code
@@ -16,7 +16,7 @@ Features:
 from dataclasses import dataclass
 import json
 import logging
-import os
+from pathlib import Path
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -46,12 +46,11 @@ except ImportError:
 # =============================================================================
 
 # Project root for data storage
-PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
-PROJECT_ROOT = os.path.dirname(PROJECT_ROOT)  # Go up one level to project root
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
 # Default paths
-DEFAULT_DATA_DIR = os.path.join(PROJECT_ROOT, "data")
-DEFAULT_CHROMA_DIR = os.path.join(DEFAULT_DATA_DIR, "experience_db")
+DEFAULT_DATA_DIR = PROJECT_ROOT / "data"
+DEFAULT_CHROMA_DIR = DEFAULT_DATA_DIR / "experience_db"
 
 # Embedding model - using a lightweight model for speed
 DEFAULT_EMBEDDING_MODEL = "all-MiniLM-L6-v2"
@@ -168,13 +167,13 @@ class ExperienceVectorDB:
         # Check availability
         if not CHROMADB_AVAILABLE:
             logger.error(
-                "Error: ChromaDB is not installed. Install with: pip install chromadb"
+                "Error: ChromaDB is not installed. Install with: pip install chromadb",
             )
             return
 
         if not SENTENCE_TRANSFORMERS_AVAILABLE:
             logger.error(
-                "Error: sentence-transformers is not installed. Install with: pip install sentence-transformers"
+                "Error: sentence-transformers is not installed. Install with: pip install sentence-transformers",
             )
             return
 
@@ -188,22 +187,22 @@ class ExperienceVectorDB:
         """Initialize ChromaDB client and collection."""
         try:
             # Create persist directory if it doesn't exist
-            os.makedirs(self.persist_directory, exist_ok=True)
+            Path(self.persist_directory).mkdir(parents=True, exist_ok=True)
 
             # Initialize ChromaDB client with persistence
             self._chroma_client = chromadb.Client(
                 Settings(
-                    persist_directory=self.persist_directory, anonymized_telemetry=False
-                )
+                    persist_directory=self.persist_directory, anonymized_telemetry=False,
+                ),
             )
 
             # Get or create the experience collection
             try:
                 self._collection = self._chroma_client.get_collection(
-                    "task_experiences"
+                    "task_experiences",
                 )
                 logger.info(
-                    f"Experience Vector DB: Loaded existing collection with {self._collection.count()} experiences"
+                    f"Experience Vector DB: Loaded existing collection with {self._collection.count()} experiences",
                 )
             except (chromadb.errors.InvalidCollectionException, Exception) as e:
                 # Collection doesn't exist, create it
@@ -223,7 +222,7 @@ class ExperienceVectorDB:
         try:
             self._embedding_model = SentenceTransformer(self.embedding_model)
             logger.info(
-                f"Experience Vector DB: Loaded embedding model '{self.embedding_model}'"
+                f"Experience Vector DB: Loaded embedding model '{self.embedding_model}'",
             )
         except Exception as e:
             logger.error(f"Error loading embedding model: {e}")
@@ -307,7 +306,7 @@ class ExperienceVectorDB:
             )
 
             logger.info(
-                f"ExperienceVectorDB: Stored task {task_id} (domain: {domain}, type: {task_type})"
+                f"ExperienceVectorDB: Stored task {task_id} (domain: {domain}, type: {task_type})",
             )
             return True
 
@@ -358,11 +357,11 @@ class ExperienceVectorDB:
             # Query ChromaDB
             if where_clause:
                 results = self._collection.query(
-                    query_embeddings=[query_embedding], n_results=k, where=where_clause
+                    query_embeddings=[query_embedding], n_results=k, where=where_clause,
                 )
             else:
                 results = self._collection.query(
-                    query_embeddings=[query_embedding], n_results=k
+                    query_embeddings=[query_embedding], n_results=k,
                 )
 
             # Parse results
@@ -383,7 +382,7 @@ class ExperienceVectorDB:
                     examples.append(example)
 
             logger.info(
-                f"ExperienceVectorDB: Found {len(examples)} similar tasks for: {user_request[:50]}..."
+                f"ExperienceVectorDB: Found {len(examples)} similar tasks for: {user_request[:50]}...",
             )
             return examples
 
@@ -421,7 +420,7 @@ class ExperienceVectorDB:
                 return base_system_prompt  # No examples to add
 
             examples = self.query_similar_tasks(
-                user_request=user_request, domain=domain, top_k=top_k
+                user_request=user_request, domain=domain, top_k=top_k,
             )
 
         # If no examples found, return base prompt
@@ -446,9 +445,7 @@ class ExperienceVectorDB:
         few_shot_section += "Use the examples above as reference when generating code for the new request.\n"
 
         # Combine base prompt with examples
-        enhanced_prompt = base_system_prompt + few_shot_section
-
-        return enhanced_prompt
+        return base_system_prompt + few_shot_section
 
     def get_experience_stats(self) -> dict[str, Any]:
         """
@@ -518,7 +515,7 @@ def get_experience_db() -> ExperienceVectorDB:
     Returns:
         The global ExperienceVectorDB instance
     """
-    global _experience_db
+    global _experience_db  # noqa: PLW0603
 
     if _experience_db is None:
         try:
@@ -595,7 +592,7 @@ def query_similar_tasks(
         return []
 
     return db.query_similar_tasks(
-        user_request=user_request, domain=domain, task_type=task_type, top_k=top_k
+        user_request=user_request, domain=domain, task_type=task_type, top_k=top_k,
     )
 
 
@@ -676,7 +673,7 @@ if __name__ == "__main__":
     # Test querying similar tasks
     logger.info("\n--- Testing query_similar_tasks ---")
     examples = db.query_similar_tasks(
-        user_request="Create a chart of quarterly revenue", domain="accounting", top_k=2
+        user_request="Create a chart of quarterly revenue", domain="accounting", top_k=2,
     )
     logger.info(f"Found {len(examples)} similar tasks")
     for ex in examples:

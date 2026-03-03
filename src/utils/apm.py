@@ -1,5 +1,5 @@
 """
-APM (Application Performance Monitoring) and OpenTelemetry Integration
+APM (Application Performance Monitoring) and OpenTelemetry Integration.
 
 This module provides comprehensive APM instrumentation for production monitoring
 using OpenTelemetry for vendor-neutral observability. It instruments critical paths:
@@ -18,17 +18,18 @@ Features:
 - Integration with multiple APM backends (Jaeger, Datadog, etc.)
 """
 
+from collections.abc import Callable
+from contextlib import contextmanager
+from functools import wraps
 import os
 import time
-from typing import Optional, Dict, Any, Callable
-from functools import wraps
-from contextlib import contextmanager
+from typing import Any, Optional
 
-from opentelemetry import trace, metrics
-from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import BatchSpanProcessor
+from opentelemetry import metrics, trace
 from opentelemetry.sdk.metrics import MeterProvider
 from opentelemetry.sdk.resources import Resource
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import BatchSpanProcessor
 
 # Exporters for various APM backends
 try:
@@ -42,10 +43,10 @@ except ImportError:
     PrometheusMetricReader = None
 
 try:
-    from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
     from opentelemetry.exporter.otlp.proto.grpc.metric_exporter import (
         OTLPMetricExporter,
     )
+    from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
 except ImportError:
     OTLPSpanExporter = None
     OTLPMetricExporter = None
@@ -53,8 +54,8 @@ except ImportError:
 # Instrumentation auto-loaders
 try:
     from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
-    from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
     from opentelemetry.instrumentation.requests import RequestsInstrumentor
+    from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
 except ImportError:
     FastAPIInstrumentor = None
     SQLAlchemyInstrumentor = None
@@ -91,13 +92,13 @@ try:
 except ImportError:
     B3MultiFormat = None
 
-from ..utils.logger import get_logger
+from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
 
 
 class APMManager:
-    """Centralized APM configuration and initialization manager"""
+    """Centralized APM configuration and initialization manager."""
 
     _instance: Optional["APMManager"] = None
     _initialized: bool = False
@@ -108,7 +109,7 @@ class APMManager:
         return cls._instance
 
     def __init__(self):
-        """Initialize APM manager (singleton pattern)"""
+        """Initialize APM manager (singleton pattern)."""
         if self._initialized:
             return
 
@@ -124,47 +125,47 @@ class APMManager:
             os.environ.get(
                 "TRACE_SAMPLE_RATE",
                 "0.1" if self.environment == "production" else "1.0",
-            )
+            ),
         )
 
         # APM backend endpoints
         self.jaeger_endpoint = os.environ.get(
-            "JAEGER_ENDPOINT", "http://localhost:14268/api/traces"
+            "JAEGER_ENDPOINT", "http://localhost:14268/api/traces",
         )
         self.otlp_endpoint = os.environ.get("OTLP_ENDPOINT", "http://localhost:4317")
         self.datadog_endpoint = os.environ.get("DATADOG_ENDPOINT", None)
         self.datadog_api_key = os.environ.get("DATADOG_API_KEY", None)
 
-        self.tracer_provider: Optional[TracerProvider] = None
-        self.meter_provider: Optional[MeterProvider] = None
-        self.tracer: Optional[trace.Tracer] = None
-        self.meter: Optional[metrics.Meter] = None
+        self.tracer_provider: TracerProvider | None = None
+        self.meter_provider: MeterProvider | None = None
+        self.tracer: trace.Tracer | None = None
+        self.meter: metrics.Meter | None = None
 
         # Metrics instruments
-        self.task_execution_time: Optional[Any] = None
-        self.task_completion_counter: Optional[Any] = None
-        self.task_error_counter: Optional[Any] = None
-        self.llm_call_duration: Optional[Any] = None
-        self.llm_token_usage: Optional[Any] = None
-        self.marketplace_scan_duration: Optional[Any] = None
-        self.bid_placement_counter: Optional[Any] = None
-        self.payment_processing_duration: Optional[Any] = None
-        self.rag_query_duration: Optional[Any] = None
-        self.arena_competition_duration: Optional[Any] = None
-        self.http_request_duration: Optional[Any] = None
-        self.http_request_counter: Optional[Any] = None
+        self.task_execution_time: Any | None = None
+        self.task_completion_counter: Any | None = None
+        self.task_error_counter: Any | None = None
+        self.llm_call_duration: Any | None = None
+        self.llm_token_usage: Any | None = None
+        self.marketplace_scan_duration: Any | None = None
+        self.bid_placement_counter: Any | None = None
+        self.payment_processing_duration: Any | None = None
+        self.rag_query_duration: Any | None = None
+        self.arena_competition_duration: Any | None = None
+        self.http_request_duration: Any | None = None
+        self.http_request_counter: Any | None = None
 
         self._initialized = True
 
     def initialize(self) -> None:
-        """Initialize APM infrastructure"""
+        """Initialize APM infrastructure."""
         if not self.apm_enabled:
             logger.info("APM disabled via APM_ENABLED=false")
             return
 
         logger.info(
             f"Initializing APM: backend={self.apm_backend}, "
-            f"sample_rate={self.trace_sample_rate}, environment={self.apm_environment}"
+            f"sample_rate={self.trace_sample_rate}, environment={self.apm_environment}",
         )
 
         try:
@@ -180,7 +181,7 @@ class APMManager:
             self.apm_enabled = False
 
     def _setup_tracer_provider(self) -> None:
-        """Initialize TracerProvider with sampling"""
+        """Initialize TracerProvider with sampling."""
         from opentelemetry.sdk.trace.sampling import TraceIdRatioBased
 
         resource = Resource.create(
@@ -189,7 +190,7 @@ class APMManager:
                 "service.version": self.apm_version,
                 "deployment.environment": self.apm_environment,
                 "host.name": os.environ.get("HOSTNAME", "unknown"),
-            }
+            },
         )
 
         self.tracer_provider = TracerProvider(
@@ -200,11 +201,11 @@ class APMManager:
         trace.set_tracer_provider(self.tracer_provider)
         self.tracer = trace.get_tracer(__name__)
         logger.info(
-            f"✓ TracerProvider initialized with {self.trace_sample_rate * 100}% sampling"
+            f"✓ TracerProvider initialized with {self.trace_sample_rate * 100}% sampling",
         )
 
     def _setup_meter_provider(self) -> None:
-        """Initialize MeterProvider for metrics"""
+        """Initialize MeterProvider for metrics."""
         if PrometheusMetricReader is None:
             logger.warning("PrometheusMetricReader not available, metrics disabled")
             return
@@ -213,7 +214,7 @@ class APMManager:
             {
                 "service.name": self.apm_service_name,
                 "service.version": self.apm_version,
-            }
+            },
         )
 
         # Use Prometheus reader for local/production scraping
@@ -229,7 +230,7 @@ class APMManager:
         logger.info("✓ MeterProvider initialized with Prometheus reader")
 
     def _setup_span_processors(self) -> None:
-        """Setup span processors based on configured backend"""
+        """Setup span processors based on configured backend."""
         if not self.tracer_provider:
             return
 
@@ -262,7 +263,7 @@ class APMManager:
             logger.warning(f"Unknown or unavailable APM backend: {self.apm_backend}")
 
     def _create_metrics(self) -> None:
-        """Create metrics instruments"""
+        """Create metrics instruments."""
         if not self.meter:
             return
 
@@ -345,7 +346,7 @@ class APMManager:
         logger.info("✓ Created 11 metrics instruments")
 
     def _setup_instrumentation(self) -> None:
-        """Auto-instrument framework libraries"""
+        """Auto-instrument framework libraries."""
         try:
             # FastAPI instrumentation
             if FastAPIInstrumentor:
@@ -373,7 +374,7 @@ class APMManager:
             logger.debug(f"Failed to instrument HTTP clients: {e}")
 
     def _setup_propagators(self) -> None:
-        """Setup context propagators for distributed tracing"""
+        """Setup context propagators for distributed tracing."""
         # Build list of available propagators
         propagators = []
 
@@ -393,19 +394,19 @@ class APMManager:
 
 
 # Global singleton
-_apm_manager: Optional[APMManager] = None
+_apm_manager: APMManager | None = None
 
 
 def get_apm_manager() -> APMManager:
-    """Get or create APM manager singleton"""
-    global _apm_manager
+    """Get or create APM manager singleton."""
+    global _apm_manager  # noqa: PLW0603
     if _apm_manager is None:
         _apm_manager = APMManager()
     return _apm_manager
 
 
 def init_apm() -> None:
-    """Initialize APM infrastructure"""
+    """Initialize APM infrastructure."""
     manager = get_apm_manager()
     manager.initialize()
 
@@ -413,7 +414,7 @@ def init_apm() -> None:
 # Decorators and context managers for instrumentation
 
 
-def create_span(name: str, attributes: Optional[Dict[str, Any]] = None) -> Any:
+def create_span(name: str, attributes: dict[str, Any] | None = None) -> Any:
     """
     Create a new span with optional attributes.
 
@@ -450,7 +451,7 @@ def create_span(name: str, attributes: Optional[Dict[str, Any]] = None) -> Any:
 
 
 def instrument_function(
-    span_name: Optional[str] = None,
+    span_name: str | None = None,
     record_result: bool = True,
 ):
     """
@@ -497,7 +498,7 @@ def instrument_function(
 def record_metric(
     metric_name: str,
     value: float,
-    attributes: Optional[Dict[str, Any]] = None,
+    attributes: dict[str, Any] | None = None,
 ) -> None:
     """
     Record a metric value.
@@ -525,8 +526,8 @@ def record_metric(
 
 
 def add_trace_context_to_headers(
-    headers: Optional[Dict[str, str]] = None,
-) -> Dict[str, str]:
+    headers: dict[str, str] | None = None,
+) -> dict[str, str]:
     """
     Add trace context to headers for distributed tracing.
 
@@ -551,7 +552,7 @@ def add_trace_context_to_headers(
 
 
 @contextmanager
-def measure_execution(name: str, attributes: Optional[Dict[str, Any]] = None):
+def measure_execution(name: str, attributes: dict[str, Any] | None = None):
     """
     Context manager to measure execution time and create a span.
 
@@ -576,7 +577,7 @@ def measure_execution(name: str, attributes: Optional[Dict[str, Any]] = None):
 
 
 def trace_task_execution(task_id: str, task_type: str):
-    """Context manager for task execution tracing"""
+    """Context manager for task execution tracing."""
     return measure_execution(
         "task.execution",
         {"task.id": task_id, "task.type": task_type},
@@ -584,7 +585,7 @@ def trace_task_execution(task_id: str, task_type: str):
 
 
 def trace_llm_call(model: str, endpoint: str):
-    """Context manager for LLM call tracing"""
+    """Context manager for LLM call tracing."""
     return measure_execution(
         "llm.call",
         {"llm.model": model, "llm.endpoint": endpoint},
@@ -592,7 +593,7 @@ def trace_llm_call(model: str, endpoint: str):
 
 
 def trace_marketplace_scan(marketplace_url: str):
-    """Context manager for marketplace scan tracing"""
+    """Context manager for marketplace scan tracing."""
     return measure_execution(
         "marketplace.scan",
         {"marketplace.url": marketplace_url},
@@ -600,7 +601,7 @@ def trace_marketplace_scan(marketplace_url: str):
 
 
 def trace_payment_processing(payment_id: str, amount: float):
-    """Context manager for payment processing tracing"""
+    """Context manager for payment processing tracing."""
     return measure_execution(
         "payment.processing",
         {"payment.id": payment_id, "payment.amount": amount},
@@ -608,7 +609,7 @@ def trace_payment_processing(payment_id: str, amount: float):
 
 
 def trace_rag_query(query: str, top_k: int = 5):
-    """Context manager for RAG query tracing"""
+    """Context manager for RAG query tracing."""
     return measure_execution(
         "rag.query",
         {"rag.query_length": len(query), "rag.top_k": top_k},
@@ -616,7 +617,7 @@ def trace_rag_query(query: str, top_k: int = 5):
 
 
 def trace_arena_competition(competition_id: str):
-    """Context manager for arena competition tracing"""
+    """Context manager for arena competition tracing."""
     return measure_execution(
         "arena.competition",
         {"arena.competition_id": competition_id},

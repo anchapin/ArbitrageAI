@@ -1,5 +1,5 @@
 """
-Confidence Tracker Module for Autonomy
+Confidence Tracker Module for Autonomy.
 
 Measures agent's performance and recommends bid thresholds based on
 historical win rates, profit margins, and risk factors.
@@ -13,13 +13,12 @@ Features:
 - Self-adjusting algorithm for continuous improvement
 """
 
-from typing import Optional, Dict, Any, List
-from datetime import datetime
+from datetime import datetime, timezone
+from typing import Any
 
-
-from ..api.database import SessionLocal
-from ..api.models import ConfidenceEntry as ConfidenceEntryModel
-from ..utils.logger import get_logger
+from src.api.database import SessionLocal
+from src.api.models import ConfidenceEntry as ConfidenceEntryModel
+from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
 
@@ -29,7 +28,7 @@ ConfidenceEntry = ConfidenceEntryModel
 
 class ConfidenceTracker:
     """
-    Confidence Tracker for Bid Threshold Optimization
+    Confidence Tracker for Bid Threshold Optimization.
 
     Calculates confidence scores based on historical performance and
     recommends optimal bid thresholds for maximum profitability.
@@ -64,7 +63,7 @@ class ConfidenceTracker:
 
             logger.info(
                 f"Loaded streaks - Wins: {self.current_streak_wins}, "
-                f"Losses: {self.current_streak_losses}"
+                f"Losses: {self.current_streak_losses}",
             )
         finally:
             db.close()
@@ -73,10 +72,10 @@ class ConfidenceTracker:
         self,
         threshold: int,
         bid_amount_cents: int,
-        job_title: Optional[str] = None,
-        marketplace: Optional[str] = None,
-        evaluation_confidence: Optional[int] = None,
-        strategy_type: Optional[str] = None,
+        job_title: str | None = None,
+        marketplace: str | None = None,
+        evaluation_confidence: int | None = None,
+        strategy_type: str | None = None,
     ) -> ConfidenceEntry:
         """
         Record a bid for confidence tracking.
@@ -112,7 +111,7 @@ class ConfidenceTracker:
                 win_streak_before=self.current_streak_wins,
                 loss_streak_before=self.current_streak_losses,
                 strategy_type=strategy_type,
-                created_at=datetime.utcnow(),
+                created_at=datetime.now(timezone.utc),
             )
 
             db.add(entry)
@@ -122,7 +121,7 @@ class ConfidenceTracker:
             logger.info(
                 f"Recorded bid - Threshold: {threshold}, "
                 f"Amount: ${bid_amount_cents / 100:.2f}, "
-                f"Confidence: {confidence_score}"
+                f"Confidence: {confidence_score}",
             )
 
             return entry
@@ -138,7 +137,7 @@ class ConfidenceTracker:
         self,
         entry_id: str,
         won: bool,
-        profit_cents: Optional[int] = None,
+        profit_cents: int | None = None,
     ) -> bool:
         """
         Update bid outcome and recalculate streaks.
@@ -183,7 +182,7 @@ class ConfidenceTracker:
                 f"Updated outcome - Won: {won}, "
                 f"Profit: {profit_str}, "
                 f"Win Streak: {self.current_streak_wins}, "
-                f"Loss Streak: {self.current_streak_losses}"
+                f"Loss Streak: {self.current_streak_losses}",
             )
 
             return True
@@ -233,7 +232,7 @@ class ConfidenceTracker:
             profitable_entries = [e for e in entries if e.won and e.profit_cents]
             if profitable_entries:
                 avg_profit = sum(e.profit_cents for e in profitable_entries) / len(
-                    profitable_entries
+                    profitable_entries,
                 )
                 profit_factor = min(avg_profit / 5000, 1.0)  # Normalize to $50 profit
             else:
@@ -263,7 +262,7 @@ class ConfidenceTracker:
         finally:
             db.close()
 
-    def _calculate_variance(self, entries: List[ConfidenceEntry]) -> float:
+    def _calculate_variance(self, entries: list[ConfidenceEntry]) -> float:
         """Calculate variance in profit outcomes."""
         profits = [e.profit_cents for e in entries if e.profit_cents]
 
@@ -271,11 +270,9 @@ class ConfidenceTracker:
             return 0
 
         mean = sum(profits) / len(profits)
-        variance = sum((p - mean) ** 2 for p in profits) / len(profits)
+        return sum((p - mean) ** 2 for p in profits) / len(profits)
 
-        return variance
-
-    def get_recommended_threshold(self) -> Dict[str, Any]:
+    def get_recommended_threshold(self) -> dict[str, Any]:
         """
         Get recommended bid threshold based on performance.
 
@@ -344,7 +341,7 @@ class ConfidenceTracker:
                         "expected_value_cents": expected_value,
                         "total_bids": stats["total"],
                         "confidence_score": confidence_score,
-                    }
+                    },
                 )
 
             if not results:
@@ -380,7 +377,7 @@ class ConfidenceTracker:
         finally:
             db.close()
 
-    def get_threshold_summary(self, threshold: int) -> Dict[str, Any]:
+    def get_threshold_summary(self, threshold: int) -> dict[str, Any]:
         """
         Get detailed summary for a specific threshold.
 
@@ -410,7 +407,7 @@ class ConfidenceTracker:
             profitable_entries = [e for e in entries if e.won and e.profit_cents]
             if profitable_entries:
                 avg_profit = sum(e.profit_cents for e in profitable_entries) / len(
-                    profitable_entries
+                    profitable_entries,
                 )
                 max_profit = max(e.profit_cents for e in profitable_entries)
                 min_profit = min(e.profit_cents for e in profitable_entries)
@@ -444,8 +441,8 @@ class ConfidenceTracker:
     def get_recent_history(
         self,
         limit: int = 50,
-        threshold: Optional[int] = None,
-    ) -> List[Dict[str, Any]]:
+        threshold: int | None = None,
+    ) -> list[dict[str, Any]]:
         """
         Get recent confidence tracking history.
 
@@ -474,12 +471,12 @@ class ConfidenceTracker:
 
 
 # Global singleton instance
-_confidence_tracker_instance: Optional[ConfidenceTracker] = None
+_confidence_tracker_instance: ConfidenceTracker | None = None
 
 
 def get_confidence_tracker() -> ConfidenceTracker:
     """Get or create global Confidence Tracker singleton."""
-    global _confidence_tracker_instance
+    global _confidence_tracker_instance  # noqa: PLW0603
 
     if _confidence_tracker_instance is None:
         _confidence_tracker_instance = ConfidenceTracker()
@@ -489,5 +486,5 @@ def get_confidence_tracker() -> ConfidenceTracker:
 
 def reset_confidence_tracker():
     """Reset confidence tracker singleton (useful for testing)."""
-    global _confidence_tracker_instance
+    global _confidence_tracker_instance  # noqa: PLW0603
     _confidence_tracker_instance = None

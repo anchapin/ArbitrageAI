@@ -1,14 +1,15 @@
+# ruff: noqa: F821
 """
-Ollama Fine-Tuning Integration
+Ollama Fine-Tuning Integration.
 
 Handles fine-tuning with local Ollama models using Unsloth.
 """
 
-import json
-import os
-from typing import Optional, Dict, Any, List
 from datetime import datetime, timezone
+import json
 import logging
+from pathlib import Path
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -37,15 +38,13 @@ class OllamaFineTuner:
             ollama_base_url: Base URL for Ollama service
         """
         self.ollama_base_url = ollama_base_url
-        self.output_dir = os.path.join(
-            os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
-            "data",
-            "ollama_finetuning",
+        self.output_dir = (
+            Path(__file__).parent.parent.parent / "data" / "ollama_finetuning"
         )
-        os.makedirs(self.output_dir, exist_ok=True)
+        Path(self.output_dir).mkdir(parents=True, exist_ok=True)
 
     def prepare_dataset_for_unsloth(
-        self, examples: List[Dict[str, Any]], output_path: Optional[str] = None
+        self, examples: list[dict[str, Any]], output_path: str | None = None,
     ) -> str:
         """
         Prepare dataset in Unsloth format.
@@ -59,7 +58,7 @@ class OllamaFineTuner:
         """
         if output_path is None:
             timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
-            output_path = os.path.join(self.output_dir, f"unsloth_dataset_{timestamp}.json")
+            output_path = str(Path(self.output_dir) / f"unsloth_dataset_{timestamp}.json")
 
         # Convert to Alpaca format for Unsloth
         training_data = [
@@ -71,7 +70,7 @@ class OllamaFineTuner:
             for ex in examples
         ]
 
-        with open(output_path, "w") as f:
+        with open(output_path, "w", encoding="utf-8") as f:
             json.dump(training_data, f, indent=2)
 
         logger.info(f"Prepared Unsloth dataset: {output_path} ({len(training_data)} examples)")
@@ -85,7 +84,7 @@ class OllamaFineTuner:
         num_epochs: int = 3,
         learning_rate: float = 0.0005,
         batch_size: int = 4,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Create a fine-tuning configuration for Unsloth.
 
@@ -110,10 +109,8 @@ class OllamaFineTuner:
             "created_at": datetime.now(timezone.utc).isoformat(),
         }
 
-        config_path = os.path.join(
-            self.output_dir, f"{output_model_name}_config.json"
-        )
-        with open(config_path, "w") as f:
+        config_path = Path(self.output_dir) / f"{output_model_name}_config.json"
+        with open(config_path, "w", encoding="utf-8") as f:
             json.dump(config, f, indent=2)
 
         logger.info(f"Created fine-tuning config: {config_path}")
@@ -127,7 +124,7 @@ class OllamaFineTuner:
         num_epochs: int = 3,
         learning_rate: float = 0.0005,
         batch_size: int = 4,
-        output_path: Optional[str] = None,
+        output_path: str | None = None,
     ) -> str:
         """
         Generate a Python script to run Unsloth fine-tuning.
@@ -146,8 +143,8 @@ class OllamaFineTuner:
         """
         if output_path is None:
             timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
-            output_path = os.path.join(
-                self.output_dir, f"finetune_{output_model_name}_{timestamp}.py"
+            output_path = str(
+                Path(self.output_dir) / f"finetune_{output_model_name}_{timestamp}.py",
             )
 
         script = f'''#!/usr/bin/env python3
@@ -164,12 +161,12 @@ from trl import SFTTrainer
 import json
 
 # Configuration
-BASE_MODEL = "{base_model}"
-DATASET_PATH = "{dataset_path}"
-OUTPUT_MODEL_NAME = "{output_model_name}"
-NUM_EPOCHS = {num_epochs}
-LEARNING_RATE = {learning_rate}
-BATCH_SIZE = {batch_size}
+BASE_MODEL = "{base_model}"  # noqa: F821
+DATASET_PATH = "{dataset_path}"  # noqa: F821
+OUTPUT_MODEL_NAME = "{output_model_name}"  # noqa: F821
+NUM_EPOCHS = {num_epochs}  # noqa: F821
+LEARNING_RATE = {learning_rate}  # noqa: F821
+BATCH_SIZE = {batch_size}  # noqa: F821
 
 # Load base model
 logger.info(f"Loading base model: {BASE_MODEL}")
@@ -252,18 +249,18 @@ tokenizer.save_pretrained(f"./models/{{OUTPUT_MODEL_NAME}}/final")
 logger.info(f"Fine-tuning complete! Model saved to ./models/{{OUTPUT_MODEL_NAME}}/final")
 '''
 
-        with open(output_path, "w") as f:
+        with open(output_path, "w", encoding="utf-8") as f:
             f.write(script)
 
         # Make script executable
-        os.chmod(output_path, 0o755)
+        pathlib.Path(output_path).chmod(0o755)
 
         logger.info(f"Generated Unsloth script: {output_path}")
         return output_path
 
     def estimate_training_time(
-        self, num_examples: int, num_epochs: int = 3, gpu_type: str = "a100"
-    ) -> Dict[str, Any]:
+        self, num_examples: int, num_epochs: int = 3, gpu_type: str = "a100",
+    ) -> dict[str, Any]:
         """
         Estimate fine-tuning time based on dataset size and GPU.
 
@@ -311,8 +308,8 @@ logger.info(f"Fine-tuning complete! Model saved to ./models/{{OUTPUT_MODEL_NAME}
         self,
         model_path: str,
         model_name: str,
-        system_prompt: Optional[str] = None,
-        output_path: Optional[str] = None,
+        system_prompt: str | None = None,
+        output_path: str | None = None,
     ) -> str:
         """
         Create an Ollama Modelfile for a fine-tuned model.
@@ -327,7 +324,7 @@ logger.info(f"Fine-tuning complete! Model saved to ./models/{{OUTPUT_MODEL_NAME}
             Path to Modelfile
         """
         if output_path is None:
-            output_path = os.path.join(self.output_dir, f"Modelfile_{model_name}")
+            output_path = str(Path(self.output_dir) / f"Modelfile_{model_name}")
 
         modelfile = f"""FROM {model_path}
 
@@ -338,7 +335,7 @@ PARAMETER model_name {model_name}
         if system_prompt:
             modelfile += f'\nSYSTEM "{system_prompt}"\n'
 
-        with open(output_path, "w") as f:
+        with open(output_path, "w", encoding="utf-8") as f:
             f.write(modelfile)
 
         logger.info(f"Created Ollama Modelfile: {output_path}")

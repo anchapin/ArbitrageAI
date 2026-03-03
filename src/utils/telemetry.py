@@ -3,14 +3,14 @@ import os
 
 from opentelemetry import trace
 
-from ..config import get_traceloop_url
+from src.config import get_traceloop_url
 
 # Import APM initialization (Issue #42)
-from ..utils.apm import init_apm
+from src.utils.apm import init_apm
 
 # Import distributed tracing logging integration (Issue #31)
-from ..utils.distributed_tracing import setup_trace_logging
-from ..utils.logger import get_logger
+from src.utils.distributed_tracing import setup_trace_logging
+from src.utils.logger import get_logger
 
 # Optional dependencies
 try:
@@ -47,7 +47,7 @@ def init_observability():
     1. APM infrastructure for production monitoring (Issue #42)
     2. Local tracing via Arize Phoenix and Traceloop
     3. OpenTelemetry context propagation for distributed tracing
-    4. Log integration for distributed trace IDs (Issue #31)
+    4. Log integration for distributed trace IDs (Issue #31).
 
     Captures LLM calls, token usage, latency, and application metrics automatically.
 

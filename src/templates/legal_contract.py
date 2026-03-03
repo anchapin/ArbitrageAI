@@ -1,5 +1,5 @@
 """
-Legal Contract Template
+Legal Contract Template.
 
 This template provides a pre-tested Python script for generating legal documents
 such as contracts, agreements, and legal correspondence.
@@ -8,16 +8,16 @@ The LLM generates structured JSON content which is injected into this template,
 ensuring proper legal formatting without Python errors.
 """
 
+import base64
+from datetime import datetime
 import io
 import json
-import base64
-import pandas as pd
-from datetime import datetime
-from typing import Dict, Any, List
+from typing import Any, ClassVar
 
 from docx import Document
-from docx.shared import Inches, Pt
 from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.shared import Inches, Pt
+import pandas as pd
 
 
 class LegalContractTemplate:
@@ -38,7 +38,7 @@ class LegalContractTemplate:
     FONT_SIZE = 12
 
     # Document structure
-    SECTIONS = [
+    SECTIONS: ClassVar[list] = [
         "title",
         "parties",
         "recitals",
@@ -61,7 +61,7 @@ class LegalContractTemplate:
 
     def generate(
         self,
-        content_json: Dict[str, Any],
+        content_json: dict[str, Any],
         csv_data: str,
         output_format: str = "docx",
         **kwargs,
@@ -104,7 +104,7 @@ class LegalContractTemplate:
         except Exception as e:
             return {
                 "success": False,
-                "message": f"Legal document generation error: {str(e)}",
+                "message": f"Legal document generation error: {e!s}",
                 "output_format": output_format,
                 "document_type": "legal_contract",
             }
@@ -219,7 +219,7 @@ class LegalContractTemplate:
         # Note: python-docx doesn't support full justification well
         # Using left alignment instead
 
-    def _add_parties_section(self, parties: List[Dict[str, str]]):
+    def _add_parties_section(self, parties: list[dict[str, str]]):
         """Add parties identification section."""
         self._add_section_heading("PARTIES")
 
@@ -243,11 +243,11 @@ class LegalContractTemplate:
 
             self.document.add_paragraph()
 
-    def _add_recitals_section(self, recitals: List[str]):
+    def _add_recitals_section(self, recitals: list[str]):
         """Add recitals (WHEREAS clauses)."""
         self._add_section_heading("RECITALS")
 
-        for i, recital in enumerate(recitals, 1):
+        for _i, recital in enumerate(recitals, 1):
             # Numbered recital
             para = self.document.add_paragraph()
             run = para.add_run(f"WHEREAS, {recital}")
@@ -259,7 +259,7 @@ class LegalContractTemplate:
         # Now therefore clause
         para = self.document.add_paragraph()
         run = para.add_run(
-            "NOW, THEREFORE, in consideration of the mutual covenants and agreements set forth herein, the parties agree as follows:"
+            "NOW, THEREFORE, in consideration of the mutual covenants and agreements set forth herein, the parties agree as follows:",
         )
         run.font.name = self.FONT_NAME
         run.font.size = Pt(self.FONT_SIZE)
@@ -267,7 +267,7 @@ class LegalContractTemplate:
 
         self.document.add_paragraph()
 
-    def _add_definitions_section(self, definitions: Dict[str, str]):
+    def _add_definitions_section(self, definitions: dict[str, str]):
         """Add definitions section."""
         self._add_section_heading("DEFINITIONS")
 
@@ -286,7 +286,7 @@ class LegalContractTemplate:
 
         self.document.add_paragraph()
 
-    def _add_terms_section(self, terms: List[Dict[str, Any]]):
+    def _add_terms_section(self, terms: list[dict[str, Any]]):
         """Add terms and conditions section."""
         self._add_section_heading("TERMS AND CONDITIONS")
 
@@ -308,11 +308,11 @@ class LegalContractTemplate:
 
             self.document.add_paragraph()
 
-    def _add_obligations_section(self, obligations: List[Dict[str, str]]):
+    def _add_obligations_section(self, obligations: list[dict[str, str]]):
         """Add obligations section."""
         self._add_section_heading("OBLIGATIONS")
 
-        for i, obligation in enumerate(obligations, 1):
+        for _i, obligation in enumerate(obligations, 1):
             party = obligation.get("party", "")
             duties = obligation.get("duties", [])
 
@@ -330,7 +330,7 @@ class LegalContractTemplate:
 
             self.document.add_paragraph()
 
-    def _add_termination_section(self, termination: Dict[str, Any]):
+    def _add_termination_section(self, termination: dict[str, Any]):
         """Add termination section."""
         self._add_section_heading("TERMINATION")
 
@@ -352,7 +352,7 @@ class LegalContractTemplate:
 
         self.document.add_paragraph()
 
-    def _add_confidentiality_section(self, confidentiality: Dict[str, Any]):
+    def _add_confidentiality_section(self, confidentiality: dict[str, Any]):
         """Add confidentiality section."""
         self._add_section_heading("CONFIDENTIALITY")
 
@@ -384,7 +384,7 @@ class LegalContractTemplate:
 
         self.document.add_paragraph()
 
-    def _add_dispute_resolution_section(self, dispute_resolution: Dict[str, Any]):
+    def _add_dispute_resolution_section(self, dispute_resolution: dict[str, Any]):
         """Add dispute resolution section."""
         self._add_section_heading("DISPUTE RESOLUTION")
 
@@ -412,7 +412,7 @@ class LegalContractTemplate:
 
         self.document.add_paragraph()
 
-    def _add_general_provisions_section(self, provisions: List[str]):
+    def _add_general_provisions_section(self, provisions: list[str]):
         """Add general provisions section."""
         self._add_section_heading("GENERAL PROVISIONS")
 
@@ -420,7 +420,7 @@ class LegalContractTemplate:
             self._add_justified_paragraph(provision)
             self.document.add_paragraph()
 
-    def _add_signature_section(self, signatures: List[Dict[str, str]]):
+    def _add_signature_section(self, signatures: list[dict[str, str]]):
         """Add signature blocks."""
         self._add_section_heading("SIGNATURES")
 
@@ -462,7 +462,7 @@ class LegalContractTemplate:
 
             self.document.add_paragraph()
 
-    def _add_data_tables(self, tables: List):
+    def _add_data_tables(self, tables: list):
         """Add data tables to the document."""
         for table_data in tables:
             if isinstance(table_data, list) and len(table_data) > 0:
@@ -470,7 +470,7 @@ class LegalContractTemplate:
                 if isinstance(table_data[0], dict):
                     headers = list(table_data[0].keys())
                     table = self.document.add_table(
-                        rows=len(table_data) + 1, cols=len(headers)
+                        rows=len(table_data) + 1, cols=len(headers),
                     )
                     table.style = "Table Grid"
 
@@ -487,7 +487,7 @@ class LegalContractTemplate:
                         for col_idx, header in enumerate(headers):
                             if col_idx < len(table.rows[row_idx + 1].cells):
                                 table.rows[row_idx + 1].cells[col_idx].text = str(
-                                    row.get(header, "")
+                                    row.get(header, ""),
                                 )
 
                 self.document.add_paragraph()
@@ -515,7 +515,7 @@ class LegalContractTemplate:
         except Exception as e:
             return {
                 "success": False,
-                "message": f"Error reading output file: {str(e)}",
+                "message": f"Error reading output file: {e!s}",
                 "output_format": output_format,
             }
 
@@ -547,22 +547,22 @@ output_format = "{output_format}"
 def generate_legal_document():
     # Parse CSV
     df = pd.read_csv(io.StringIO(csv_data))
-    
+
     # Create document
     doc = Document()
-    
+
     # Set margins (extra left margin for binding)
     for section in doc.sections:
         section.top_margin = Inches(1.0)
         section.bottom_margin = Inches(1.0)
         section.left_margin = Inches(1.5)
         section.right_margin = Inches(1.0)
-    
+
     content = CONTENT_JSON
-    
+
     FONT_NAME = "Times New Roman"
     FONT_SIZE = 12
-    
+
     def add_centered(text, bold=False):
         para = doc.add_paragraph()
         run = para.add_run(text)
@@ -572,7 +572,7 @@ def generate_legal_document():
             run.font.bold = True
         para.alignment = WD_ALIGN_PARAGRAPH.CENTER
         return para
-    
+
     def add_section_heading(text):
         para = doc.add_paragraph()
         run = para.add_run(text)
@@ -581,18 +581,18 @@ def generate_legal_document():
         run.font.bold = True
         para.alignment = WD_ALIGN_PARAGRAPH.CENTER
         doc.add_paragraph()
-    
+
     def add_text(text):
         para = doc.add_paragraph(text)
         for run in para.runs:
             run.font.name = FONT_NAME
             run.font.size = Pt(FONT_SIZE)
-    
+
     # Title
     add_centered(content.get("title", "AGREEMENT"), bold=True)
     add_centered(content.get("date", datetime.now().strftime("%B %d, %Y")))
     doc.add_paragraph()
-    
+
     # Parties
     if "parties" in content:
         add_section_heading("PARTIES")
@@ -605,7 +605,7 @@ def generate_legal_document():
             if party.get("address"):
                 add_text(party["address"])
             doc.add_paragraph()
-    
+
     # Recitals
     if "recitals" in content:
         add_section_heading("RECITALS")
@@ -615,7 +615,7 @@ def generate_legal_document():
             run.font.name = FONT_NAME
             run.font.size = Pt(FONT_SIZE)
         doc.add_paragraph()
-    
+
     # Now therefore
     para = doc.add_paragraph()
     run = para.add_run("NOW, THEREFORE, in consideration of the mutual covenants and agreements set forth herein, the parties agree as follows:")
@@ -623,7 +623,7 @@ def generate_legal_document():
     run.font.size = Pt(FONT_SIZE)
     run.font.italic = True
     doc.add_paragraph()
-    
+
     # Terms
     if "terms" in content:
         add_section_heading("TERMS AND CONDITIONS")
@@ -631,17 +631,17 @@ def generate_legal_document():
             number = term.get("number", i)
             title = term.get("title", "")
             content_text = term.get("content", "")
-            
+
             para = doc.add_paragraph()
             run = para.add_run(f"{{number}}. {{title}}")
             run.font.name = FONT_NAME
             run.font.size = Pt(FONT_SIZE)
             run.font.bold = True
-            
+
             if content_text:
                 add_text(content_text)
             doc.add_paragraph()
-    
+
     # Signatures
     if "signatures" in content:
         add_section_heading("SIGNATURES")
@@ -654,11 +654,11 @@ def generate_legal_document():
             add_text(f"Title: {{sig.get('title', '')}}")
             add_text(f"Date: {{sig.get('date', '')}}")
             doc.add_paragraph()
-    
+
     # Save
     output_filename = f"output.{{output_format}}"
     doc.save(output_filename)
-    
+
     return output_filename
 
 if __name__ == "__main__":
@@ -668,15 +668,11 @@ if __name__ == "__main__":
 
 
 def get_legal_template_code(
-    content_json: Dict[str, Any], csv_data: str, output_format: str = "docx"
+    content_json: dict[str, Any], csv_data: str, output_format: str = "docx",
 ) -> str:
-    """
-    Get the executable legal template code with injected content.
-    """
+    """Get the executable legal template code with injected content."""
     content_str = json.dumps(content_json)
 
-    template = LEGAL_CONTRACT_TEMPLATE_CODE.replace("{content_json}", content_str)
+    template = LEGAL_CONTRACT_TEMPLATE_CODE.replace(f"{content_json}", content_str)
     template = template.replace("{csv_data}", csv_data)
-    template = template.replace("{output_format}", output_format)
-
-    return template
+    return template.replace("{output_format}", output_format)

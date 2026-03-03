@@ -1,5 +1,5 @@
 """
-Robust Logging Configuration
+Robust Logging Configuration.
 
 Provides centralized logging with:
 - Rotating file handler (prevents huge log files)
@@ -59,7 +59,7 @@ def setup_logging(
     )
 
     simple_formatter = logging.Formatter(
-        "[%(asctime)s] [%(levelname)s] %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
+        "[%(asctime)s] [%(levelname)s] %(message)s", datefmt="%Y-%m-%d %H:%M:%S",
     )
 
     # File handler - rotates at 10MB, keeps 5 backups
@@ -114,7 +114,7 @@ class TaskLogger:
     Provides convenient methods for common task operations.
     """
 
-    def __init__(self, task_id: str = None):
+    def __init__(self, task_id: str | None = None):
         self.logger = get_logger("task_processor")
         self.task_id = task_id
 
@@ -144,7 +144,7 @@ class TaskLogger:
         """Log task processing start."""
         self.info(f"Starting task processing with {workflow} workflow")
 
-    def task_completed(self, output_format: str = None):
+    def task_completed(self, output_format: str | None = None):
         """Log task completion."""
         msg = "Task completed successfully"
         if output_format:
@@ -155,7 +155,7 @@ class TaskLogger:
         """Log task failure."""
         self.error(f"Task failed - {error}")
 
-    def task_escalated(self, reason: str, error: str = None):
+    def task_escalated(self, reason: str, error: str | None = None):
         """Log task escalation to human review."""
         msg = f"ESCALATED for human review - {reason}"
         if error:
@@ -174,7 +174,7 @@ class TaskLogger:
         """Log arena competition start."""
         self.logger.info(
             f"🏟️ Starting Arena Competition: {competition_type} | "
-            f"Agent A: {agent_a} | Agent B: {agent_b}"
+            f"Agent A: {agent_a} | Agent B: {agent_b}",
         )
 
     def arena_completed(self, agent: str, execution_time: float):
@@ -192,9 +192,7 @@ class TaskLogger:
 
 
 class ArenaLogger:
-    """
-    Specialized logger for arena operations.
-    """
+    """Specialized logger for arena operations."""
 
     def __init__(self):
         self.logger = get_logger("arena")
@@ -204,7 +202,7 @@ class ArenaLogger:
         self.logger.info(
             f"🏟️ Starting Arena Competition: {competition_type}\n"
             f"   Agent A: {agent_a}\n"
-            f"   Agent B: {agent_b}"
+            f"   Agent B: {agent_b}",
         )
 
     def agent_complete(self, agent_name: str, execution_time: float):

@@ -1,5 +1,5 @@
 """
-Intelligent Task Categorization and Auto-Routing System
+Intelligent Task Categorization and Auto-Routing System.
 
 This module provides ML-based task classification and automatic routing
 to optimize task distribution and improve success rates. It uses machine
@@ -14,33 +14,35 @@ Features:
 - Integration with existing TaskRouter for seamless operation
 """
 
-import os
-import pickle
-import numpy as np
-from typing import Dict, List, Optional, Tuple, Any
+import asyncio
+from collections import Counter, defaultdict
+from dataclasses import asdict, dataclass
 from datetime import datetime
-from dataclasses import dataclass, asdict
-from collections import defaultdict, Counter
-from sklearn.feature_extraction.text import TfidfVectorizer
+from pathlib import Path
+import pickle
+from typing import Any
+
+import numpy as np
 from sklearn.cluster import KMeans
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics import accuracy_score
-
-# Import existing components
-from src.agent_execution.executor import (
-    TaskRouter,
-    TaskType,
-    OutputFormat,
-    LLMService,
-)
-from src.utils.logger import get_logger
-from src.utils.telemetry import get_tracer
-
-# Import database models
-from src.api.models import Task, TaskStatus
 
 # Import telemetry
 from traceloop.sdk.decorators import task, workflow
+
+# Import existing components
+from src.agent_execution.executor import (
+    LLMService,
+    OutputFormat,
+    TaskRouter,
+    TaskType,
+)
+
+# Import database models
+from src.api.models import Task, TaskStatus
+from src.utils.logger import get_logger
+from src.utils.telemetry import get_tracer
 
 # Initialize logger
 logger = get_logger(__name__)
@@ -56,7 +58,7 @@ class TaskProfile:
     task_id: str
     domain: str
     user_request: str
-    csv_headers: List[str]
+    csv_headers: list[str]
     task_type: str
     output_format: str
     complexity_score: float
@@ -66,8 +68,8 @@ class TaskProfile:
     retry_count: int
     review_attempts: int
     created_at: datetime
-    execution_time: Optional[float] = None
-    actual_success: Optional[bool] = None
+    execution_time: float | None = None
+    actual_success: bool | None = None
 
 
 @dataclass
@@ -77,8 +79,8 @@ class RouteDecision:
     handler_type: str
     confidence: float
     reasoning: str
-    estimated_performance: Dict[str, float]
-    fallback_handlers: List[str]
+    estimated_performance: dict[str, float]
+    fallback_handlers: list[str]
 
 
 class TaskClassifier:
@@ -91,7 +93,7 @@ class TaskClassifier:
     3. Rule-based classification for known patterns
     """
 
-    def __init__(self, model_path: Optional[str] = None):
+    def __init__(self, model_path: str | None = None):
         """
         Initialize the task classifier.
 
@@ -113,12 +115,12 @@ class TaskClassifier:
 
     def _get_default_model_path(self) -> str:
         """Get default model storage path."""
-        return os.path.join(os.path.dirname(__file__), "models", "task_classifier.pkl")
+        return str(Path(__file__).parent / "models" / "task_classifier.pkl")
 
     def _load_models(self):
         """Load pre-trained models from disk."""
         try:
-            if os.path.exists(self.model_path):
+            if Path(self.model_path).exists():
                 with open(self.model_path, "rb") as f:
                     models = pickle.load(f)
                     self.text_classifier = models.get("classifier")
@@ -131,7 +133,7 @@ class TaskClassifier:
                 logger.info("No pre-trained models found, will train on first use")
         except (pickle.UnpicklingError, EOFError) as e:
             logger.warning(f"Failed to load models (pickle error): {e}", exc_info=True)
-        except (FileNotFoundError, IOError, OSError) as e:
+        except (FileNotFoundError, OSError) as e:
             logger.warning(f"Failed to load models (file error): {e}", exc_info=True)
         except (ValueError, TypeError) as e:
             logger.warning(f"Failed to load models (validation error): {e}", exc_info=True)
@@ -141,7 +143,7 @@ class TaskClassifier:
     def _save_models(self):
         """Save trained models to disk."""
         try:
-            os.makedirs(os.path.dirname(self.model_path), exist_ok=True)
+            Path(self.model_path).parent.mkdir(parents=True, exist_ok=True)
             models = {
                 "classifier": self.text_classifier,
                 "clustering": self.clustering_model,
@@ -152,14 +154,14 @@ class TaskClassifier:
             with open(self.model_path, "wb") as f:
                 pickle.dump(models, f)
             logger.info("Saved task classification models")
-        except (IOError, OSError) as e:
+        except OSError as e:
             logger.error(f"Failed to save models (IO error): {e}", exc_info=True)
         except (ValueError, TypeError) as e:
             logger.error(f"Failed to save models (validation error): {e}", exc_info=True)
         except Exception as e:
             logger.error(f"Failed to save models: {e}", exc_info=True)
 
-    def extract_features(self, task_profiles: List[TaskProfile]) -> np.ndarray:
+    def extract_features(self, task_profiles: list[TaskProfile]) -> np.ndarray:
         """
         Extract features from task profiles for ML classification.
 
@@ -194,17 +196,13 @@ class TaskClassifier:
             text_features = self.vectorizer.transform(text_data)
 
         # Numerical features
-        numerical_features = []
-        for profile in task_profiles:
-            numerical_features.append(
-                [
+        numerical_features = [[
                     profile.complexity_score,
                     profile.estimated_time,
                     profile.success_rate,
                     profile.retry_count,
                     profile.review_attempts,
-                ]
-            )
+                ] for profile in task_profiles]
 
         numerical_features = np.array(numerical_features)
 
@@ -216,7 +214,7 @@ class TaskClassifier:
 
         return combined_features
 
-    def train(self, task_profiles: List[TaskProfile], labels: List[str]):
+    def train(self, task_profiles: list[TaskProfile], labels: list[str]):
         """
         Train the task classifier using historical data.
 
@@ -231,14 +229,14 @@ class TaskClassifier:
 
         # Train text classifier
         self.text_classifier = RandomForestClassifier(
-            n_estimators=100, max_depth=10, random_state=42, class_weight="balanced"
+            n_estimators=100, max_depth=10, random_state=42, class_weight="balanced",
         )
 
         self.text_classifier.fit(features, labels)
 
         # Train clustering model for anomaly detection
         self.clustering_model = KMeans(
-            n_clusters=min(5, len(set(labels))), random_state=42
+            n_clusters=min(5, len(set(labels))), random_state=42,
         )
         self.clustering_model.fit(features)
 
@@ -253,7 +251,7 @@ class TaskClassifier:
         # Store metrics
         self.classification_metrics["training_accuracy"].append(accuracy)
 
-    def classify(self, task_profile: TaskProfile) -> Dict[str, Any]:
+    def classify(self, task_profile: TaskProfile) -> dict[str, Any]:
         """
         Classify a task and return routing recommendations.
 
@@ -309,7 +307,7 @@ class TaskClassifier:
             logger.warning(f"ML classification failed: {e}, falling back to rule-based", exc_info=True)
             return self._rule_based_classification(task_profile)
 
-    def _rule_based_classification(self, task_profile: TaskProfile) -> Dict[str, Any]:
+    def _rule_based_classification(self, task_profile: TaskProfile) -> dict[str, Any]:
         """
         Fallback rule-based classification for untrained models.
 
@@ -399,7 +397,7 @@ class TaskClassifier:
                 [
                     np.linalg.norm(features[0] - c)
                     for c in self.clustering_model.cluster_centers_
-                ]
+                ],
             )
 
             return min(distance / max_distance if max_distance > 0 else 0.0, 1.0)
@@ -415,9 +413,7 @@ class TaskClassifier:
 
 
 class PerformanceTracker:
-    """
-    Tracks and analyzes task execution performance for continuous improvement.
-    """
+    """Tracks and analyzes task execution performance for continuous improvement."""
 
     def __init__(self, db_session=None):
         """
@@ -458,17 +454,17 @@ class PerformanceTracker:
                 "retry_count": task_profile.retry_count,
                 "review_attempts": task_profile.review_attempts,
                 "timestamp": datetime.now(),
-            }
+            },
         )
 
         # Update handler performance metrics
         self.handler_performance[handler]["successes"].append(actual_success)
         if task_profile.execution_time:
             self.handler_performance[handler]["execution_times"].append(
-                task_profile.execution_time
+                task_profile.execution_time,
             )
         self.handler_performance[handler]["complexities"].append(
-            task_profile.complexity_score
+            task_profile.complexity_score,
         )
 
         # Recalculate metrics
@@ -480,12 +476,12 @@ class PerformanceTracker:
 
         if data["successes"]:
             self.metrics["success_rate"][handler] = sum(data["successes"]) / len(
-                data["successes"]
+                data["successes"],
             )
 
         if data["execution_times"]:
             self.metrics["avg_execution_time"][handler] = np.mean(
-                data["execution_times"]
+                data["execution_times"],
             )
 
         if data["complexities"]:
@@ -494,8 +490,8 @@ class PerformanceTracker:
         self.metrics["task_volume"][handler] = len(data["successes"])
 
     def get_handler_recommendations(
-        self, task_profile: TaskProfile
-    ) -> List[Dict[str, Any]]:
+        self, task_profile: TaskProfile,
+    ) -> list[dict[str, Any]]:
         """
         Get handler recommendations based on performance data.
 
@@ -509,7 +505,7 @@ class PerformanceTracker:
 
         # Get all unique handlers from metrics
         all_handlers = set(self.metrics["success_rate"].keys()) | set(
-            self.metrics["avg_execution_time"].keys()
+            self.metrics["avg_execution_time"].keys(),
         )
 
         for handler in all_handlers:
@@ -526,7 +522,7 @@ class PerformanceTracker:
             # Higher volume = more proven
 
             time_score = max(
-                0, 1 - (avg_time / 600)
+                0, 1 - (avg_time / 600),
             )  # Normalize to 0-1 (10 minutes max)
             complexity_score = min(1, avg_complexity / 1.0)  # Normalize to 0-1
             volume_score = min(1, volume / 100)  # Normalize to 0-1 (100 tasks max)
@@ -547,14 +543,14 @@ class PerformanceTracker:
                     "avg_execution_time": avg_time,
                     "avg_complexity": avg_complexity,
                     "task_volume": volume,
-                }
+                },
             )
 
         # Sort by score
         recommendations.sort(key=lambda x: x["score"], reverse=True)
         return recommendations
 
-    def get_complexity_thresholds(self) -> Dict[str, float]:
+    def get_complexity_thresholds(self) -> dict[str, float]:
         """
         Calculate complexity thresholds for different handler types.
 
@@ -587,7 +583,7 @@ class IntelligentRouter:
     to make optimal routing decisions.
     """
 
-    def __init__(self, db_session=None, model_path: Optional[str] = None):
+    def __init__(self, db_session=None, model_path: str | None = None):
         """
         Initialize the intelligent router.
 
@@ -657,10 +653,10 @@ class IntelligentRouter:
         domain: str,
         user_request: str,
         csv_data: str,
-        task_type: Optional[str] = None,
-        output_format: Optional[str] = None,
+        task_type: str | None = None,
+        output_format: str | None = None,
         **kwargs,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Route a task using intelligent classification and performance data.
 
@@ -677,7 +673,7 @@ class IntelligentRouter:
         """
         # Create task profile
         task_profile = self._create_task_profile(
-            domain, user_request, csv_data, task_type, output_format
+            domain, user_request, csv_data, task_type, output_format,
         )
 
         # Classify task
@@ -710,7 +706,7 @@ class IntelligentRouter:
 
         # Make routing decision
         decision = self._make_routing_decision(
-            task_profile, classification, performance_recommendations
+            task_profile, classification, performance_recommendations,
         )
 
         # Execute task with selected handler
@@ -718,7 +714,7 @@ class IntelligentRouter:
 
         # Record performance
         self.performance_tracker.record_execution(
-            task_profile, result.get("success", False)
+            task_profile, result.get("success", False),
         )
 
         return {
@@ -734,8 +730,8 @@ class IntelligentRouter:
         domain: str,
         user_request: str,
         csv_data: str,
-        task_type: Optional[str],
-        output_format: Optional[str],
+        task_type: str | None,
+        output_format: str | None,
     ) -> TaskProfile:
         """
         Create a task profile from task parameters.
@@ -771,7 +767,7 @@ class IntelligentRouter:
             task_type=task_type or self.task_router.detect_task_type(user_request),
             output_format=output_format
             or self.task_router.detect_output_format(
-                domain, task_type or "visualization"
+                domain, task_type or "visualization",
             ),
             complexity_score=complexity,
             estimated_time=estimated_time,
@@ -783,7 +779,7 @@ class IntelligentRouter:
         )
 
     def _calculate_complexity_score(
-        self, user_request: str, csv_headers: List[str], domain: str
+        self, user_request: str, csv_headers: list[str], domain: str,
     ) -> float:
         """
         Calculate task complexity score based on various factors.
@@ -808,7 +804,7 @@ class IntelligentRouter:
             score += 0.1
 
         # Domain complexity
-        if domain.lower() in ["legal", "accounting"]:
+        if domain.lower() in {"legal", "accounting"}:
             score += 0.4
         else:
             score += 0.2
@@ -855,7 +851,7 @@ class IntelligentRouter:
         return base_time * time_multiplier * format_multiplier
 
     def _calculate_success_rate(
-        self, domain: str, task_type: str, output_format: str
+        self, domain: str, task_type: str, output_format: str,
     ) -> float:
         """
         Calculate expected success rate based on historical performance.
@@ -880,7 +876,7 @@ class IntelligentRouter:
             base_rate -= 0.03
 
         # Adjust based on output format
-        if output_format in ["docx", "xlsx"]:
+        if output_format in {"docx", "xlsx"}:
             base_rate -= 0.02
 
         return max(0.0, min(1.0, base_rate))
@@ -888,8 +884,8 @@ class IntelligentRouter:
     def _make_routing_decision(
         self,
         task_profile: TaskProfile,
-        classification: Dict[str, Any],
-        performance_recommendations: List[Dict[str, Any]],
+        classification: dict[str, Any],
+        performance_recommendations: list[dict[str, Any]],
     ) -> RouteDecision:
         """
         Make routing decision based on classification and performance data.
@@ -960,11 +956,11 @@ class IntelligentRouter:
             reasoning=reasoning,
             estimated_performance={
                 "success_rate": self._get_estimated_success_rate(
-                    best_handler, task_profile
+                    best_handler, task_profile,
                 ),
                 "execution_time": self._get_estimated_time(best_handler, task_profile),
                 "complexity_match": self._get_complexity_match(
-                    best_handler, task_profile
+                    best_handler, task_profile,
                 ),
             },
             fallback_handlers=fallback_handlers[:3],  # Limit to 3 fallbacks
@@ -973,8 +969,8 @@ class IntelligentRouter:
     def _generate_reasoning(
         self,
         task_profile: TaskProfile,
-        classification: Dict[str, Any],
-        performance_recommendations: List[Dict[str, Any]],
+        classification: dict[str, Any],
+        performance_recommendations: list[dict[str, Any]],
         selected_handler: str,
         is_anomaly: bool,
     ) -> str:
@@ -997,11 +993,11 @@ class IntelligentRouter:
         if classification.get("method") == "ml_classification":
             reasoning_parts.append(
                 f"ML classification predicted '{classification['predicted_handler']}' "
-                f"with {classification['confidence']:.2%} confidence"
+                f"with {classification['confidence']:.2%} confidence",
             )
         else:
             reasoning_parts.append(
-                "Used rule-based classification due to untrained model"
+                "Used rule-based classification due to untrained model",
             )
 
         # Performance reasoning
@@ -1016,13 +1012,13 @@ class IntelligentRouter:
         if perf_rec:
             reasoning_parts.append(
                 f"Performance data shows {selected_handler} has {perf_rec['success_rate']:.1%} "
-                f"success rate and handles {perf_rec['task_volume']} tasks"
+                f"success rate and handles {perf_rec['task_volume']} tasks",
             )
 
         # Anomaly detection
         if is_anomaly:
             reasoning_parts.append(
-                "Task detected as anomaly, using conservative routing"
+                "Task detected as anomaly, using conservative routing",
             )
 
         # Capability matching
@@ -1030,13 +1026,13 @@ class IntelligentRouter:
         if capabilities:
             reasoning_parts.append(
                 f"Handler capabilities: domains={capabilities['domains']}, "
-                f"formats={capabilities['formats']}, complexity={capabilities['complexity']}"
+                f"formats={capabilities['formats']}, complexity={capabilities['complexity']}",
             )
 
         return " | ".join(reasoning_parts)
 
     def _get_estimated_success_rate(
-        self, handler: str, task_profile: TaskProfile
+        self, handler: str, task_profile: TaskProfile,
     ) -> float:
         """Get estimated success rate for a handler and task."""
         perf_data = self.performance_tracker.metrics["success_rate"].get(handler, 0.8)
@@ -1046,7 +1042,7 @@ class IntelligentRouter:
     def _get_estimated_time(self, handler: str, task_profile: TaskProfile) -> float:
         """Get estimated execution time for a handler and task."""
         base_time = self.performance_tracker.metrics["avg_execution_time"].get(
-            handler, 120
+            handler, 120,
         )
         complexity_multiplier = 1 + (task_profile.complexity_score * 2)
         return base_time * complexity_multiplier
@@ -1066,8 +1062,8 @@ class IntelligentRouter:
         return 1 - abs(avg_complexity - task_complexity)
 
     async def _execute_with_handler(
-        self, task_profile: TaskProfile, decision: RouteDecision, **kwargs
-    ) -> Dict[str, Any]:
+        self, task_profile: TaskProfile, decision: RouteDecision, **kwargs,
+    ) -> dict[str, Any]:
         """
         Execute task with the selected handler.
 
@@ -1113,7 +1109,7 @@ class IntelligentRouter:
             for fallback_handler in decision.fallback_handlers:
                 try:
                     fallback_method = handler_map.get(
-                        fallback_handler, self._execute_standard_task
+                        fallback_handler, self._execute_standard_task,
                     )
                     result = await fallback_method(task_profile, **kwargs)
 
@@ -1123,25 +1119,25 @@ class IntelligentRouter:
                     task_profile.model_used = result.get("model_used", "unknown")
 
                     logger.info(
-                        f"Task execution succeeded with fallback handler: {fallback_handler}"
+                        f"Task execution succeeded with fallback handler: {fallback_handler}",
                     )
                     return result
 
                 except (ValueError, TypeError) as fallback_error:
                     logger.error(
-                        f"Fallback validation error for handler {fallback_handler}: {fallback_error}", exc_info=True
+                        f"Fallback validation error for handler {fallback_handler}: {fallback_error}", exc_info=True,
                     )
                     continue
                 except Exception as fallback_error:
                     logger.error(
-                        f"Fallback execution failed for handler {fallback_handler}: {fallback_error}", exc_info=True
+                        f"Fallback execution failed for handler {fallback_handler}: {fallback_error}", exc_info=True,
                     )
                     continue
 
             # All handlers failed
             return {
                 "success": False,
-                "message": f"All handlers failed. Last error: {str(e)}",
+                "message": f"All handlers failed. Last error: {e!s}",
                 "handler_type": handler_type,
                 "execution_time": 0,
                 "model_used": "none",
@@ -1153,7 +1149,7 @@ class IntelligentRouter:
             for fallback_handler in decision.fallback_handlers:
                 try:
                     fallback_method = handler_map.get(
-                        fallback_handler, self._execute_standard_task
+                        fallback_handler, self._execute_standard_task,
                     )
                     result = await fallback_method(task_profile, **kwargs)
 
@@ -1163,20 +1159,20 @@ class IntelligentRouter:
                     task_profile.model_used = result.get("model_used", "unknown")
 
                     logger.info(
-                        f"Task execution succeeded with fallback handler: {fallback_handler}"
+                        f"Task execution succeeded with fallback handler: {fallback_handler}",
                     )
                     return result
 
                 except Exception as fallback_error:
                     logger.error(
-                        f"Fallback execution failed for handler {fallback_handler}: {fallback_error}", exc_info=True
+                        f"Fallback execution failed for handler {fallback_handler}: {fallback_error}", exc_info=True,
                     )
                     continue
 
             # All handlers failed
             return {
                 "success": False,
-                "message": f"All handlers failed. Last error: {str(e)}",
+                "message": f"All handlers failed. Last error: {e!s}",
                 "handler_type": handler_type,
                 "execution_time": 0,
                 "model_used": "none",
@@ -1188,7 +1184,7 @@ class IntelligentRouter:
             for fallback_handler in decision.fallback_handlers:
                 try:
                     fallback_method = handler_map.get(
-                        fallback_handler, self._execute_standard_task
+                        fallback_handler, self._execute_standard_task,
                     )
                     result = await fallback_method(task_profile, **kwargs)
 
@@ -1198,20 +1194,20 @@ class IntelligentRouter:
                     task_profile.model_used = result.get("model_used", "unknown")
 
                     logger.info(
-                        f"Task execution succeeded with fallback handler: {fallback_handler}"
+                        f"Task execution succeeded with fallback handler: {fallback_handler}",
                     )
                     return result
 
                 except Exception as fallback_error:
                     logger.error(
-                        f"Fallback execution failed for handler {fallback_handler}: {fallback_error}", exc_info=True
+                        f"Fallback execution failed for handler {fallback_handler}: {fallback_error}", exc_info=True,
                     )
                     continue
 
             # All handlers failed
             return {
                 "success": False,
-                "message": f"All handlers failed. Last error: {str(e)}",
+                "message": f"All handlers failed. Last error: {e!s}",
                 "handler_type": handler_type,
                 "execution_time": 0,
                 "model_used": "none",
@@ -1219,22 +1215,22 @@ class IntelligentRouter:
 
     # Handler execution methods
     async def _execute_legal_task(
-        self, task_profile: TaskProfile, **kwargs
-    ) -> Dict[str, Any]:
+        self, task_profile: TaskProfile, **kwargs,
+    ) -> dict[str, Any]:
         """Execute legal domain task."""
         # Use cloud model for legal tasks
         llm_service = LLMService.for_complex_task()
 
         # Execute with document generator for legal tasks
         result = await self._execute_document_task(
-            task_profile, llm_service=llm_service, **kwargs
+            task_profile, llm_service=llm_service, **kwargs,
         )
         result["model_used"] = "gpt-4o"
         return result
 
     async def _execute_accounting_task(
-        self, task_profile: TaskProfile, **kwargs
-    ) -> Dict[str, Any]:
+        self, task_profile: TaskProfile, **kwargs,
+    ) -> dict[str, Any]:
         """Execute accounting domain task."""
         # Use cloud model for accounting tasks
         llm_service = LLMService.for_complex_task()
@@ -1242,19 +1238,19 @@ class IntelligentRouter:
         # Route to appropriate handler based on output format
         if task_profile.output_format == "xlsx":
             result = await self._execute_spreadsheet_task(
-                task_profile, llm_service=llm_service, **kwargs
+                task_profile, llm_service=llm_service, **kwargs,
             )
         else:
             result = await self._execute_document_task(
-                task_profile, llm_service=llm_service, **kwargs
+                task_profile, llm_service=llm_service, **kwargs,
             )
 
         result["model_used"] = "gpt-4o"
         return result
 
     async def _execute_visualization_task(
-        self, task_profile: TaskProfile, **kwargs
-    ) -> Dict[str, Any]:
+        self, task_profile: TaskProfile, **kwargs,
+    ) -> dict[str, Any]:
         """Execute data visualization task."""
         # Use local model for cost optimization
         llm_service = LLMService.for_basic_admin()
@@ -1262,7 +1258,7 @@ class IntelligentRouter:
         from src.agent_execution.executor import execute_data_visualization
 
         result = execute_data_visualization(
-            csv_data="\n".join([",".join(task_profile.csv_headers)] + ["sample,data"]),
+            csv_data="\n".join([",".join(task_profile.csv_headers), "sample,data"]),
             user_request=task_profile.user_request,
             llm_service=llm_service,
             domain=task_profile.domain,
@@ -1273,8 +1269,8 @@ class IntelligentRouter:
         return result
 
     async def _execute_document_task(
-        self, task_profile: TaskProfile, **kwargs
-    ) -> Dict[str, Any]:
+        self, task_profile: TaskProfile, **kwargs,
+    ) -> dict[str, Any]:
         """Execute document generation task."""
         llm_service = kwargs.get("llm_service", LLMService())
 
@@ -1288,7 +1284,7 @@ class IntelligentRouter:
 
         result = generator.generate_document(
             user_request=task_profile.user_request,
-            csv_data="\n".join([",".join(task_profile.csv_headers)] + ["sample,data"]),
+            csv_data="\n".join([",".join(task_profile.csv_headers), "sample,data"]),
             **kwargs,
         )
 
@@ -1296,8 +1292,8 @@ class IntelligentRouter:
         return result
 
     async def _execute_spreadsheet_task(
-        self, task_profile: TaskProfile, **kwargs
-    ) -> Dict[str, Any]:
+        self, task_profile: TaskProfile, **kwargs,
+    ) -> dict[str, Any]:
         """Execute spreadsheet generation task."""
         llm_service = kwargs.get("llm_service", LLMService())
         exec_kwargs = {k: v for k, v in kwargs.items() if k != "llm_service"}
@@ -1307,7 +1303,7 @@ class IntelligentRouter:
         result = execute_task(
             domain=task_profile.domain,
             user_request=task_profile.user_request,
-            csv_data="\n".join([",".join(task_profile.csv_headers)] + ["sample,data"]),
+            csv_data="\n".join([",".join(task_profile.csv_headers), "sample,data"]),
             task_type=TaskType.SPREADSHEET,
             output_format=OutputFormat.XLSX,
             llm_service=llm_service,
@@ -1318,20 +1314,20 @@ class IntelligentRouter:
         return result
 
     async def _execute_report_task(
-        self, task_profile: TaskProfile, **kwargs
-    ) -> Dict[str, Any]:
+        self, task_profile: TaskProfile, **kwargs,
+    ) -> dict[str, Any]:
         """Execute report generation task."""
         llm_service = kwargs.get("llm_service", LLMService())
 
         from src.agent_execution.executor import ReportGenerator
 
         generator = ReportGenerator(
-            domain=task_profile.domain, llm_service=llm_service, report_type="detailed"
+            domain=task_profile.domain, llm_service=llm_service, report_type="detailed",
         )
 
         result = generator.generate_report(
             user_request=task_profile.user_request,
-            csv_data="\n".join([",".join(task_profile.csv_headers)] + ["sample,data"]),
+            csv_data="\n".join([",".join(task_profile.csv_headers), "sample,data"]),
             **kwargs,
         )
 
@@ -1339,14 +1335,14 @@ class IntelligentRouter:
         return result
 
     async def _execute_standard_task(
-        self, task_profile: TaskProfile, **kwargs
-    ) -> Dict[str, Any]:
+        self, task_profile: TaskProfile, **kwargs,
+    ) -> dict[str, Any]:
         """Execute standard task using default routing."""
         # Use the existing TaskRouter for standard tasks
         result = self.task_router.route(
             domain=task_profile.domain,
             user_request=task_profile.user_request,
-            csv_data="\n".join([",".join(task_profile.csv_headers)] + ["sample,data"]),
+            csv_data="\n".join([",".join(task_profile.csv_headers), "sample,data"]),
             task_type=task_profile.task_type,
             output_format=task_profile.output_format,
             **kwargs,
@@ -1355,7 +1351,7 @@ class IntelligentRouter:
         result["model_used"] = "standard"
         return result
 
-    def get_routing_analytics(self) -> Dict[str, Any]:
+    def get_routing_analytics(self) -> dict[str, Any]:
         """
         Get analytics on routing decisions and performance.
 
@@ -1385,19 +1381,19 @@ class IntelligentRouter:
 
         return {
             "total_tasks_routed": sum(
-                self.performance_tracker.metrics["task_volume"].values()
+                self.performance_tracker.metrics["task_volume"].values(),
             ),
             "average_success_rate": np.mean(
-                list(self.performance_tracker.metrics["success_rate"].values())
+                list(self.performance_tracker.metrics["success_rate"].values()),
             )
             if self.performance_tracker.metrics["success_rate"]
             else 0.0,
             "top_performing_handlers": performance_recommendations[:3],
             "handler_distribution": dict(
-                self.performance_tracker.metrics["task_volume"]
+                self.performance_tracker.metrics["task_volume"],
             ),
             "classification_accuracy": np.mean(
-                self.classifier.classification_metrics["training_accuracy"]
+                self.classifier.classification_metrics["training_accuracy"],
             )
             if self.classifier.classification_metrics["training_accuracy"]
             else 0.0,
@@ -1428,7 +1424,7 @@ class IntelligentRouter:
                 logger.warning("No training data available for retraining")
                 return False
 
-            task_profiles, labels = zip(*training_data)
+            task_profiles, labels = zip(*training_data, strict=False)
 
             # Retrain classifier
             self.classifier.train(task_profiles, labels)
@@ -1446,7 +1442,7 @@ class IntelligentRouter:
             logger.error(f"Failed to retrain classifier: {e}", exc_info=True)
             return False
 
-    def _get_training_data(self, db_session) -> List[Tuple[TaskProfile, str]]:
+    def _get_training_data(self, db_session) -> list[tuple[TaskProfile, str]]:
         """
         Get training data from database or performance tracker.
 
@@ -1515,14 +1511,13 @@ class IntelligentRouter:
         # This would depend on how handlers are tracked in the system
         if task.domain == "legal":
             return "legal_specialist"
-        elif task.domain == "accounting":
+        if task.domain == "accounting":
             return "accounting_specialist"
-        elif task.result_type == "docx":
+        if task.result_type == "docx":
             return "document_generator"
-        elif task.result_type == "xlsx":
+        if task.result_type == "xlsx":
             return "spreadsheet_generator"
-        else:
-            return "standard_handler"
+        return "standard_handler"
 
 
 # Global intelligent router instance
@@ -1530,7 +1525,7 @@ _intelligent_router_instance = None
 
 
 def get_intelligent_router(
-    db_session=None, model_path: Optional[str] = None
+    db_session=None, model_path: str | None = None,
 ) -> IntelligentRouter:
     """
     Get the global intelligent router instance.
@@ -1542,7 +1537,7 @@ def get_intelligent_router(
     Returns:
         IntelligentRouter instance
     """
-    global _intelligent_router_instance
+    global _intelligent_router_instance  # noqa: PLW0603
     if _intelligent_router_instance is None:
         _intelligent_router_instance = IntelligentRouter(db_session, model_path)
     return _intelligent_router_instance
@@ -1554,11 +1549,11 @@ async def route_task_intelligently(
     domain: str,
     user_request: str,
     csv_data: str,
-    task_type: Optional[str] = None,
-    output_format: Optional[str] = None,
+    task_type: str | None = None,
+    output_format: str | None = None,
     db_session=None,
     **kwargs,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Convenience function to route a task intelligently.
 

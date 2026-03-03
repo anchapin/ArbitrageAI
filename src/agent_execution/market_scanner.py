@@ -1,5 +1,5 @@
 """
-Market Scanner Module
+Market Scanner Module.
 
 This module provides functionality to scan freelance marketplaces for potential tasks.
 It uses Playwright to navigate to marketplace URLs and evaluates job postings
@@ -17,6 +17,7 @@ from dataclasses import dataclass
 from datetime import datetime
 import json
 import os
+from pathlib import Path
 import re
 from typing import Any
 
@@ -27,12 +28,12 @@ from dotenv import load_dotenv
 from src.utils.logger import get_logger
 
 # Import database and models for bidding (Issue #19 Integration)
-from ..api.database import SessionLocal
-from ..api.models import BidStatus
+from src.api.database import SessionLocal
+from src.api.models import BidStatus
 
 # Import ConfigManager for centralized configuration
-from ..config.config_manager import ConfigManager
-from .bid_deduplication import create_bid_atomically, should_bid
+from src.config.config_manager import ConfigManager
+from src.agent_execution.bid_deduplication import create_bid_atomically, should_bid
 
 # Import distributed locking and deduplication (Issue #19 Integration)
 from .bid_lock_manager_factory import get_bid_lock_manager
@@ -45,7 +46,7 @@ from .marketplace_adapters.registry import MarketplaceRegistry
 
 # Import LLM service for local inference
 try:
-    from ..llm_service import LLMService
+    from src.llm_service import LLMService
 
     LLM_SERVICE_AVAILABLE = True
 except ImportError:
@@ -67,7 +68,7 @@ logger = get_logger(__name__)
 
 if not LLM_SERVICE_AVAILABLE:
     logger.warning(
-        "LLMService not available, market scanner will use fallback evaluation"
+        "LLMService not available, market scanner will use fallback evaluation",
     )
 
 if not PLAYWRIGHT_AVAILABLE:
@@ -81,7 +82,7 @@ if not PLAYWRIGHT_AVAILABLE:
 # Marketplace URLs configuration
 MARKETPLACES_FILE = os.environ.get(
     "MARKETPLACES_FILE",
-    os.path.join(os.path.dirname(__file__), "../../data/marketplaces.json"),
+    str(Path(__file__).parent / "../../data/marketplaces.json"),
 )
 DEFAULT_MARKETPLACE_URL = "https://example.com/freelance-jobs"
 
@@ -226,7 +227,7 @@ class MarketScanner:
             try:
                 self.llm = LLMService.with_local(model=EVALUATION_MODEL)
                 logger.info(
-                    f"MarketScanner initialized with LLM model: {EVALUATION_MODEL}"
+                    f"MarketScanner initialized with LLM model: {EVALUATION_MODEL}",
                 )
             except (ValueError, TypeError) as e:
                 logger.warning(f"Failed to initialize LLM service (validation error): {e}", exc_info=True)
@@ -240,14 +241,14 @@ class MarketScanner:
     def _load_marketplaces_from_config(self) -> None:
         """Load active marketplace URLs from the marketplaces.json config file."""
         try:
-            if not os.path.exists(MARKETPLACES_FILE):
+            if not Path(MARKETPLACES_FILE).exists():
                 logger.warning(
-                    f"Marketplaces config file not found: {MARKETPLACES_FILE}"
+                    f"Marketplaces config file not found: {MARKETPLACES_FILE}",
                 )
                 self.marketplace_urls = [DEFAULT_MARKETPLACE_URL]
                 return
 
-            with open(MARKETPLACES_FILE) as f:
+            with open(MARKETPLACES_FILE, encoding="utf-8") as f:
                 data = json.load(f)
 
             # Extract active marketplace URLs
@@ -263,13 +264,13 @@ class MarketScanner:
                 self.marketplace_urls = [DEFAULT_MARKETPLACE_URL]
 
             logger.info(
-                f"Loaded {len(self.marketplace_urls)} marketplace URLs from config"
+                f"Loaded {len(self.marketplace_urls)} marketplace URLs from config",
             )
 
         except (json.JSONDecodeError, ValueError) as e:
             logger.error(f"Failed to load marketplaces from config (JSON error): {e}", exc_info=True)
             self.marketplace_urls = [DEFAULT_MARKETPLACE_URL]
-        except (FileNotFoundError, IOError, OSError) as e:
+        except (FileNotFoundError, OSError) as e:
             logger.error(f"Failed to load marketplaces from config (file error): {e}", exc_info=True)
             self.marketplace_urls = [DEFAULT_MARKETPLACE_URL]
         except (KeyError, TypeError) as e:
@@ -296,7 +297,7 @@ class MarketScanner:
         """
         if not PLAYWRIGHT_AVAILABLE:
             logger.error(
-                "Playwright is not available. Install with: pip install playwright && playwright install chromium"
+                "Playwright is not available. Install with: pip install playwright && playwright install chromium",
             )
             raise RuntimeError("Playwright is not installed")
 
@@ -364,7 +365,7 @@ class MarketScanner:
             self.playwright = None
 
     async def fetch_job_postings(
-        self, max_posts: int = 10, marketplace_url: str | None = None
+        self, max_posts: int = 10, marketplace_url: str | None = None,
     ) -> list[JobPosting]:
         """
         Fetch job postings from the marketplace.
@@ -425,12 +426,12 @@ class MarketScanner:
                     ".listing-item",
                     "article.job",
                     ".job-post",
-                ]
+                ],
             )
 
             if not job_elements:
                 logger.warning(
-                    "No job postings found with common selectors, using fallback extraction"
+                    "No job postings found with common selectors, using fallback extraction",
                 )
                 return self._get_mock_job_postings(max_posts)
 
@@ -488,24 +489,24 @@ class MarketScanner:
         try:
             # Try common selectors for job data
             title_elem = await element.query_selector(
-                ["h2", "h3", ".title", ".job-title", "[data-testid='title']"]
+                ["h2", "h3", ".title", ".job-title", "[data-testid='title']"],
             )
             title = await title_elem.inner_text() if title_elem else f"Job {index + 1}"
 
             desc_elem = await element.query_selector(
-                [".description", ".job-description", ".snippet", "p"]
+                [".description", ".job-description", ".snippet", "p"],
             )
             description = await desc_elem.inner_text() if desc_elem else ""
 
             # Try to get budget
             budget_elem = await element.query_selector(
-                [".budget", ".price", ".amount", ".job-price", "[data-testid='budget']"]
+                [".budget", ".price", ".amount", ".job-price", "[data-testid='budget']"],
             )
             budget = await budget_elem.inner_text() if budget_elem else None
 
             # Try to get skills
             skill_elems = await element.query_selector_all(
-                [".skills span", ".skill-tag", ".tag", "span[data-testid='skill']"]
+                [".skills span", ".skill-tag", ".tag", "span[data-testid='skill']"],
             )
             skills = []
             for skill in skill_elems:
@@ -603,7 +604,7 @@ class MarketScanner:
         return self._evaluate_fallback(title, description, task_id)
 
     async def _evaluate_with_llm(
-        self, title: str, description: str, task_id: str
+        self, title: str, description: str, task_id: str,
     ) -> EvaluationResult:
         """
         Evaluate job posting using local LLM (Ollama).
@@ -696,7 +697,7 @@ Evaluate this job posting and return JSON."""
             return self._evaluate_fallback(title, description, task_id)
 
     def _evaluate_fallback(
-        self, title: str, description: str, task_id: str
+        self, title: str, description: str, task_id: str,
     ) -> EvaluationResult:
         """
         Fallback rule-based evaluation when LLM is unavailable.
@@ -815,7 +816,7 @@ Evaluate this job posting and return JSON."""
         try:
             # Fetch job postings
             postings = await self.fetch_job_postings(
-                max_posts, marketplace_url=marketplace_url
+                max_posts, marketplace_url=marketplace_url,
             )
 
             if not postings:
@@ -833,7 +834,7 @@ Evaluate this job posting and return JSON."""
 
             for posting in postings:
                 evaluation = await self.evaluate_post(
-                    posting.title, posting.description
+                    posting.title, posting.description,
                 )
                 evaluation.task_id = (
                     f"{evaluation.task_id}_{hash(posting.title) % 1000}"
@@ -847,7 +848,7 @@ Evaluate this job posting and return JSON."""
                     # Bidding integration (Issue #19 Integration)
                     # For actual bidding, we need to extract the marketplace ID from the URL
                     marketplace_id = self._extract_marketplace_id(
-                        marketplace_url or self.marketplace_url
+                        marketplace_url or self.marketplace_url,
                     )
 
                     # Try to place bid (distributed lock + deduplication)
@@ -868,7 +869,7 @@ Evaluate this job posting and return JSON."""
                             },
                             "evaluation": evaluation.to_dict(),
                             "bid_placed": bid_placed,
-                        }
+                        },
                     )
 
             scan_duration = (datetime.now() - start_time).total_seconds()
@@ -926,7 +927,7 @@ Evaluate this job posting and return JSON."""
             }
 
     async def scan_all_marketplaces(
-        self, max_posts: int = 10, min_bid_threshold: int = 30
+        self, max_posts: int = 10, min_bid_threshold: int = 30,
     ) -> dict[str, Any]:
         """
         Scan all configured marketplaces and evaluate all job postings.
@@ -980,7 +981,7 @@ Evaluate this job posting and return JSON."""
                     # Add suitable jobs, avoiding duplicates
                     for job in result.get("suitable_jobs", []):
                         job_hash = hash(
-                            job["posting"]["title"] + job["posting"]["description"]
+                            job["posting"]["title"] + job["posting"]["description"],
                         )
                         if job_hash not in seen_job_hashes:
                             seen_job_hashes.add(job_hash)
@@ -1060,7 +1061,7 @@ Evaluate this job posting and return JSON."""
 
 
 async def run_single_scan(
-    marketplace_url: str | None = None, max_posts: int = 10
+    marketplace_url: str | None = None, max_posts: int = 10,
 ) -> dict[str, Any]:
     """
     Run a single market scan.
@@ -1153,7 +1154,7 @@ def _extract_marketplace_id_helper(url: str) -> str:
 
 
 async def place_bid_on_posting(
-    self, marketplace_id: str, posting: Any, evaluation: Any
+    self, marketplace_id: str, posting: Any, evaluation: Any,
 ) -> bool:
     """
     Atomic bid placement with distributed lock and deduplication.
@@ -1189,7 +1190,7 @@ async def place_bid_on_posting(
             try:
                 if not await should_bid(db, posting_id, marketplace_id):
                     logger.info(
-                        f"Deduplication: Already bid on {marketplace_id}:{posting_id}"
+                        f"Deduplication: Already bid on {marketplace_id}:{posting_id}",
                     )
                     return False
 
@@ -1222,19 +1223,18 @@ async def place_bid_on_posting(
 
                         # In this integration, we'll just log and mark as SUBMITTED
                         logger.info(
-                            f"PLACED BID via adapter for {marketplace_id}:{posting_id} ($ {evaluation.bid_amount})"
+                            f"PLACED BID via adapter for {marketplace_id}:{posting_id} ($ {evaluation.bid_amount})",
                         )
 
                         bid.status = BidStatus.SUBMITTED
                         bid.submitted_at = datetime.now()
                         db.commit()
                         return True
-                    else:
-                        # No adapter, just log the intent (simulated bid)
-                        logger.warning(
-                            f"No adapter for {marketplace_id}, bid recorded but not submitted"
-                        )
-                        return True
+                    # No adapter, just log the intent (simulated bid)
+                    logger.warning(
+                        f"No adapter for {marketplace_id}, bid recorded but not submitted",
+                    )
+                    return True
                 except (ValueError, TypeError) as adapter_error:
                     logger.error(f"Adapter bid validation error: {adapter_error}", exc_info=True)
                     return False
@@ -1254,7 +1254,7 @@ async def place_bid_on_posting(
 
     except TimeoutError:
         logger.warning(
-            f"Lock timeout for {marketplace_id}:{posting_id} - someone else is bidding"
+            f"Lock timeout for {marketplace_id}:{posting_id} - someone else is bidding",
         )
         return False
     except (ValueError, TypeError) as e:

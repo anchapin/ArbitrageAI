@@ -1,5 +1,5 @@
 """
-Self-Adjusting Confidence Algorithm
+Self-Adjusting Confidence Algorithm.
 
 Implements adaptive confidence calculation that learns and improves over time
 based on performance patterns.
@@ -14,13 +14,13 @@ Features:
 - Performance improvement tracking
 """
 
-from typing import Optional, Dict, Any, List
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
+from typing import Any
 
-from ..api.database import SessionLocal
-from ..api.models import ConfidenceAdjustment, ConfidenceEntry
-from ..utils.logger import get_logger
+from src.api.database import SessionLocal
+from src.api.models import ConfidenceAdjustment, ConfidenceEntry
+from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
 
@@ -51,7 +51,7 @@ class ConservatismLevel(Enum):
 
 class SelfAdjustingConfidenceAlgorithm:
     """
-    Self-Adjusting Confidence Algorithm
+    Self-Adjusting Confidence Algorithm.
 
     Automatically adjusts confidence calculation parameters based on
     performance patterns to optimize profitability.
@@ -74,8 +74,8 @@ class SelfAdjustingConfidenceAlgorithm:
         self.current_conservatism = ConservatismLevel.MODERATE.value
         self.baseline_conservatism = ConservatismLevel.MODERATE.value
         self.total_adjustments = 0
-        self.adjustment_history: List[Dict[str, Any]] = []
-        self.performance_baseline: Optional[Dict[str, Any]] = None
+        self.adjustment_history: list[dict[str, Any]] = []
+        self.performance_baseline: dict[str, Any] | None = None
         self._load_state()
 
     def _load_state(self):
@@ -94,14 +94,14 @@ class SelfAdjustingConfidenceAlgorithm:
                 self.total_adjustments = last_adjustment.total_adjustments
                 logger.info(
                     f"Loaded algorithm state - Conservatism: {self.current_conservatism}, "
-                    f"Total adjustments: {self.total_adjustments}"
+                    f"Total adjustments: {self.total_adjustments}",
                 )
             else:
                 logger.info("Initialized new algorithm state with default conservatism")
         finally:
             db.close()
 
-    def analyze_performance(self) -> Dict[str, Any]:
+    def analyze_performance(self) -> dict[str, Any]:
         """
         Analyze recent performance to determine if adjustment is needed.
 
@@ -209,23 +209,21 @@ class SelfAdjustingConfidenceAlgorithm:
         finally:
             db.close()
 
-    def _calculate_profit_variance(self, profitable_wins: List[ConfidenceEntry]) -> float:
+    def _calculate_profit_variance(self, profitable_wins: list[ConfidenceEntry]) -> float:
         """Calculate variance in profit outcomes."""
         if len(profitable_wins) < 2:
             return 0
 
         profits = [e.profit_cents for e in profitable_wins]
         mean = sum(profits) / len(profits)
-        variance = sum((p - mean) ** 2 for p in profits) / len(profits)
-
-        return variance
+        return sum((p - mean) ** 2 for p in profits) / len(profits)
 
     def adjust_conservatism(
         self,
         reason: AdjustmentReason,
         manual_override: bool = False,
-        override_value: Optional[int] = None,
-    ) -> Dict[str, Any]:
+        override_value: int | None = None,
+    ) -> dict[str, Any]:
         """
         Adjust conservatism level based on performance or manual override.
 
@@ -246,77 +244,76 @@ class SelfAdjustingConfidenceAlgorithm:
                 self.current_conservatism = override_value
                 reason = AdjustmentReason.MANUAL_OVERRIDE
                 logger.info(
-                    f"Manual override: Conservatism {old_conservatism} -> {override_value}"
+                    f"Manual override: Conservatism {old_conservatism} -> {override_value}",
                 )
-            else:
-                # Automatic adjustment based on reason
-                if reason == AdjustmentReason.WIN_STREAK:
-                    # Reduce conservatism (more aggressive)
-                    adjustment = -10
-                    self.current_conservatism = max(
-                        ConservatismLevel.VERY_AGGRESSIVE.value,
-                        self.current_conservatism + adjustment,
-                    )
-                    logger.info(
-                        f"Win streak detected: Reducing conservatism to {self.current_conservatism}"
-                    )
+            # Automatic adjustment based on reason
+            elif reason == AdjustmentReason.WIN_STREAK:
+                # Reduce conservatism (more aggressive)
+                adjustment = -10
+                self.current_conservatism = max(
+                    ConservatismLevel.VERY_AGGRESSIVE.value,
+                    self.current_conservatism + adjustment,
+                )
+                logger.info(
+                    f"Win streak detected: Reducing conservatism to {self.current_conservatism}",
+                )
 
-                elif reason == AdjustmentReason.LOSS_STREAK:
-                    # Increase conservatism (more cautious)
-                    adjustment = +15
-                    self.current_conservatism = min(
-                        ConservatismLevel.VERY_CONSERVATIVE.value,
-                        self.current_conservatism + adjustment,
-                    )
-                    logger.info(
-                        f"Loss streak detected: Increasing conservatism to {self.current_conservatism}"
-                    )
+            elif reason == AdjustmentReason.LOSS_STREAK:
+                # Increase conservatism (more cautious)
+                adjustment = +15
+                self.current_conservatism = min(
+                    ConservatismLevel.VERY_CONSERVATIVE.value,
+                    self.current_conservatism + adjustment,
+                )
+                logger.info(
+                    f"Loss streak detected: Increasing conservatism to {self.current_conservatism}",
+                )
 
-                elif reason == AdjustmentReason.HIGH_VARIANCE:
-                    # Increase conservatism due to unpredictability
-                    adjustment = +10
-                    self.current_conservatism = min(
-                        ConservatismLevel.VERY_CONSERVATIVE.value,
-                        self.current_conservatism + adjustment,
-                    )
-                    logger.info(
-                        f"High variance detected: Increasing conservatism to {self.current_conservatism}"
-                    )
+            elif reason == AdjustmentReason.HIGH_VARIANCE:
+                # Increase conservatism due to unpredictability
+                adjustment = +10
+                self.current_conservatism = min(
+                    ConservatismLevel.VERY_CONSERVATIVE.value,
+                    self.current_conservatism + adjustment,
+                )
+                logger.info(
+                    f"High variance detected: Increasing conservatism to {self.current_conservatism}",
+                )
 
-                elif reason == AdjustmentReason.PROFIT_INCREASE:
-                    # Slightly reduce conservatism (success)
-                    adjustment = -5
-                    self.current_conservatism = max(
-                        ConservatismLevel.VERY_AGGRESSIVE.value,
-                        self.current_conservatism + adjustment,
-                    )
-                    logger.info(
-                        f"Profit increase: Slightly reducing conservatism to {self.current_conservatism}"
-                    )
+            elif reason == AdjustmentReason.PROFIT_INCREASE:
+                # Slightly reduce conservatism (success)
+                adjustment = -5
+                self.current_conservatism = max(
+                    ConservatismLevel.VERY_AGGRESSIVE.value,
+                    self.current_conservatism + adjustment,
+                )
+                logger.info(
+                    f"Profit increase: Slightly reducing conservatism to {self.current_conservatism}",
+                )
 
-                elif reason == AdjustmentReason.PROFIT_DECLINE:
-                    # Increase conservatism (underperforming)
-                    adjustment = +10
-                    self.current_conservatism = min(
-                        ConservatismLevel.VERY_CONSERVATIVE.value,
-                        self.current_conservatism + adjustment,
-                    )
-                    logger.info(
-                        f"Profit decline: Increasing conservatism to {self.current_conservatism}"
-                    )
+            elif reason == AdjustmentReason.PROFIT_DECLINE:
+                # Increase conservatism (underperforming)
+                adjustment = +10
+                self.current_conservatism = min(
+                    ConservatismLevel.VERY_CONSERVATIVE.value,
+                    self.current_conservatism + adjustment,
+                )
+                logger.info(
+                    f"Profit decline: Increasing conservatism to {self.current_conservatism}",
+                )
 
             # Increment total adjustments
             self.total_adjustments += 1
 
             # Create adjustment record
             adjustment_record = ConfidenceAdjustment(
-                id=str(hash(f"{datetime.utcnow().isoformat()}{self.total_adjustments}")),
+                id=str(hash(f"{datetime.now(timezone.utc).isoformat()}{self.total_adjustments}")),
                 old_conservatism=old_conservatism,
                 new_conservatism=self.current_conservatism,
                 adjustment_reason=reason.value,
                 total_adjustments=self.total_adjustments,
                 is_manual_override=manual_override,
-                created_at=datetime.utcnow(),
+                created_at=datetime.now(timezone.utc),
             )
 
             db.add(adjustment_record)
@@ -324,7 +321,7 @@ class SelfAdjustingConfidenceAlgorithm:
 
             # Store in history
             adjustment_info = {
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": datetime.now(timezone.utc).isoformat(),
                 "old_conservatism": old_conservatism,
                 "new_conservatism": self.current_conservatism,
                 "reason": reason.value,
@@ -338,7 +335,7 @@ class SelfAdjustingConfidenceAlgorithm:
 
             logger.info(
                 f"Conservatism adjusted: {old_conservatism} -> {self.current_conservatism} "
-                f"({reason.value})"
+                f"({reason.value})",
             )
 
             return {
@@ -385,7 +382,7 @@ class SelfAdjustingConfidenceAlgorithm:
             "win_rate": wins / len(recent_entries),
             "avg_profit": avg_profit,
             "total_bids": len(recent_entries),
-            "updated_at": datetime.utcnow().isoformat(),
+            "updated_at": datetime.now(timezone.utc).isoformat(),
         }
 
     def get_adjusted_threshold(self, base_threshold: int) -> int:
@@ -405,7 +402,7 @@ class SelfAdjustingConfidenceAlgorithm:
 
         return int(max(0, min(100, adjusted)))
 
-    def get_algorithm_status(self) -> Dict[str, Any]:
+    def get_algorithm_status(self) -> dict[str, Any]:
         """
         Get current algorithm status and configuration.
 
@@ -466,7 +463,7 @@ class SelfAdjustingConfidenceAlgorithm:
         finally:
             db.close()
 
-    def _calculate_improvement_metrics(self, db: SessionLocal) -> Dict[str, Any]:
+    def _calculate_improvement_metrics(self, db: SessionLocal) -> dict[str, Any]:
         """Calculate improvement metrics over time."""
         # Get all adjustments
         adjustments = (
@@ -494,9 +491,9 @@ class SelfAdjustingConfidenceAlgorithm:
                 "total_adjustments": len(adjustments),
                 "current_win_rate": self.performance_baseline.get("win_rate", 0),
                 "current_avg_profit": self.performance_baseline.get("avg_profit", 0),
-                "algorithm_age_days": (datetime.utcnow() - start_time).days if start_time else 0,
+                "algorithm_age_days": (datetime.now(timezone.utc) - start_time).days if start_time else 0,
                 "adjustments_per_day": len(adjustments)
-                / max((datetime.utcnow() - start_time).days, 1)
+                / max((datetime.now(timezone.utc) - start_time).days, 1)
                 if start_time
                 else 0,
             }
@@ -510,7 +507,7 @@ class SelfAdjustingConfidenceAlgorithm:
         self,
         conservatism_value: int,
         reason: str = "Manual adjustment by user",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Manually override conservatism level.
 
@@ -539,7 +536,7 @@ class SelfAdjustingConfidenceAlgorithm:
 
         return result
 
-    def reset_to_baseline(self) -> Dict[str, Any]:
+    def reset_to_baseline(self) -> dict[str, Any]:
         """
         Reset conservatism to baseline value.
 
@@ -550,7 +547,7 @@ class SelfAdjustingConfidenceAlgorithm:
         self.current_conservatism = self.baseline_conservatism
 
         logger.info(
-            f"Reset to baseline: {old_value} -> {self.baseline_conservatism}"
+            f"Reset to baseline: {old_value} -> {self.baseline_conservatism}",
         )
 
         return {
@@ -562,12 +559,12 @@ class SelfAdjustingConfidenceAlgorithm:
 
 
 # Global singleton instance
-_algorithm_instance: Optional[SelfAdjustingConfidenceAlgorithm] = None
+_algorithm_instance: SelfAdjustingConfidenceAlgorithm | None = None
 
 
 def get_self_adjusting_algorithm() -> SelfAdjustingConfidenceAlgorithm:
     """Get or create global Self-Adjusting Algorithm singleton."""
-    global _algorithm_instance
+    global _algorithm_instance  # noqa: PLW0603
 
     if _algorithm_instance is None:
         _algorithm_instance = SelfAdjustingConfidenceAlgorithm()
@@ -577,5 +574,5 @@ def get_self_adjusting_algorithm() -> SelfAdjustingConfidenceAlgorithm:
 
 def reset_self_adjusting_algorithm():
     """Reset algorithm singleton (useful for testing)."""
-    global _algorithm_instance
+    global _algorithm_instance  # noqa: PLW0603
     _algorithm_instance = None

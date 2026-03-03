@@ -1,5 +1,5 @@
 """
-Disaster Recovery and Backup Strategy
+Disaster Recovery and Backup Strategy.
 
 This module provides comprehensive disaster recovery and backup capabilities for the ArbitrageAI platform.
 It includes automated backups, point-in-time recovery, data validation, and recovery orchestration.
@@ -15,32 +15,32 @@ Features:
 - Disaster recovery testing and validation
 """
 
+from dataclasses import asdict, dataclass
+from datetime import datetime, timedelta
+from enum import Enum
+import hashlib
 import json
+from pathlib import Path
 import shutil
 import tarfile
 import tempfile
 import time
-from datetime import datetime, timedelta
-from pathlib import Path
-from typing import Dict, List, Optional, Any
-from dataclasses import dataclass, asdict
-from enum import Enum
-import hashlib
+from typing import Any
+
 import boto3
 from botocore.exceptions import ClientError
-import schedule
-
 from fastapi import HTTPException
-from sqlalchemy import create_engine, text
 import redis
 from redis.exceptions import RedisError
+import schedule
+from sqlalchemy import create_engine, text
+
+# Import telemetry
+from traceloop.sdk.decorators import task, workflow
 
 from src.config import Config
 from src.utils.logger import get_logger
 from src.utils.telemetry import get_tracer
-
-# Import telemetry
-from traceloop.sdk.decorators import task, workflow
 
 # Initialize logger and telemetry
 logger = get_logger(__name__)
@@ -102,7 +102,7 @@ class RecoveryPlan:
     description: str
     recovery_point_objective: int  # RPO in minutes
     recovery_time_objective: int  # RTO in minutes
-    backup_locations: List[str]
+    backup_locations: list[str]
     priority: str  # "high", "medium", "low"
     automated: bool
     test_frequency: str  # cron expression
@@ -116,12 +116,12 @@ class RecoveryOperation:
     plan_id: str
     status: RecoveryStatus
     start_time: datetime
-    end_time: Optional[datetime]
+    end_time: datetime | None
     backup_id: str
     target_location: str
-    steps_completed: List[str]
-    error_message: Optional[str]
-    validation_results: Dict[str, bool]
+    steps_completed: list[str]
+    error_message: str | None
+    validation_results: dict[str, bool]
 
 
 class BackupManager:
@@ -244,7 +244,7 @@ class BackupManager:
             logger.error(f"Full backup failed: {e}")
             metadata.status = BackupStatus.FAILED
             await self._store_backup_metadata(metadata)
-            raise HTTPException(status_code=500, detail=f"Backup failed: {str(e)}") from e
+            raise HTTPException(status_code=500, detail=f"Backup failed: {e!s}") from e
 
     @task(name="create_incremental_backup")
     async def create_incremental_backup(self) -> BackupMetadata:
@@ -287,7 +287,7 @@ class BackupManager:
 
                 # Backup only changed data
                 await self._backup_incremental_data(
-                    temp_path, last_full_backup.timestamp
+                    temp_path, last_full_backup.timestamp,
                 )
 
                 # Create compressed archive
@@ -307,12 +307,12 @@ class BackupManager:
             metadata.status = BackupStatus.FAILED
             await self._store_backup_metadata(metadata)
             raise HTTPException(
-                status_code=500, detail=f"Incremental backup failed: {str(e)}"
+                status_code=500, detail=f"Incremental backup failed: {e!s}",
             ) from e
 
     @task(name="create_point_in_time_backup")
     async def create_point_in_time_backup(
-        self, timestamp: Optional[datetime] = None
+        self, timestamp: datetime | None = None,
     ) -> BackupMetadata:
         """
         Create a point-in-time backup.
@@ -370,7 +370,7 @@ class BackupManager:
             metadata.status = BackupStatus.FAILED
             await self._store_backup_metadata(metadata)
             raise HTTPException(
-                status_code=500, detail=f"Point-in-time backup failed: {str(e)}"
+                status_code=500, detail=f"Point-in-time backup failed: {e!s}",
             ) from e
 
     async def _backup_database(self, backup_path: Path):
@@ -454,7 +454,7 @@ class BackupManager:
         try:
             # Backup database changes
             await self._backup_database_changes(
-                backup_dir / "database_changes.sqlite", since
+                backup_dir / "database_changes.sqlite", since,
             )
 
             # Backup new/modified files
@@ -503,7 +503,7 @@ class BackupManager:
             raise
 
     async def _create_point_in_time_snapshot(
-        self, backup_dir: Path, timestamp: datetime
+        self, backup_dir: Path, timestamp: datetime,
     ):
         """Create a point-in-time snapshot."""
         try:
@@ -574,7 +574,7 @@ class BackupManager:
         try:
             s3_key = f"backups/{backup_id}/{file_path.name}"
             self.s3_client.upload_file(
-                str(file_path), self.config.AWS_S3_BACKUP_BUCKET, s3_key
+                str(file_path), self.config.AWS_S3_BACKUP_BUCKET, s3_key,
             )
 
             logger.info(f"Backup uploaded to S3: {s3_key}")
@@ -587,7 +587,7 @@ class BackupManager:
         """Store backup metadata."""
         try:
             metadata_file = self.backup_dir / f"{metadata.backup_id}_metadata.json"
-            with open(metadata_file, "w") as f:
+            with open(metadata_file, "w", encoding="utf-8") as f:
                 json.dump(asdict(metadata), f, default=str, indent=2)
 
             # Also store in Redis for quick access if available
@@ -612,8 +612,8 @@ class BackupManager:
             logger.error(f"Redis metadata storage failed: {e}")
 
     async def _get_last_backup(
-        self, backup_type: BackupType
-    ) -> Optional[BackupMetadata]:
+        self, backup_type: BackupType,
+    ) -> BackupMetadata | None:
         """Get the most recent backup of specified type."""
         try:
             # Check Redis first for performance
@@ -633,11 +633,11 @@ class BackupManager:
 
             for metadata_file in metadata_files:
                 try:
-                    with open(metadata_file) as f:
+                    with open(metadata_file, encoding="utf-8") as f:
                         metadata_dict = json.load(f)
                         if metadata_dict.get("backup_type") == backup_type.value:
                             backup_time = datetime.fromisoformat(
-                                metadata_dict["timestamp"]
+                                metadata_dict["timestamp"],
                             )
                             if not latest_time or backup_time > latest_time:
                                 latest_time = backup_time
@@ -656,7 +656,7 @@ class BackupManager:
         """Clean up expired backups."""
         try:
             cutoff_date = datetime.now() - timedelta(
-                days=self.config.BACKUP_RETENTION_DAYS
+                days=self.config.BACKUP_RETENTION_DAYS,
             )
 
             # Clean up local files
@@ -668,7 +668,7 @@ class BackupManager:
             # Clean up metadata files
             for metadata_file in self.backup_dir.glob("*_metadata.json"):
                 try:
-                    with open(metadata_file) as f:
+                    with open(metadata_file, encoding="utf-8") as f:
                         metadata = json.load(f)
                         backup_date = datetime.fromisoformat(metadata["timestamp"])
                         if backup_date < cutoff_date:
@@ -687,7 +687,7 @@ class BackupManager:
                         try:
                             metadata_dict = json.loads(metadata_str)
                             backup_date = datetime.fromisoformat(
-                                metadata_dict["timestamp"]
+                                metadata_dict["timestamp"],
                             )
                             if backup_date < cutoff_date:
                                 self.redis_client.delete(key)
@@ -700,8 +700,8 @@ class BackupManager:
             logger.error(f"Backup cleanup failed: {e}")
 
     async def list_backups(
-        self, backup_type: Optional[BackupType] = None
-    ) -> List[BackupMetadata]:
+        self, backup_type: BackupType | None = None,
+    ) -> list[BackupMetadata]:
         """
         List available backups.
 
@@ -731,7 +731,7 @@ class BackupManager:
             metadata_files = list(self.backup_dir.glob("*_metadata.json"))
             for metadata_file in metadata_files:
                 try:
-                    with open(metadata_file) as f:
+                    with open(metadata_file, encoding="utf-8") as f:
                         metadata_dict = json.load(f)
                         backup_id = metadata_dict["backup_id"]
 
@@ -754,7 +754,7 @@ class BackupManager:
             logger.error(f"Failed to list backups: {e}")
             return []
 
-    async def validate_backup(self, backup_id: str) -> Dict[str, Any]:
+    async def validate_backup(self, backup_id: str) -> dict[str, Any]:
         """
         Validate backup integrity.
 
@@ -819,7 +819,7 @@ class BackupManager:
             logger.error(f"Backup validation failed: {e}")
             return {"valid": False, "error": str(e)}
 
-    async def _get_backup_metadata(self, backup_id: str) -> Optional[BackupMetadata]:
+    async def _get_backup_metadata(self, backup_id: str) -> BackupMetadata | None:
         """Get backup metadata by ID."""
         try:
             # Check Redis first
@@ -832,7 +832,7 @@ class BackupManager:
             # Check file system
             metadata_file = self.backup_dir / f"{backup_id}_metadata.json"
             if metadata_file.exists():
-                with open(metadata_file) as f:
+                with open(metadata_file, encoding="utf-8") as f:
                     return BackupMetadata(**json.load(f))
 
             return None
@@ -861,7 +861,7 @@ class RecoveryManager:
         # Initialize recovery plans
         self.recovery_plans = self._load_recovery_plans()
 
-    def _load_recovery_plans(self) -> Dict[str, RecoveryPlan]:
+    def _load_recovery_plans(self) -> dict[str, RecoveryPlan]:
         """Load recovery plans from configuration."""
         plans = {}
 
@@ -902,7 +902,7 @@ class RecoveryManager:
         self,
         backup_id: str,
         plan_id: str = "default",
-        target_location: Optional[str] = None,
+        target_location: str | None = None,
     ) -> RecoveryOperation:
         """
         Execute recovery operation.
@@ -924,14 +924,14 @@ class RecoveryManager:
             plan = self.recovery_plans.get(plan_id)
             if not plan:
                 raise HTTPException(
-                    status_code=400, detail=f"Recovery plan not found: {plan_id}"
+                    status_code=400, detail=f"Recovery plan not found: {plan_id}",
                 )
 
             # Get backup metadata
             backup_metadata = await self.backup_manager._get_backup_metadata(backup_id)
             if not backup_metadata:
                 raise HTTPException(
-                    status_code=400, detail=f"Backup not found: {backup_id}"
+                    status_code=400, detail=f"Backup not found: {backup_id}",
                 )
 
             # Initialize recovery operation
@@ -965,20 +965,18 @@ class RecoveryManager:
                 if not recovery_op.error_message:
                     recovery_op.error_message = str(e)
                 return recovery_op
-            else:
-                recovery_op = RecoveryOperation(
-                    operation_id=operation_id,
-                    plan_id=plan_id,
-                    status=RecoveryStatus.FAILED,
-                    start_time=datetime.now(),
-                    end_time=datetime.now(),
-                    backup_id=backup_id,
-                    target_location=target_location or str(self.recovery_dir),
-                    steps_completed=[],
-                    error_message=str(e),
-                    validation_results={},
-                )
-                return recovery_op
+            return RecoveryOperation(
+                operation_id=operation_id,
+                plan_id=plan_id,
+                status=RecoveryStatus.FAILED,
+                start_time=datetime.now(),
+                end_time=datetime.now(),
+                backup_id=backup_id,
+                target_location=target_location or str(self.recovery_dir),
+                steps_completed=[],
+                error_message=str(e),
+                validation_results={},
+            )
 
     async def _execute_recovery_steps(
         self,
@@ -1003,7 +1001,7 @@ class RecoveryManager:
 
                 if step == "validate_backup":
                     await self._validate_backup_for_recovery(
-                        recovery_op, backup_metadata
+                        recovery_op, backup_metadata,
                     )
 
                 elif step == "prepare_target_environment":
@@ -1029,15 +1027,15 @@ class RecoveryManager:
 
             except Exception as e:
                 logger.error(f"Recovery step failed: {step} - {e}")
-                recovery_op.error_message = f"Step {step} failed: {str(e)}"
+                recovery_op.error_message = f"Step {step} failed: {e!s}"
                 raise
 
     async def _validate_backup_for_recovery(
-        self, recovery_op: RecoveryOperation, backup_metadata: BackupMetadata
+        self, recovery_op: RecoveryOperation, backup_metadata: BackupMetadata,
     ):
         """Validate backup before recovery."""
         validation_results = await self.backup_manager.validate_backup(
-            backup_metadata.backup_id
+            backup_metadata.backup_id,
         )
         recovery_op.validation_results["backup_validation"] = validation_results[
             "valid"
@@ -1050,7 +1048,7 @@ class RecoveryManager:
             )
 
     async def _prepare_target_environment(
-        self, recovery_op: RecoveryOperation, plan: RecoveryPlan
+        self, recovery_op: RecoveryOperation, plan: RecoveryPlan,
     ):
         """Prepare target environment for recovery."""
         target_path = Path(recovery_op.target_location)
@@ -1066,7 +1064,7 @@ class RecoveryManager:
             logger.info(f"Current state backed up to: {current_state_path}")
 
     async def _restore_database(
-        self, recovery_op: RecoveryOperation, backup_metadata: BackupMetadata
+        self, recovery_op: RecoveryOperation, backup_metadata: BackupMetadata,
     ):
         """Restore database from backup."""
         try:
@@ -1093,7 +1091,7 @@ class RecoveryManager:
             raise
 
     async def _restore_configuration(
-        self, recovery_op: RecoveryOperation, backup_metadata: BackupMetadata
+        self, recovery_op: RecoveryOperation, backup_metadata: BackupMetadata,
     ):
         """Restore configuration from backup."""
         try:
@@ -1118,7 +1116,7 @@ class RecoveryManager:
             raise
 
     async def _restore_files(
-        self, recovery_op: RecoveryOperation, backup_metadata: BackupMetadata
+        self, recovery_op: RecoveryOperation, backup_metadata: BackupMetadata,
     ):
         """Restore files from backup."""
         try:
@@ -1200,7 +1198,7 @@ class RecoveryManager:
             # Continue anyway, as recovery might still be possible
 
     @task(name="test_recovery_plan")
-    async def test_recovery_plan(self, plan_id: str) -> Dict[str, Any]:
+    async def test_recovery_plan(self, plan_id: str) -> dict[str, Any]:
         """
         Test a recovery plan without affecting production.
 
@@ -1266,8 +1264,8 @@ class RecoveryManager:
             return {"success": False, "error": str(e)}
 
     async def get_recovery_status(
-        self, operation_id: str
-    ) -> Optional[RecoveryOperation]:
+        self, operation_id: str,
+    ) -> RecoveryOperation | None:
         """
         Get status of a recovery operation.
 
@@ -1319,8 +1317,8 @@ class DisasterRecoveryOrchestrator:
 
     @workflow(name="disaster_recovery_workflow")
     async def execute_disaster_recovery(
-        self, disaster_type: str, plan_id: str = "default"
-    ) -> Dict[str, Any]:
+        self, disaster_type: str, plan_id: str = "default",
+    ) -> dict[str, Any]:
         """
         Execute complete disaster recovery workflow.
 
@@ -1339,12 +1337,12 @@ class DisasterRecoveryOrchestrator:
 
             # Get appropriate backup
             backup_id = await self._select_backup_for_recovery(
-                disaster_type, recovery_strategy
+                disaster_type, recovery_strategy,
             )
 
             # Execute recovery
             recovery_result = await self.recovery_manager.execute_recovery(
-                backup_id=backup_id, plan_id=plan_id
+                backup_id=backup_id, plan_id=plan_id,
             )
 
             # Validate recovery
@@ -1373,7 +1371,7 @@ class DisasterRecoveryOrchestrator:
                 "failure_time": datetime.now().isoformat(),
             }
 
-    async def _assess_disaster(self, disaster_type: str) -> Dict[str, Any]:
+    async def _assess_disaster(self, disaster_type: str) -> dict[str, Any]:
         """Assess disaster and determine recovery strategy."""
         strategies = {
             "database_corruption": {
@@ -1402,7 +1400,7 @@ class DisasterRecoveryOrchestrator:
         return strategies.get(disaster_type, strategies["system_failure"])
 
     async def _select_backup_for_recovery(
-        self, disaster_type: str, recovery_strategy: Dict[str, Any]
+        self, disaster_type: str, recovery_strategy: dict[str, Any],
     ) -> str:
         """Select appropriate backup for recovery."""
         try:
@@ -1433,8 +1431,8 @@ class DisasterRecoveryOrchestrator:
             raise
 
     async def _validate_disaster_recovery(
-        self, recovery_result: RecoveryOperation
-    ) -> Dict[str, Any]:
+        self, recovery_result: RecoveryOperation,
+    ) -> dict[str, Any]:
         """Validate disaster recovery operation."""
         try:
             validation_results = {
@@ -1477,7 +1475,7 @@ class DisasterRecoveryOrchestrator:
             return {}
 
     async def _notify_recovery_completion(
-        self, recovery_result: RecoveryOperation, validation_result: Dict[str, Any]
+        self, recovery_result: RecoveryOperation, validation_result: dict[str, Any],
     ):
         """Notify stakeholders of recovery completion."""
         try:
@@ -1498,7 +1496,7 @@ class DisasterRecoveryOrchestrator:
         except Exception as e:
             logger.error(f"Failed to send recovery failure notification: {e}")
 
-    async def get_recovery_metrics(self) -> Dict[str, Any]:
+    async def get_recovery_metrics(self) -> dict[str, Any]:
         """
         Get disaster recovery metrics.
 

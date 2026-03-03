@@ -21,19 +21,19 @@ Security properties:
 Issue #17: SECURITY - Unauthenticated Client Dashboard Access
 """
 
-import hmac
 import hashlib
+import hmac
 import os
-from typing import Optional
+
 from fastapi import HTTPException, Query
 
-from ..utils.logger import get_logger
+from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
 
 # Secret key for HMAC signing (MUST be set in production)
 CLIENT_AUTH_SECRET = os.environ.get(
-    "CLIENT_AUTH_SECRET", "CHANGE_ME_IN_PRODUCTION_use_a_random_32_byte_key"
+    "CLIENT_AUTH_SECRET", "CHANGE_ME_IN_PRODUCTION_use_a_random_32_byte_key",
 )
 
 
@@ -48,10 +48,9 @@ def generate_client_token(email: str) -> str:
         Hex-encoded HMAC signature
     """
     normalized_email = email.strip().lower()
-    signature = hmac.new(
-        CLIENT_AUTH_SECRET.encode(), normalized_email.encode(), hashlib.sha256
+    return hmac.new(
+        CLIENT_AUTH_SECRET.encode(), normalized_email.encode(), hashlib.sha256,
     ).hexdigest()
-    return signature
 
 
 def verify_client_token(email: str, token: str) -> bool:
@@ -94,7 +93,7 @@ class AuthenticatedClient:
     def is_authenticated(self) -> bool:
         """Check if client is authenticated."""
         return bool(
-            self.email and self.token and verify_client_token(self.email, self.token)
+            self.email and self.token and verify_client_token(self.email, self.token),
         )
 
 
@@ -140,8 +139,8 @@ def require_client_auth(
 
 
 def optional_client_auth(
-    email: Optional[str] = Query(None, description="Client email address"),
-    token: Optional[str] = Query(None, description="HMAC authentication token"),
+    email: str | None = Query(None, description="Client email address"),
+    token: str | None = Query(None, description="HMAC authentication token"),
 ) -> AuthenticatedClient:
     """
     FastAPI dependency for optional client authentication.

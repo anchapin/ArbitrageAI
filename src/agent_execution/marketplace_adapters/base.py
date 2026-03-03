@@ -1,5 +1,5 @@
 """
-Base Marketplace Adapter
+Base Marketplace Adapter.
 
 Defines abstract interface for all marketplace adapters.
 Provides common data models, error handling, and retry logic.
@@ -7,10 +7,9 @@ Provides common data models, error handling, and retry logic.
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Optional, List, Dict, Any
 from datetime import datetime
 from enum import Enum
-
+from typing import Any
 
 # ============================================================================
 # ERROR HANDLING
@@ -20,25 +19,17 @@ from enum import Enum
 class MarketplaceError(Exception):
     """Base exception for marketplace operations."""
 
-    pass
-
 
 class AuthenticationError(MarketplaceError):
     """Raised when authentication fails."""
-
-    pass
 
 
 class RateLimitError(MarketplaceError):
     """Raised when rate limit is exceeded."""
 
-    pass
-
 
 class NotFoundError(MarketplaceError):
     """Raised when resource is not found."""
-
-    pass
 
 
 # ============================================================================
@@ -76,17 +67,17 @@ class SearchQuery:
     """Marketplace search parameters."""
 
     keywords: str
-    min_budget: Optional[float] = None
-    max_budget: Optional[float] = None
-    skills: Optional[List[str]] = None
-    experience_level: Optional[str] = None  # entry, intermediate, expert
-    job_type: Optional[str] = None
-    language: Optional[str] = None
-    country: Optional[str] = None
+    min_budget: float | None = None
+    max_budget: float | None = None
+    skills: list[str] | None = None
+    experience_level: str | None = None  # entry, intermediate, expert
+    job_type: str | None = None
+    language: str | None = None
+    country: str | None = None
     sort_by: str = "relevance"  # relevance, budget, deadline
     page: int = 1
     limit: int = 10
-    filters: Dict[str, Any] = field(default_factory=dict)
+    filters: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -100,13 +91,13 @@ class SearchResult:
     budget: float
     pricing_model: PricingModel
     client_name: str
-    client_rating: Optional[float] = None
-    proposals_count: Optional[int] = None
-    created_at: Optional[datetime] = None
-    deadline: Optional[datetime] = None
-    skills_required: Optional[List[str]] = None
-    url: Optional[str] = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    client_rating: float | None = None
+    proposals_count: int | None = None
+    created_at: datetime | None = None
+    deadline: datetime | None = None
+    skills_required: list[str] | None = None
+    url: str | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -118,11 +109,11 @@ class BidProposal:
     amount: float
     pricing_model: PricingModel
     proposal_text: str
-    cover_letter: Optional[str] = None
-    estimated_duration: Optional[int] = None  # in days
-    availability: Optional[str] = None
-    attachments: Optional[List[str]] = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    cover_letter: str | None = None
+    estimated_duration: int | None = None  # in days
+    availability: str | None = None
+    attachments: list[str] | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -136,8 +127,8 @@ class PlacedBid:
     amount: float
     pricing_model: PricingModel
     submitted_at: datetime
-    url: Optional[str] = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    url: str | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -149,7 +140,7 @@ class BidStatusUpdate:
     job_id: str
     status: BidStatus
     last_updated: datetime
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -162,8 +153,8 @@ class InboxMessage:
     body: str
     created_at: datetime
     is_read: bool = False
-    url: Optional[str] = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    url: str | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 # ============================================================================
@@ -182,8 +173,8 @@ class MarketplaceAdapter(ABC):
     def __init__(
         self,
         marketplace_name: str,
-        api_key: Optional[str] = None,
-        api_secret: Optional[str] = None,
+        api_key: str | None = None,
+        api_secret: str | None = None,
     ):
         """
         Initialize adapter.
@@ -213,10 +204,9 @@ class MarketplaceAdapter(ABC):
         Raises:
             AuthenticationError: If authentication fails
         """
-        pass
 
     @abstractmethod
-    async def search(self, query: SearchQuery) -> List[SearchResult]:
+    async def search(self, query: SearchQuery) -> list[SearchResult]:
         """
         Search for jobs on the marketplace.
 
@@ -230,7 +220,6 @@ class MarketplaceAdapter(ABC):
             MarketplaceError: If search fails
             RateLimitError: If rate limited
         """
-        pass
 
     @abstractmethod
     async def get_job_details(self, job_id: str) -> SearchResult:
@@ -247,7 +236,6 @@ class MarketplaceAdapter(ABC):
             NotFoundError: If job not found
             MarketplaceError: If request fails
         """
-        pass
 
     @abstractmethod
     async def place_bid(self, proposal: BidProposal) -> PlacedBid:
@@ -264,7 +252,6 @@ class MarketplaceAdapter(ABC):
             MarketplaceError: If bid placement fails
             RateLimitError: If rate limited
         """
-        pass
 
     @abstractmethod
     async def get_bid_status(self, bid_id: str) -> BidStatusUpdate:
@@ -281,7 +268,6 @@ class MarketplaceAdapter(ABC):
             NotFoundError: If bid not found
             MarketplaceError: If request fails
         """
-        pass
 
     @abstractmethod
     async def withdraw_bid(self, bid_id: str) -> BidStatusUpdate:
@@ -298,10 +284,9 @@ class MarketplaceAdapter(ABC):
             NotFoundError: If bid not found
             MarketplaceError: If withdrawal fails
         """
-        pass
 
     @abstractmethod
-    async def check_inbox(self) -> List[InboxMessage]:
+    async def check_inbox(self) -> list[InboxMessage]:
         """
         Check for new messages in marketplace inbox.
 
@@ -311,7 +296,6 @@ class MarketplaceAdapter(ABC):
         Raises:
             MarketplaceError: If request fails
         """
-        pass
 
     @abstractmethod
     async def mark_message_read(self, message_id: str) -> bool:
@@ -328,10 +312,9 @@ class MarketplaceAdapter(ABC):
             NotFoundError: If message not found
             MarketplaceError: If request fails
         """
-        pass
 
     @abstractmethod
-    async def sync_portfolio(self, portfolio_items: List[Dict[str, Any]]) -> bool:
+    async def sync_portfolio(self, portfolio_items: list[dict[str, Any]]) -> bool:
         """
         Sync portfolio/profile with marketplace.
 
@@ -344,7 +327,6 @@ class MarketplaceAdapter(ABC):
         Raises:
             MarketplaceError: If sync fails
         """
-        pass
 
     # ========================================================================
     # COMMON METHODS
@@ -356,7 +338,6 @@ class MarketplaceAdapter(ABC):
 
     async def close(self) -> None:
         """Clean up resources."""
-        pass
 
     async def __aenter__(self):
         """Async context manager entry."""

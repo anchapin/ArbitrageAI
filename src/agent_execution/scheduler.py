@@ -1,5 +1,5 @@
 """
-Advanced Task Scheduling System
+Advanced Task Scheduling System.
 
 Implements cron expression parsing, recurring tasks, and intelligent scheduling
 for ArbitrageAI. Supports both one-time and recurring task scheduling with
@@ -28,17 +28,19 @@ Usage:
 """
 
 import asyncio
-import json
+from collections.abc import Callable
 from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Any, Callable, Tuple
+import json
+from typing import Any
+
 from croniter import croniter
+import pytz
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-import pytz
 
-from .errors import SchedulingError
-from ..api.models import ScheduledTask, ScheduleHistory
-from ..utils.logger import get_logger
+from src.api.models import ScheduledTask, ScheduleHistory
+from src.utils.logger import get_logger
+from src.agent_execution.errors import SchedulingError
 
 logger = get_logger(__name__)
 
@@ -95,7 +97,7 @@ class CronExpressionValidator:
             return next_time
         except Exception as e:
             logger.error(f"Error calculating next occurrence for '{expression}': {e}")
-            raise SchedulingError(f"Failed to calculate next occurrence: {e}")
+            raise SchedulingError(f"Failed to calculate next occurrence: {e}") from e
 
     @staticmethod
     def get_human_readable(expression: str) -> str:
@@ -120,7 +122,7 @@ class CronExpressionValidator:
         # For custom expressions, provide a basic description
         parts = expression.split()
         if len(parts) == 5:
-            minute, hour, day, month, dow = parts
+            _minute, _hour, _day, _month, _dow = parts
             return f"Cron expression: {expression}"
         return f"Custom cron: {expression}"
 
@@ -137,7 +139,7 @@ class IntelligentScheduler:
         return schedule.avoid_peak_hours
 
     def get_optimal_time(
-        self, base_time: datetime, schedule: ScheduledTask
+        self, base_time: datetime, schedule: ScheduledTask,
     ) -> datetime:
         """Calculate optimal execution time avoiding peak hours."""
         if not self.should_avoid_peak_hours(schedule):
@@ -147,10 +149,9 @@ class IntelligentScheduler:
         if base_time.weekday() >= 5:
             # Move to Monday morning
             days_until_monday = (7 - base_time.weekday()) % 7 or 7
-            next_time = base_time.replace(
-                hour=6, minute=0, second=0, microsecond=0
+            return base_time.replace(
+                hour=6, minute=0, second=0, microsecond=0,
             ) + timedelta(days=days_until_monday)
-            return next_time
 
         # Check if during peak hours (9 AM to 5 PM)
         hour = base_time.hour
@@ -159,10 +160,10 @@ class IntelligentScheduler:
         if is_peak:
             # Move to end of peak hours (5 PM)
             return base_time.replace(hour=17, minute=0, second=0, microsecond=0)
-        elif hour >= 17:
+        if hour >= 17:
             # After business hours (5 PM or later), move to next day morning (6 AM)
             return base_time.replace(
-                hour=6, minute=0, second=0, microsecond=0
+                hour=6, minute=0, second=0, microsecond=0,
             ) + timedelta(days=1)
 
         return base_time
@@ -171,7 +172,7 @@ class IntelligentScheduler:
         """Check if tasks should be batched."""
         return schedule.batch_size > 1
 
-    def get_batch_window(self, base_time: datetime) -> Tuple[datetime, datetime]:
+    def get_batch_window(self, base_time: datetime) -> tuple[datetime, datetime]:
         """Get the time window for batching tasks."""
         start = base_time
         end = base_time + timedelta(minutes=self.batch_window_size)
@@ -181,13 +182,13 @@ class IntelligentScheduler:
 class TaskScheduler:
     """Main task scheduler with cron expression support."""
 
-    def __init__(self, db_session: Optional[AsyncSession] = None):
+    def __init__(self, db_session: AsyncSession | None = None):
         self.db_session = db_session
         self.validator = CronExpressionValidator()
         self.intelligent_scheduler = IntelligentScheduler()
         self.is_running = False
         self.scheduler_task = None
-        self._scheduled_callbacks: Dict[str, Callable] = {}
+        self._scheduled_callbacks: dict[str, Callable] = {}
 
         # Peak hours configuration
         self.peak_hours_start = 9  # 9 AM
@@ -221,17 +222,17 @@ class TaskScheduler:
 
     async def schedule_task(
         self,
-        task_data: Dict[str, Any],
+        task_data: dict[str, Any],
         cron_expression: str,
         schedule_type: str = ScheduleType.RECURRING,
-        title: Optional[str] = None,
-        description: Optional[str] = None,
+        title: str | None = None,
+        description: str | None = None,
         domain: str = "general",
         timezone: str = "UTC",
         avoid_peak_hours: bool = True,
         batch_size: int = 1,
         priority: int = 1,
-        max_runs: Optional[int] = None,
+        max_runs: int | None = None,
     ) -> str:
         """
         Schedule a new task.
@@ -263,7 +264,7 @@ class TaskScheduler:
         # Calculate next run time
         next_run = self.validator.get_next_occurrence(cron_expression, timezone)
         next_run = self.intelligent_scheduler.get_optimal_time(
-            next_run, type("obj", (object,), {"avoid_peak_hours": avoid_peak_hours})
+            next_run, type("obj", (object,), {"avoid_peak_hours": avoid_peak_hours}),
         )
 
         # Create scheduled task record
@@ -289,13 +290,13 @@ class TaskScheduler:
             self.db_session.add(schedule)
             await self.db_session.commit()
             logger.info(
-                f"Task scheduled: {schedule.id} - {title} - Next run: {next_run}"
+                f"Task scheduled: {schedule.id} - {title} - Next run: {next_run}",
             )
             return schedule.id
         except Exception as e:
             await self.db_session.rollback()
             logger.error(f"Failed to schedule task: {e}")
-            raise SchedulingError(f"Failed to schedule task: {e}")
+            raise SchedulingError(f"Failed to schedule task: {e}") from e
 
     async def register_callback(self, schedule_id: str, callback: Callable):
         """Register a callback function for a scheduled task."""
@@ -323,10 +324,10 @@ class TaskScheduler:
                 schedule.status = ScheduleStatus.ACTIVE
                 # Recalculate next run time
                 next_run = self.validator.get_next_occurrence(
-                    schedule.cron_expression, schedule.timezone
+                    schedule.cron_expression, schedule.timezone,
                 )
                 next_run = self.intelligent_scheduler.get_optimal_time(
-                    next_run, schedule
+                    next_run, schedule,
                 )
                 schedule.next_run_at = next_run
                 await self.db_session.commit()
@@ -351,11 +352,11 @@ class TaskScheduler:
             logger.error(f"Failed to cancel schedule {schedule_id}: {e}")
             return False
 
-    async def get_schedule(self, schedule_id: str) -> Optional[ScheduledTask]:
+    async def get_schedule(self, schedule_id: str) -> ScheduledTask | None:
         """Get schedule details."""
         return await self._get_schedule(schedule_id)
 
-    async def list_schedules(self, status: Optional[str] = None) -> List[ScheduledTask]:
+    async def list_schedules(self, status: str | None = None) -> list[ScheduledTask]:
         """List all schedules, optionally filtered by status."""
         query = select(ScheduledTask)
         if status:
@@ -364,7 +365,7 @@ class TaskScheduler:
         result = await self.db_session.execute(query)
         return result.scalars().all()
 
-    async def get_schedule_analytics(self, schedule_id: str) -> Dict[str, Any]:
+    async def get_schedule_analytics(self, schedule_id: str) -> dict[str, Any]:
         """Get analytics for a specific schedule."""
         schedule = await self._get_schedule(schedule_id)
         if not schedule:
@@ -413,7 +414,7 @@ class TaskScheduler:
             else None,
             "cron_expression": schedule.cron_expression,
             "human_readable": self.validator.get_human_readable(
-                schedule.cron_expression
+                schedule.cron_expression,
             ),
             "recent_executions": [
                 {
@@ -466,7 +467,7 @@ class TaskScheduler:
         """Execute a single schedule."""
         execution_start = datetime.now(pytz.UTC)
         history_record = ScheduleHistory(
-            schedule_id=schedule.id, execution_start=execution_start, status="STARTED"
+            schedule_id=schedule.id, execution_start=execution_start, status="STARTED",
         )
 
         try:
@@ -523,10 +524,10 @@ class TaskScheduler:
             # Update next run time for recurring schedules
             if schedule.schedule_type == ScheduleType.RECURRING:
                 next_run = self.validator.get_next_occurrence(
-                    schedule.cron_expression, schedule.timezone
+                    schedule.cron_expression, schedule.timezone,
                 )
                 next_run = self.intelligent_scheduler.get_optimal_time(
-                    next_run, schedule
+                    next_run, schedule,
                 )
                 schedule.next_run_at = next_run
 
@@ -539,7 +540,7 @@ class TaskScheduler:
             # Update success rate
             total_runs = schedule.run_count
             successful_runs = len(
-                [h for h in [history_record] if h.status == "COMPLETED"]
+                [h for h in [history_record] if h.status == "COMPLETED"],
             )
             schedule.success_rate = (
                 (successful_runs / total_runs * 100) if total_runs > 0 else 100.0
@@ -563,7 +564,7 @@ class TaskScheduler:
 
             logger.error(f"Schedule {schedule.id} failed: {e}")
 
-    async def _get_schedule(self, schedule_id: str) -> Optional[ScheduledTask]:
+    async def _get_schedule(self, schedule_id: str) -> ScheduledTask | None:
         """Get a schedule by ID."""
         query = select(ScheduledTask).where(ScheduledTask.id == schedule_id)
         result = await self.db_session.execute(query)
@@ -576,28 +577,28 @@ class TaskScheduler:
         for schedule in schedules:
             try:
                 next_run = self.validator.get_next_occurrence(
-                    schedule.cron_expression, schedule.timezone
+                    schedule.cron_expression, schedule.timezone,
                 )
                 next_run = self.intelligent_scheduler.get_optimal_time(
-                    next_run, schedule
+                    next_run, schedule,
                 )
                 schedule.next_run_at = next_run
                 self.db_session.add(schedule)
             except Exception as e:
                 logger.error(
-                    f"Failed to update next run time for schedule {schedule.id}: {e}"
+                    f"Failed to update next run time for schedule {schedule.id}: {e}",
                 )
 
         await self.db_session.commit()
 
     @staticmethod
     def create_common_schedule(
-        task_data: Dict[str, Any],
+        task_data: dict[str, Any],
         schedule_type: str,
         title: str,
-        description: str = None,
+        description: str | None = None,
         domain: str = "general",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Create common schedule configurations."""
         schedules = {
             "daily_9am": {
@@ -634,7 +635,7 @@ class TaskScheduler:
                     "title": title,
                     "description": description or config["description"],
                     "domain": domain,
-                }
+                },
             )
             return config
 
@@ -644,10 +645,10 @@ class TaskScheduler:
 # Convenience functions for common scheduling patterns
 async def schedule_daily_task(
     scheduler: TaskScheduler,
-    task_data: Dict[str, Any],
+    task_data: dict[str, Any],
     time_of_day: str = "09:00",
-    title: str = None,
-    description: str = None,
+    title: str | None = None,
+    description: str | None = None,
     domain: str = "general",
     **kwargs,
 ) -> str:
@@ -667,11 +668,11 @@ async def schedule_daily_task(
 
 async def schedule_weekly_task(
     scheduler: TaskScheduler,
-    task_data: Dict[str, Any],
+    task_data: dict[str, Any],
     day_of_week: int = 1,  # 0=Monday, 6=Sunday
     time_of_day: str = "09:00",
-    title: str = None,
-    description: str = None,
+    title: str | None = None,
+    description: str | None = None,
     domain: str = "general",
     **kwargs,
 ) -> str:
@@ -691,11 +692,11 @@ async def schedule_weekly_task(
 
 async def schedule_monthly_task(
     scheduler: TaskScheduler,
-    task_data: Dict[str, Any],
+    task_data: dict[str, Any],
     day_of_month: int = 1,
     time_of_day: str = "09:00",
-    title: str = None,
-    description: str = None,
+    title: str | None = None,
+    description: str | None = None,
     domain: str = "general",
     **kwargs,
 ) -> str:

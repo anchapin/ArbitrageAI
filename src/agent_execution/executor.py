@@ -1,5 +1,5 @@
 """
-E2B Code Interpreter Executor
+E2B Code Interpreter Executor.
 
 This module provides functionality for executing code in secure sandboxes
 using the E2B Code Interpreter SDK. It takes user's CSV data and generates
@@ -13,12 +13,13 @@ Features:
 - Detailed error tracking for debugging
 """
 
+import asyncio
 import base64
 from datetime import datetime
 import json
 import os
 import re
-from typing import Any
+from typing import Any, ClassVar
 
 # Import error categorization (Issue #37)
 
@@ -164,14 +165,14 @@ class TaskRouter:
     """
 
     # Default output formats by domain
-    DOMAIN_DEFAULT_FORMAT = {
+    DOMAIN_DEFAULT_FORMAT: ClassVar[dict] = {
         "legal": OutputFormat.DOCX,
         "accounting": OutputFormat.XLSX,
         "data_analysis": OutputFormat.IMAGE,
     }
 
     # Keywords to detect task type from user request
-    DOCUMENT_KEYWORDS = [
+    DOCUMENT_KEYWORDS: ClassVar[list] = [
         "document",
         "report",
         "brief",
@@ -186,7 +187,7 @@ class TaskRouter:
         "generate document",
     ]
 
-    SPREADSHEET_KEYWORDS = [
+    SPREADSHEET_KEYWORDS: ClassVar[list] = [
         "spreadsheet",
         "excel",
         "workbook",
@@ -198,7 +199,7 @@ class TaskRouter:
         "xlsx",
     ]
 
-    VISUALIZATION_KEYWORDS = [
+    VISUALIZATION_KEYWORDS: ClassVar[list] = [
         "chart",
         "graph",
         "visualize",
@@ -223,7 +224,7 @@ class TaskRouter:
         self.llm = llm_service
 
     def detect_task_type(
-        self, user_request: str, explicit_task_type: str | None = None
+        self, user_request: str, explicit_task_type: str | None = None,
     ) -> str:
         """
         Detect the task type from user request.
@@ -260,7 +261,7 @@ class TaskRouter:
         return TaskType.VISUALIZATION
 
     def detect_output_format(
-        self, domain: str, task_type: str, explicit_format: str | None = None
+        self, domain: str, task_type: str, explicit_format: str | None = None,
     ) -> str:
         """
         Detect the output format based on domain and task type.
@@ -283,18 +284,16 @@ class TaskRouter:
         if domain_lower == "legal":
             if task_type == TaskType.DOCUMENT:
                 return OutputFormat.DOCX
-            elif task_type == TaskType.SPREADSHEET:
-                return OutputFormat.XLSX
-            else:
-                return OutputFormat.IMAGE  # Legal can also have visualizations
-
-        elif domain_lower == "accounting":
             if task_type == TaskType.SPREADSHEET:
                 return OutputFormat.XLSX
-            elif task_type == TaskType.DOCUMENT:
+            return OutputFormat.IMAGE  # Legal can also have visualizations
+
+        if domain_lower == "accounting":
+            if task_type == TaskType.SPREADSHEET:
+                return OutputFormat.XLSX
+            if task_type == TaskType.DOCUMENT:
                 return OutputFormat.PDF  # Accounting reports often as PDF
-            else:
-                return OutputFormat.IMAGE  # Accounting visualizations
+            return OutputFormat.IMAGE  # Accounting visualizations
 
         # Default for data_analysis
         return OutputFormat.IMAGE
@@ -329,11 +328,11 @@ class TaskRouter:
 
         # Detect output format
         detected_format = self.detect_output_format(
-            domain, detected_task_type, output_format
+            domain, detected_task_type, output_format,
         )
 
         logger.info(
-            f"TaskRouter: domain={domain}, task_type={detected_task_type}, output_format={detected_format}"
+            f"TaskRouter: domain={domain}, task_type={detected_task_type}, output_format={detected_format}",
         )
 
         # Check if it's a report request
@@ -358,7 +357,7 @@ class TaskRouter:
                 output_format=OutputFormat.DOCX,
                 **kwargs,
             )
-        elif detected_format == OutputFormat.XLSX:
+        if detected_format == OutputFormat.XLSX:
             return self._handle_spreadsheet_generation(
                 domain=domain,
                 user_request=user_request,
@@ -366,7 +365,7 @@ class TaskRouter:
                 output_format=OutputFormat.XLSX,
                 **kwargs,
             )
-        elif detected_format == OutputFormat.PDF:
+        if detected_format == OutputFormat.PDF:
             return self._handle_document_generation(
                 domain=domain,
                 user_request=user_request,
@@ -374,11 +373,10 @@ class TaskRouter:
                 output_format=OutputFormat.PDF,
                 **kwargs,
             )
-        else:
-            # Default to visualization (image)
-            return self._handle_visualization(
-                domain=domain, user_request=user_request, csv_data=csv_data, **kwargs
-            )
+        # Default to visualization (image)
+        return self._handle_visualization(
+            domain=domain, user_request=user_request, csv_data=csv_data, **kwargs,
+        )
 
     def _handle_visualization(
         self,
@@ -386,7 +384,7 @@ class TaskRouter:
         user_request: str,
         csv_data: str,
         few_shot_examples: list[Any] | None = None,
-        **kwargs
+        **kwargs,
     ) -> dict:
         """
         Handle visualization tasks (default behavior).
@@ -407,7 +405,7 @@ class TaskRouter:
             user_request=user_request,
             domain=domain,
             few_shot_examples=few_shot_examples,
-            **kwargs
+            **kwargs,
         )
 
     def _handle_report_generation(
@@ -434,13 +432,13 @@ class TaskRouter:
         generator = ReportGenerator(
             domain=domain,
             llm_service=self.llm,
-            report_type=report_type
+            report_type=report_type,
         )
 
         return generator.generate_report(
             user_request=user_request,
             csv_data=csv_data,
-            **kwargs
+            **kwargs,
         )
 
     def _handle_document_generation(
@@ -467,13 +465,13 @@ class TaskRouter:
         generator = DocumentGenerator(
             domain=domain,
             llm_service=self.llm,
-            output_format=output_format
+            output_format=output_format,
         )
 
         return generator.generate_document(
             user_request=user_request,
             csv_data=csv_data,
-            **kwargs
+            **kwargs,
         )
 
     def _handle_spreadsheet_generation(
@@ -542,7 +540,7 @@ Return ONLY the Python code, no markdown."""
             sandbox_timeout = kwargs.get("sandbox_timeout", 120)
 
             success, sandbox_result, _, artifacts = _execute_code_in_sandbox(
-                code_with_csv, e2b_api_key, sandbox_timeout, output_format
+                code_with_csv, e2b_api_key, sandbox_timeout, output_format,
             )
 
             if success and artifacts:
@@ -644,7 +642,7 @@ The code must:
 
 Return ONLY Python code, no markdown."""
 
-        elif domain.lower() == "accounting":
+        if domain.lower() == "accounting":
             return f"""You are an expert accounting document generator. Create a professional {format_ext} document
 from the financial data. The document should be suitable for stakeholders.
 
@@ -712,7 +710,7 @@ The code must:
 
 Return ONLY Python code, no markdown."""
 
-        elif domain.lower() == "accounting":
+        if domain.lower() == "accounting":
             return """You are an expert accounting spreadsheet generator. Create a professional Excel spreadsheet
 from the financial data with proper accounting formatting.
 
@@ -818,7 +816,7 @@ The JSON structure should follow this schema for legal contracts:
 Generate ONLY valid JSON, no explanations or markdown. The JSON will be injected into
 a pre-tested Python template that handles all formatting."""
 
-        elif domain.lower() == "accounting" or template_type == "financial_summary":
+        if domain.lower() == "accounting" or template_type == "financial_summary":
             return """You are an expert financial document content generator. Your task is to generate
 structured JSON content for a financial document, NOT Python code.
 
@@ -927,11 +925,10 @@ Return ONLY valid JSON, no markdown formatting, no explanations."""
                     "content_json": content_json,
                     "template_type": template_type,
                 }
-            else:
-                return {
-                    "success": False,
-                    "message": "Failed to parse JSON from LLM response",
-                }
+            return {
+                "success": False,
+                "message": "Failed to parse JSON from LLM response",
+            }
 
         except json.JSONDecodeError as e:
             logger.error(f"JSON parsing error in content generation: {e}", exc_info=True)
@@ -1006,7 +1003,7 @@ Return ONLY valid JSON, no markdown formatting, no explanations."""
         if not json_result.get("success"):
             # Fall back to legacy code generation if JSON fails
             logger.warning(
-                f"JSON generation failed: {json_result.get('message')}, falling back to legacy code generation"
+                f"JSON generation failed: {json_result.get('message')}, falling back to legacy code generation",
             )
             return self._handle_document_generation(
                 domain=domain,
@@ -1018,7 +1015,7 @@ Return ONLY valid JSON, no markdown formatting, no explanations."""
 
         content_json = json_result.get("content_json", {})
         logger.info(
-            f"Generated JSON content with {len(content_json)} keys for template: {template_type}"
+            f"Generated JSON content with {len(content_json)} keys for template: {template_type}",
         )
 
         # Step 2: Get template code with injected JSON
@@ -1031,7 +1028,7 @@ Return ONLY valid JSON, no markdown formatting, no explanations."""
                 from src.templates.financial_summary import get_financial_template_code
 
                 code = get_financial_template_code(
-                    content_json, csv_data, output_format
+                    content_json, csv_data, output_format,
                 )
             else:
                 from src.templates.base_document import get_template_code
@@ -1039,7 +1036,7 @@ Return ONLY valid JSON, no markdown formatting, no explanations."""
                 code = get_template_code(content_json, csv_data, output_format)
         except ImportError as e:
             logger.warning(
-                f"Template import failed: {e!s}, falling back to legacy code generation"
+                f"Template import failed: {e!s}, falling back to legacy code generation",
             )
             return self._handle_document_generation(
                 domain=domain,
@@ -1055,7 +1052,7 @@ Return ONLY valid JSON, no markdown formatting, no explanations."""
             sandbox_timeout = kwargs.get("sandbox_timeout", 120)
 
             success, sandbox_result, _, artifacts = _execute_code_in_sandbox(
-                code, e2b_api_key, sandbox_timeout, output_format
+                code, e2b_api_key, sandbox_timeout, output_format,
             )
 
             if success and artifacts:
@@ -1315,7 +1312,7 @@ The code must:
 
 Return ONLY Python code, no markdown."""
 
-        elif self.domain.lower() == "accounting":
+        if self.domain.lower() == "accounting":
             return f"""You are an expert accounting document generator. Create a professional {self.output_format} document
 from the financial data. The document should be suitable for stakeholders.
 
@@ -1375,7 +1372,7 @@ Return ONLY Python code, no markdown."""
 
         # Execute in sandbox
         success, sandbox_result, _, artifacts = _execute_code_in_sandbox(
-            code_with_csv, e2b_api_key, sandbox_timeout, self.output_format
+            code_with_csv, e2b_api_key, sandbox_timeout, self.output_format,
         )
 
         # Parse result
@@ -1490,10 +1487,9 @@ class ReportGenerator:
         """
         if self.report_type == self.REPORT_TYPE_SUMMARY:
             return self.create_summary_report(user_request, csv_data, **kwargs)
-        elif self.report_type == self.REPORT_TYPE_COMBINED:
+        if self.report_type == self.REPORT_TYPE_COMBINED:
             return self._create_combined_report(user_request, csv_data, **kwargs)
-        else:
-            return self.create_detailed_report(user_request, csv_data, **kwargs)
+        return self.create_detailed_report(user_request, csv_data, **kwargs)
 
     def create_summary_report(self, user_request: str, csv_data: str, **kwargs) -> dict:
         """
@@ -1547,7 +1543,7 @@ Return ONLY the Python code, no markdown."""
             sandbox_timeout = kwargs.get("sandbox_timeout", 120)
 
             success, sandbox_result, _, artifacts = _execute_code_in_sandbox(
-                code_with_csv, e2b_api_key, sandbox_timeout, "docx"
+                code_with_csv, e2b_api_key, sandbox_timeout, "docx",
             )
 
             return self._parse_result(success, sandbox_result, artifacts, "summary")
@@ -1590,7 +1586,7 @@ Return ONLY the Python code, no markdown."""
             }
 
     def create_detailed_report(
-        self, user_request: str, csv_data: str, **kwargs
+        self, user_request: str, csv_data: str, **kwargs,
     ) -> dict:
         """
         Generate a detailed analysis report.
@@ -1644,7 +1640,7 @@ Return ONLY the Python code, no markdown."""
             sandbox_timeout = kwargs.get("sandbox_timeout", 120)
 
             success, sandbox_result, _, artifacts = _execute_code_in_sandbox(
-                code_with_csv, e2b_api_key, sandbox_timeout, "docx"
+                code_with_csv, e2b_api_key, sandbox_timeout, "docx",
             )
 
             return self._parse_result(success, sandbox_result, artifacts, "detailed")
@@ -1687,7 +1683,7 @@ Return ONLY the Python code, no markdown."""
             }
 
     def combine_with_visualizations(
-        self, user_request: str, csv_data: str, visualizations: list, **kwargs
+        self, user_request: str, csv_data: str, visualizations: list, **kwargs,
     ) -> dict:
         """
         Combine data visualizations into a comprehensive report.
@@ -1728,7 +1724,7 @@ Return ONLY Python code, no markdown."""
         viz_info = []
         for i, viz in enumerate(visualizations):
             viz_info.append(
-                f"Visualization {i + 1}: {viz[:100]}..."
+                f"Visualization {i + 1}: {viz[:100]}...",
             )  # Truncate for prompt
 
         prompt = f"""CSV Headers: {csv_headers}
@@ -1767,7 +1763,7 @@ Return ONLY the Python code, no markdown."""
             sandbox_timeout = kwargs.get("sandbox_timeout", 120)
 
             success, sandbox_result, _, artifacts = _execute_code_in_sandbox(
-                code_with_csv, e2b_api_key, sandbox_timeout, "docx"
+                code_with_csv, e2b_api_key, sandbox_timeout, "docx",
             )
 
             return self._parse_result(success, sandbox_result, artifacts, "combined")
@@ -1810,7 +1806,7 @@ Return ONLY the Python code, no markdown."""
             }
 
     def _create_combined_report(
-        self, user_request: str, csv_data: str, **kwargs
+        self, user_request: str, csv_data: str, **kwargs,
     ) -> dict:
         """
         Internal method to create a combined report with visualizations.
@@ -1825,7 +1821,7 @@ Return ONLY the Python code, no markdown."""
         """
         # First generate visualizations
         viz_result = execute_data_visualization(
-            csv_data=csv_data, user_request=user_request, llm_service=self.llm, **kwargs
+            csv_data=csv_data, user_request=user_request, llm_service=self.llm, **kwargs,
         )
 
         visualizations = []
@@ -1867,7 +1863,7 @@ The code must:
 
 Return ONLY Python code, no markdown."""
 
-        elif self.domain.lower() == "accounting":
+        if self.domain.lower() == "accounting":
             return """You are an expert accounting document generator. Create a concise executive summary
 from the financial data.
 
@@ -1935,7 +1931,7 @@ The code must:
 
 Return ONLY Python code, no markdown."""
 
-        elif self.domain.lower() == "accounting":
+        if self.domain.lower() == "accounting":
             return """You are an expert accounting document generator. Create a comprehensive detailed analysis report
 from the financial data.
 
@@ -1978,7 +1974,7 @@ The code must:
 Return ONLY Python code, no markdown."""
 
     def _parse_result(
-        self, success: bool, sandbox_result, artifacts: list, report_type: str
+        self, success: bool, sandbox_result, artifacts: list, report_type: str,
     ) -> dict:
         """
         Parse and return the generated report.
@@ -2103,7 +2099,7 @@ The code MUST:
 Return ONLY the Python code, no explanations or markdown. The code should be complete and ready to execute."""
 
     # Accounting domain prompt
-    elif domain_lower == "accounting":
+    if domain_lower == "accounting":
         return f"""You are an expert accounting data analyst. The user wants to visualize data from financial
 statements, bookkeeping records, tax documents, or accounting metrics. The data comes from a {file_type_desc}.
 
@@ -2143,8 +2139,7 @@ The code MUST:
 Return ONLY the Python code, no explanations or markdown. The code should be complete and ready to execute."""
 
     # Default (data_analysis) domain prompt
-    else:
-        return f"""You are an expert data scientist. The user wants to visualize data from a {file_type_desc}.
+    return f"""You are an expert data scientist. The user wants to visualize data from a {file_type_desc}.
 
 I will provide you with:
 1. The column headers from the data file
@@ -2184,7 +2179,7 @@ class ArtifactReviewer:
         self.llm = llm_service or LLMService()
 
     def review_artifact(
-        self, image_base64: str, user_request: str, chart_type: str, code_executed: str
+        self, image_base64: str, user_request: str, chart_type: str, code_executed: str,
     ) -> dict:
         """
         Review the generated artifact against the user's request.
@@ -2246,9 +2241,7 @@ Return your review in JSON format."""
 
             # Parse the LLM response
             response_content = result["content"].strip()
-            review_result = self._parse_review_response(response_content)
-
-            return review_result
+            return self._parse_review_response(response_content)
 
         except (ValueError, TypeError) as e:
             logger.error(f"Artifact review validation error: {e}", exc_info=True)
@@ -2309,7 +2302,7 @@ Return your review in JSON format."""
         return {"approved": True, "feedback": "", "issues": [], "success": True}
 
     def regenerate_with_feedback(
-        self, csv_headers: list, user_request: str, feedback: str, chart_type: str
+        self, csv_headers: list, user_request: str, feedback: str, chart_type: str,
     ) -> dict:
         """
         Regenerate visualization code with feedback from review.
@@ -2416,7 +2409,7 @@ class CodeFixer:
         self.llm = llm_service or LLMService()
 
     def fix_code(
-        self, failed_code: str, error_message: str, csv_headers: list, user_request: str
+        self, failed_code: str, error_message: str, csv_headers: list, user_request: str,
     ) -> dict:
         """
         Generate fixed Python code based on the error message.
@@ -2531,7 +2524,7 @@ class AIResponseGenerator:
         self,
         llm_service: LLMService | None = None,
         domain: str | None = None,
-        few_shot_examples: list[Any] | None = None
+        few_shot_examples: list[Any] | None = None,
     ):
         """
         Initialize the AI response generator.
@@ -2549,7 +2542,7 @@ class AIResponseGenerator:
         self.prefetched_examples = few_shot_examples
 
     def _get_few_shot_system_prompt(
-        self, base_system_prompt: str, user_request: str, domain: str
+        self, base_system_prompt: str, user_request: str, domain: str,
     ) -> str:
         """
         Get system prompt enhanced with few-shot examples from Experience Vector DB.
@@ -2570,17 +2563,16 @@ class AIResponseGenerator:
             if self.prefetched_examples is not None:
                 return build_few_shot_system_prompt(
                     base_system_prompt=base_system_prompt,
-                    examples=self.prefetched_examples
+                    examples=self.prefetched_examples,
                 )
 
             # Fall back to synchronous query if no prefetched examples
-            enhanced_prompt = build_few_shot_system_prompt(
+            return build_few_shot_system_prompt(
                 base_system_prompt=base_system_prompt,
                 user_request=user_request,
                 domain=domain,
                 top_k=2,
             )
-            return enhanced_prompt
         except (ValueError, TypeError) as e:
             # If few-shot fails, fall back to base prompt
             logger.warning(f"Few-shot prompt validation error: {e}", exc_info=True)
@@ -2633,7 +2625,7 @@ class AIResponseGenerator:
 
         # Get domain-specific system prompt
         base_system_prompt = get_domain_system_prompt(
-            effective_domain, effective_file_type
+            effective_domain, effective_file_type,
         )
 
         # Enhance with few-shot examples if enabled
@@ -2732,13 +2724,13 @@ Generate the Python code now. Return only the code, no markdown formatting."""
 
         if 'kind="pie"' in code_lower or "kind='pie'" in code_lower:
             return "pie"
-        elif 'kind="line"' in code_lower or "kind='line'" in code_lower:
+        if 'kind="line"' in code_lower or "kind='line'" in code_lower:
             return "line"
-        elif 'kind="scatter"' in code_lower or "kind='scatter'" in code_lower:
+        if 'kind="scatter"' in code_lower or "kind='scatter'" in code_lower:
             return "scatter"
-        elif 'kind="hist"' in code_lower or "kind='histogram'" in code_lower:
+        if 'kind="hist"' in code_lower or "kind='histogram'" in code_lower:
             return "histogram"
-        elif 'kind="bar"' in code_lower or "kind='bar'" in code_lower:
+        if 'kind="bar"' in code_lower or "kind='bar'" in code_lower:
             return "bar"
 
         return "bar"  # Default
@@ -2881,10 +2873,10 @@ def _execute_code_in_sandbox(
     effective_timeout = sandbox_timeout
     if is_complex_task:
         effective_timeout = min(
-            sandbox_timeout * 5, SANDBOX_TIMEOUT_SECONDS
+            sandbox_timeout * 5, SANDBOX_TIMEOUT_SECONDS,
         )  # Up to 10 minutes
         logger.info(
-            f"Complex task detected, using extended timeout: {effective_timeout}s"
+            f"Complex task detected, using extended timeout: {effective_timeout}s",
         )
 
     # Try Docker sandbox first (for cost savings)
@@ -2898,7 +2890,7 @@ def _execute_code_in_sandbox(
 
 
 def _execute_code_in_docker(
-    code: str, timeout: int, output_format: str = "image"
+    code: str, timeout: int, output_format: str = "image",
 ) -> tuple:
     """
     Execute Python code in Docker sandbox.
@@ -2935,17 +2927,16 @@ def _execute_code_in_docker(
 
         if result.success:
             return (True, mock_result, None, docker_artifacts)
+        error_msg = result.error or "Unknown Docker error"
+
+        # Detect timeout
+        if result.timed_out:
+            error_type = "TimeoutError"
+            error_msg = f"SANDBOX_TIMEOUT: Execution timed out after {timeout}s. Task escalated to human review."
         else:
-            error_msg = result.error or "Unknown Docker error"
+            error_type = "ExecutionError"
 
-            # Detect timeout
-            if result.timed_out:
-                error_type = "TimeoutError"
-                error_msg = f"SANDBOX_TIMEOUT: Execution timed out after {timeout}s. Task escalated to human review."
-            else:
-                error_type = "ExecutionError"
-
-            return (False, f"{error_type}: {error_msg}", None, None)
+        return (False, f"{error_type}: {error_msg}", None, None)
 
     except (ValueError, TypeError) as e:
         error_msg = str(e)
@@ -3174,7 +3165,7 @@ def _get_llm_for_task(domain: str | None) -> LLMService:
     domain_lower = (domain or "").lower().strip()
 
     # Legal and Accounting require high accuracy - use cloud models
-    if domain_lower in ["legal", "accounting"]:
+    if domain_lower in {"legal", "accounting"}:
         logger.info(f"Using cloud model for {domain} task (high accuracy required)")
         return LLMService.for_complex_task()
 
@@ -3185,7 +3176,7 @@ def _get_llm_for_task(domain: str | None) -> LLMService:
 
 
 def _capture_for_distillation(
-    result: dict, prompt: str, code: str, domain: str, model_used: str
+    result: dict, prompt: str, code: str, domain: str, model_used: str,
 ) -> None:
     """
     Capture successful task outputs for distillation training.
@@ -3251,7 +3242,7 @@ def _capture_for_distillation(
     except (ValueError, TypeError) as e:
         # Don't fail the task if distillation capture fails
         logger.warning(f"Warning: Failed to capture for distillation (validation error): {e}", exc_info=True)
-    except (IOError, OSError) as e:
+    except OSError as e:
         # Don't fail the task if distillation capture fails
         logger.warning(f"Warning: Failed to capture for distillation (IO error): {e}", exc_info=True)
     except Exception as e:
@@ -3423,7 +3414,7 @@ def execute_data_visualization(
     # Log which model is being used
     model_info = effective_llm.get_config()
     logger.info(
-        f"LLM Config: model={model_info.get('model')}, is_local={model_info.get('is_local')}"
+        f"LLM Config: model={model_info.get('model')}, is_local={model_info.get('is_local')}",
     )
 
     # Generate visualization code using LLM with domain-specific prompts
@@ -3431,10 +3422,10 @@ def execute_data_visualization(
     ai_generator = AIResponseGenerator(
         effective_llm,
         domain=domain,
-        few_shot_examples=few_shot_examples
+        few_shot_examples=few_shot_examples,
     )
     llm_result = ai_generator.generate_visualization_code(
-        csv_headers, user_request, domain=domain, file_type=effective_file_type
+        csv_headers, user_request, domain=domain, file_type=effective_file_type,
     )
 
     # Get the generated code
@@ -3468,7 +3459,7 @@ def execute_data_visualization(
     while retry_count <= max_retries:
         # Execute code in sandbox
         success, result_or_error, _, _ = _execute_code_in_sandbox(
-            current_code, e2b_api_key, sandbox_timeout
+            current_code, e2b_api_key, sandbox_timeout,
         )
 
         if success:
@@ -3477,13 +3468,13 @@ def execute_data_visualization(
 
             # Extract code for review (without csv_data assignment)
             code_for_review = code_with_csv.replace(
-                f'csv_data = """{csv_data}"""\n\n', "", 1
+                f'csv_data = """{csv_data}"""\n\n', "", 1,
             )
 
             # Pre-Submission Review: Validate artifact against user request
             if enable_pre_submission_review and parsed_result.get("image_url"):
                 approved, feedback, issues = _perform_pre_submission_review(
-                    parsed_result, user_request, code_for_review, llm_service
+                    parsed_result, user_request, code_for_review, llm_service,
                 )
 
                 if not approved:
@@ -3494,7 +3485,7 @@ def execute_data_visualization(
 
                     if review_attempts <= max_review_attempts:
                         logger.info(
-                            f"Regenerating code based on review feedback (attempt {review_attempts}/{max_review_attempts})..."
+                            f"Regenerating code based on review feedback (attempt {review_attempts}/{max_review_attempts})...",
                         )
 
                         # Regenerate code with feedback
@@ -3517,10 +3508,9 @@ def execute_data_visualization(
                                 or chart_type
                             )
                             continue  # Retry execution with new code
-                        else:
-                            logger.warning(
-                                f"Failed to regenerate code: {regen_result.get('error', 'Unknown error')}"
-                            )
+                        logger.warning(
+                            f"Failed to regenerate code: {regen_result.get('error', 'Unknown error')}",
+                        )
                             # Continue to return current result even if review regeneration failed
 
                     # Either exhausted review attempts or regeneration failed
@@ -3551,51 +3541,50 @@ def execute_data_visualization(
                 "review_attempts": review_attempts,
                 "last_error": None,
             }
-        else:
-            # Execution failed - this is an error we can potentially fix
-            last_error = result_or_error
-            retry_count += 1
+        # Execution failed - this is an error we can potentially fix
+        last_error = result_or_error
+        retry_count += 1
 
-            # Smart retry: Only retry if error is transient or LLM-fixable (Issue #37)
-            if not _should_retry_execution(last_error):
-                logger.warning(
-                    f"Code execution failed with non-retryable error: {last_error}"
-                )
-                break
-
-            # If we've exhausted retries, break out
-            if retry_count > max_retries:
-                break
-
-            # Try to fix the code using the LLM
+        # Smart retry: Only retry if error is transient or LLM-fixable (Issue #37)
+        if not _should_retry_execution(last_error):
             logger.warning(
-                f"Code execution failed (attempt {retry_count}/{max_retries}): {last_error}"
+                f"Code execution failed with non-retryable error: {last_error}",
             )
-            logger.info("Attempting to fix code with LLM...")
+            break
 
-            # Extract just the user code (without csv_data assignment)
-            user_code_only = code_with_csv.replace(
-                f'csv_data = """{csv_data}"""\n\n', "", 1
+        # If we've exhausted retries, break out
+        if retry_count > max_retries:
+            break
+
+        # Try to fix the code using the LLM
+        logger.warning(
+            f"Code execution failed (attempt {retry_count}/{max_retries}): {last_error}",
+        )
+        logger.info("Attempting to fix code with LLM...")
+
+        # Extract just the user code (without csv_data assignment)
+        user_code_only = code_with_csv.replace(
+            f'csv_data = """{csv_data}"""\n\n', "", 1,
+        )
+
+        code_fixer = CodeFixer(llm_service)
+        fix_result = code_fixer.fix_code(
+            failed_code=user_code_only,
+            error_message=last_error,
+            csv_headers=csv_headers,
+            user_request=user_request,
+        )
+
+        if fix_result["success"] and fix_result["code"]:
+            # Wrap fixed code with CSV data
+            current_code = f'csv_data = """{csv_data}"""\n\n' + fix_result["code"]
+            logger.info("LLM generated fix, retrying...")
+        else:
+            # LLM failed to generate a fix
+            logger.warning(
+                f"LLM failed to generate fix: {fix_result.get('error', 'Unknown error')}",
             )
-
-            code_fixer = CodeFixer(llm_service)
-            fix_result = code_fixer.fix_code(
-                failed_code=user_code_only,
-                error_message=last_error,
-                csv_headers=csv_headers,
-                user_request=user_request,
-            )
-
-            if fix_result["success"] and fix_result["code"]:
-                # Wrap fixed code with CSV data
-                current_code = f'csv_data = """{csv_data}"""\n\n' + fix_result["code"]
-                logger.info("LLM generated fix, retrying...")
-            else:
-                # LLM failed to generate a fix
-                logger.warning(
-                    f"LLM failed to generate fix: {fix_result.get('error', 'Unknown error')}"
-                )
-                break
+            break
 
     # All retries exhausted
     execution_time = (datetime.now() - start_time).total_seconds()
@@ -3612,7 +3601,7 @@ def execute_data_visualization(
 
 
 def execute_data_visualization_simple(
-    csv_data: str, user_request: str = "Create a bar chart"
+    csv_data: str, user_request: str = "Create a bar chart",
 ) -> dict:
     """
     Simplified version of execute_data_visualization with default settings.
@@ -3625,7 +3614,7 @@ def execute_data_visualization_simple(
         Dictionary with visualization results
     """
     return execute_data_visualization(
-        csv_data=csv_data, user_request=user_request, api_key=None, sandbox_timeout=120
+        csv_data=csv_data, user_request=user_request, api_key=None, sandbox_timeout=120,
     )
 
 
@@ -3646,9 +3635,6 @@ Item E,125,Cat3"""
     logger.info("\n" + "=" * 50)
 
     # Note: This will fail without a valid E2B API key
-    # Uncomment below to test with valid API key
-    # result = execute_data_visualization(sample_csv, "Create a bar chart")
-    # logger.info(result)
 
     logger.info("\nTo test with a real sandbox, provide a valid E2B_API_KEY")
     logger.info("or set the E2B_API_KEY environment variable.")

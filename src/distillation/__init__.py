@@ -1,5 +1,5 @@
 """
-Local Model Distillation Package
+Local Model Distillation Package.
 
 This package provides tools for capturing successful cloud model outputs
 and preparing them for fine-tuning local models.

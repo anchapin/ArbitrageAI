@@ -1,4 +1,4 @@
-"""Add database indexes for query optimization - Issue #38"""
+"""Add database indexes for query optimization - Issue #38."""
 
 import logging
 
@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 
 def add_indexes():
-    """Add indexes on frequently queried columns"""
+    """Add indexes on frequently queried columns."""
     indexes = [
         "CREATE INDEX IF NOT EXISTS idx_task_client_email ON task(client_email);",
         "CREATE INDEX IF NOT EXISTS idx_task_status ON task(status);",

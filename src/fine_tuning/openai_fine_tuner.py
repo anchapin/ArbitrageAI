@@ -1,13 +1,15 @@
 """
-OpenAI Fine-Tuning Integration
+OpenAI Fine-Tuning Integration.
 
 Handles fine-tuning with OpenAI's API for gpt-3.5-turbo and gpt-4o-mini.
 """
 
-import os
-from typing import Optional, Dict, Any
-from openai import OpenAI
 import logging
+import os
+import pathlib
+from typing import Any, ClassVar
+
+from openai import OpenAI
 
 logger = logging.getLogger(__name__)
 
@@ -27,9 +29,9 @@ class OpenAIFineTuner:
     - Cancel jobs
     """
 
-    SUPPORTED_MODELS = ["gpt-3.5-turbo", "gpt-4o-mini"]
+    SUPPORTED_MODELS: ClassVar[list] = ["gpt-3.5-turbo", "gpt-4o-mini"]
 
-    def __init__(self, api_key: Optional[str] = None):
+    def __init__(self, api_key: str | None = None):
         """
         Initialize OpenAI fine-tuner.
 
@@ -52,7 +54,7 @@ class OpenAIFineTuner:
         Returns:
             File ID
         """
-        if not os.path.exists(filepath):
+        if not pathlib.Path(filepath).exists():
             raise FileNotFoundError(f"Training file not found: {filepath}")
 
         with open(filepath, "rb") as f:
@@ -66,11 +68,11 @@ class OpenAIFineTuner:
         self,
         model: str,
         training_file_id: str,
-        validation_file_id: Optional[str] = None,
-        suffix: Optional[str] = None,
+        validation_file_id: str | None = None,
+        suffix: str | None = None,
         learning_rate_multiplier: float = 1.0,
         n_epochs: int = 3,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Create a fine-tuning job.
 
@@ -115,7 +117,7 @@ class OpenAIFineTuner:
             "created_at": job.created_at,
         }
 
-    def get_job_status(self, job_id: str) -> Dict[str, Any]:
+    def get_job_status(self, job_id: str) -> dict[str, Any]:
         """
         Get fine-tuning job status.
 
@@ -178,7 +180,7 @@ class OpenAIFineTuner:
             for job in jobs.data
         ]
 
-    def estimate_cost(self, training_tokens: int, model: str) -> Dict[str, float]:
+    def estimate_cost(self, training_tokens: int, model: str) -> dict[str, float]:
         """
         Estimate fine-tuning cost.
 

@@ -7,10 +7,11 @@ Automatically enforces rate limits and quotas on all endpoints.
 Returns 429 (Too Many Requests) or 402 (Payment Required) status codes.
 """
 
+from collections.abc import Callable
+import logging
 import os
 import time
-import logging
-from typing import Callable
+from typing import ClassVar
 
 from fastapi import Request
 from fastapi.responses import JSONResponse
@@ -18,7 +19,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 
 from .database import SessionLocal
 from .models import UserQuota
-from .rate_limiter import RateLimiter, QuotaManager
+from .rate_limiter import QuotaManager, RateLimiter
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +30,7 @@ _quota_manager = None
 
 def get_rate_limiter():
     """Get or create global rate limiter."""
-    global _rate_limiter
+    global _rate_limiter  # noqa: PLW0603
     if _rate_limiter is None:
         # Disable rate limiting for tests
         if os.getenv("DISABLE_RATE_LIMITING") == "true":
@@ -59,7 +60,7 @@ def get_rate_limiter():
 
 def get_quota_manager():
     """Get or create global quota manager."""
-    global _quota_manager
+    global _quota_manager  # noqa: PLW0603
     if _quota_manager is None:
         _quota_manager = QuotaManager()
     return _quota_manager
@@ -80,7 +81,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
     """
 
     # Endpoints that bypass rate limiting
-    BYPASS_ENDPOINTS = {
+    BYPASS_ENDPOINTS: ClassVar[set] = {
         "/health",
         "/docs",
         "/openapi.json",
@@ -141,7 +142,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                             "detail": "Too Many Requests",
                             "rate_limit_rps": quota.rate_limit_rps,
                             "requests_in_window": rate_details.get(
-                                "requests_in_window", 0
+                                "requests_in_window", 0,
                             ),
                             "retry_after": 1,
                         },
@@ -156,7 +157,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             if request.url.path.startswith("/api/submit-task"):
                 quota_manager = get_quota_manager()
                 allowed_quota, quota_check = quota_manager.check_task_quota(
-                    db, user_id, quota
+                    db, user_id, quota,
                 )
                 if not allowed_quota:
                     quota_exceeded = True
@@ -166,7 +167,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             if not quota_exceeded and request.url.path.startswith("/api/"):
                 quota_manager = get_quota_manager()
                 allowed_quota, quota_check = quota_manager.check_api_quota(
-                    db, user_id, quota
+                    db, user_id, quota,
                 )
                 if not allowed_quota:
                     quota_exceeded = True

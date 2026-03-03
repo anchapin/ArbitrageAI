@@ -1,5 +1,5 @@
 """
-Distributed Lock Manager for Bid Placement
+Distributed Lock Manager for Bid Placement.
 
 This module implements a database-backed distributed lock mechanism to prevent
 race conditions when multiple scanner instances attempt to place bids on the
@@ -14,16 +14,15 @@ Issue #19: Replace in-memory asyncio.Lock with DB-backed distributed lock
 """
 
 import asyncio
+from contextlib import asynccontextmanager
 import time
 import uuid
-from typing import Dict, Optional
-from contextlib import asynccontextmanager
 
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from src.api.models import DistributedLock
 from src.api.database import SessionLocal
+from src.api.models import DistributedLock
 from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -136,7 +135,7 @@ class BidLockManager:
                     # Lock acquired successfully
                     self._lock_successes += 1
                     logger.info(
-                        f"Lock acquired: {holder_id} locked {lock_key} (TTL: {self.ttl}s)"
+                        f"Lock acquired: {holder_id} locked {lock_key} (TTL: {self.ttl}s)",
                     )
                     return True
 
@@ -162,7 +161,7 @@ class BidLockManager:
                     holder = existing.holder_id if existing else "unknown"
                     logger.warning(
                         f"Lock conflict: {holder_id} tried to acquire "
-                        f"{lock_key} but it's held by {holder}"
+                        f"{lock_key} but it's held by {holder}",
                     )
 
                     # Check timeout
@@ -170,7 +169,7 @@ class BidLockManager:
                     if elapsed > timeout:
                         self._lock_timeouts += 1
                         logger.error(
-                            f"Lock timeout for {lock_key} after {elapsed:.1f}s"
+                            f"Lock timeout for {lock_key} after {elapsed:.1f}s",
                         )
                         return False
 
@@ -186,7 +185,7 @@ class BidLockManager:
                 db.close()
 
     async def release_lock(
-        self, marketplace_id: str, posting_id: str, holder_id: str = "default"
+        self, marketplace_id: str, posting_id: str, holder_id: str = "default",
     ) -> bool:
         """
         Release a previously acquired lock.
@@ -216,7 +215,7 @@ class BidLockManager:
             if existing.holder_id != holder_id:
                 logger.warning(
                     f"Holder mismatch for {lock_key}: "
-                    f"{holder_id} tried to release but held by {existing.holder_id}"
+                    f"{holder_id} tried to release but held by {existing.holder_id}",
                 )
                 return False
 
@@ -263,7 +262,7 @@ class BidLockManager:
         if not acquired:
             raise TimeoutError(
                 f"Failed to acquire lock for {marketplace_id}:{posting_id} "
-                f"within {timeout}s"
+                f"within {timeout}s",
             )
 
         try:
@@ -275,7 +274,7 @@ class BidLockManager:
                 holder_id=holder_id,
             )
 
-    def get_metrics(self) -> Dict[str, int]:
+    def get_metrics(self) -> dict[str, int]:
         """Get lock manager metrics."""
         db = self._get_db()
         try:
@@ -313,12 +312,12 @@ class BidLockManager:
 
 
 # Global instance (singleton pattern)
-_bid_lock_manager: Optional[BidLockManager] = None
+_bid_lock_manager: BidLockManager | None = None
 
 
 def get_bid_lock_manager() -> BidLockManager:
     """Get or create the global BidLockManager instance."""
-    global _bid_lock_manager
+    global _bid_lock_manager  # noqa: PLW0603
     if _bid_lock_manager is None:
         _bid_lock_manager = BidLockManager(ttl=300)  # 5 minute TTL
     return _bid_lock_manager
@@ -326,6 +325,6 @@ def get_bid_lock_manager() -> BidLockManager:
 
 def init_bid_lock_manager(ttl: int = 300) -> BidLockManager:
     """Initialize the global BidLockManager with custom TTL."""
-    global _bid_lock_manager
+    global _bid_lock_manager  # noqa: PLW0603
     _bid_lock_manager = BidLockManager(ttl=ttl)
     return _bid_lock_manager

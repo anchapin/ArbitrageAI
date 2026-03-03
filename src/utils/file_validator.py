@@ -9,12 +9,12 @@ Provides comprehensive file validation including:
 - Virus/malware scan integration (mock for local, real for cloud)
 """
 
-import os
-import re
 import base64
-from typing import Optional, Tuple
+import os
+import pathlib
+import re
 
-from ..utils.logger import get_logger
+from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
 
@@ -72,7 +72,7 @@ def sanitize_filename(filename: str) -> str:
         raise ValueError("Filename cannot be empty")
 
     # Remove path components (prevent directory traversal)
-    filename = os.path.basename(filename)
+    filename = pathlib.Path(filename).name
 
     # Remove null bytes
     filename = filename.replace("\x00", "")
@@ -103,7 +103,7 @@ def sanitize_filename(filename: str) -> str:
 # =============================================================================
 
 
-def validate_file_extension(filename: str, allowed_types: Optional[list] = None) -> str:
+def validate_file_extension(filename: str, allowed_types: list | None = None) -> str:
     """
     Validate file extension against whitelist.
 
@@ -129,11 +129,10 @@ def validate_file_extension(filename: str, allowed_types: Optional[list] = None)
         raise ValueError(f"File type '{ext}' not allowed. Allowed types: {allowed}")
 
     # If specific types are required, check against them
-    if allowed_types:
-        if ext not in allowed_types:
-            raise ValueError(
-                f"File type '{ext}' not allowed for this field. Allowed: {', '.join(allowed_types)}"
-            )
+    if allowed_types and ext not in allowed_types:
+        raise ValueError(
+            f"File type '{ext}' not allowed for this field. Allowed: {', '.join(allowed_types)}",
+        )
 
     logger.info(f"File extension validated: {ext}")
     return ext
@@ -163,7 +162,7 @@ def validate_file_size(file_content: bytes, max_size: int = MAX_FILE_SIZE_BYTES)
     if size > max_size:
         max_mb = max_size / (1024 * 1024)
         raise ValueError(
-            f"File size ({size} bytes) exceeds maximum ({max_size} bytes / {max_mb}MB)"
+            f"File size ({size} bytes) exceeds maximum ({max_size} bytes / {max_mb}MB)",
         )
 
     logger.info(f"File size validated: {size} bytes")
@@ -197,7 +196,7 @@ def validate_file_signature(file_content: bytes, ext: str) -> bool:
     # Some file types don't have reliable magic bytes (CSV, TXT, JSON)
     if expected_magic is None:
         logger.info(
-            f"File type '{ext}' has no magic bytes check, skipping signature validation"
+            f"File type '{ext}' has no magic bytes check, skipping signature validation",
         )
         return True
 
@@ -207,7 +206,7 @@ def validate_file_signature(file_content: bytes, ext: str) -> bool:
 
     if not file_content.startswith(expected_magic):
         raise ValueError(
-            f"File signature does not match '.{ext}' format. File may be corrupted or misnamed."
+            f"File signature does not match '.{ext}' format. File may be corrupted or misnamed.",
         )
 
     logger.info(f"File signature validated for type: {ext}")
@@ -221,7 +220,7 @@ def validate_file_signature(file_content: bytes, ext: str) -> bool:
 
 def decode_base64_file(
     base64_content: str,
-) -> Tuple[bytes, int]:
+) -> tuple[bytes, int]:
     """
     Decode base64-encoded file content.
 
@@ -239,7 +238,7 @@ def decode_base64_file(
         logger.info(f"Base64 decoded successfully: {len(file_content)} bytes")
         return file_content, len(file_content)
     except Exception as e:
-        raise ValueError(f"Invalid base64 encoding: {str(e)}")
+        raise ValueError(f"Invalid base64 encoding: {e!s}") from e
 
 
 # =============================================================================
@@ -269,7 +268,7 @@ def scan_file_for_malware(file_content: bytes, filename: str) -> bool:
     # Check environment for antivirus service
     antivirus_service = os.environ.get("ANTIVIRUS_SERVICE", "mock")
 
-    if antivirus_service == "mock" or antivirus_service == "disabled":
+    if antivirus_service in {"mock", "disabled"}:
         logger.info(f"Mock antivirus scan (DISABLED): {filename}")
         return True
 
@@ -315,7 +314,7 @@ def _scan_with_virustotal(file_content: bytes, filename: str) -> bool:
 
         if response.status_code != 200:
             logger.warning(
-                f"VirusTotal scan failed for {filename}: {response.status_code}"
+                f"VirusTotal scan failed for {filename}: {response.status_code}",
             )
             return True  # Allow if service is unavailable
 
@@ -323,7 +322,7 @@ def _scan_with_virustotal(file_content: bytes, filename: str) -> bool:
         return True
 
     except Exception as e:
-        logger.warning(f"VirusTotal scan error: {str(e)}, allowing file")
+        logger.warning(f"VirusTotal scan error: {e!s}, allowing file")
         return True  # Allow if scan fails (don't block legitimate files)
 
 
@@ -364,11 +363,11 @@ def _scan_with_clamav(file_content: bytes, filename: str) -> bool:
 
     except ImportError:
         logger.warning(
-            "pyclamd not installed, ClamAV scanning disabled. Install with: pip install pyclamd"
+            "pyclamd not installed, ClamAV scanning disabled. Install with: pip install pyclamd",
         )
         return True
     except Exception as e:
-        logger.warning(f"ClamAV scan error: {str(e)}, allowing file")
+        logger.warning(f"ClamAV scan error: {e!s}, allowing file")
         return True  # Allow if scan fails
 
 
@@ -380,10 +379,10 @@ def _scan_with_clamav(file_content: bytes, filename: str) -> bool:
 def validate_file_upload(
     filename: str,
     file_content_base64: str,
-    file_type: Optional[str] = None,
+    file_type: str | None = None,
     max_size: int = MAX_FILE_SIZE_BYTES,
     scan_malware: bool = True,
-) -> Tuple[str, bytes, str]:
+) -> tuple[str, bytes, str]:
     """
     Comprehensive file validation pipeline.
 
@@ -422,11 +421,11 @@ def validate_file_upload(
             allowed_exts = FILE_TYPE_TO_EXTENSIONS.get(file_type, [])
             if ext not in allowed_exts:
                 raise ValueError(
-                    f"File extension '{ext}' not compatible with file type '{file_type}'"
+                    f"File extension '{ext}' not compatible with file type '{file_type}'",
                 )
 
         # Step 4: Decode base64 content
-        file_content, decoded_size = decode_base64_file(file_content_base64)
+        file_content, _decoded_size = decode_base64_file(file_content_base64)
 
         # Step 5: Validate file size
         validate_file_size(file_content, max_size)
@@ -444,8 +443,8 @@ def validate_file_upload(
         return sanitized_filename, file_content, ext
 
     except ValueError as e:
-        logger.error(f"File validation failed: {str(e)}")
+        logger.error(f"File validation failed: {e!s}")
         raise
     except Exception as e:
-        logger.error(f"Unexpected file validation error: {str(e)}")
-        raise ValueError(f"File validation error: {str(e)}")
+        logger.error(f"Unexpected file validation error: {e!s}")
+        raise ValueError(f"File validation error: {e!s}") from e

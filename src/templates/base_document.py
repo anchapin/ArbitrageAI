@@ -1,5 +1,5 @@
 """
-Base Document Template
+Base Document Template.
 
 This is the foundational template for generating Word documents using python-docx.
 It provides a pre-tested Python script that:
@@ -14,15 +14,15 @@ injected into this template. This approach:
 - Provides consistent, reliable document generation
 """
 
+import base64
 import io
 import json
-import base64
-import pandas as pd
-from typing import Dict, Any, Optional
+from typing import Any
 
 # python-docx imports
 from docx import Document
 from docx.shared import Inches, Pt
+import pandas as pd
 
 
 class BaseDocumentTemplate:
@@ -52,7 +52,7 @@ class BaseDocumentTemplate:
 
     def generate(
         self,
-        content_json: Dict[str, Any],
+        content_json: dict[str, Any],
         csv_data: str,
         output_format: str = "docx",
         **kwargs,
@@ -95,7 +95,7 @@ class BaseDocumentTemplate:
         except Exception as e:
             return {
                 "success": False,
-                "message": f"Document generation error: {str(e)}",
+                "message": f"Document generation error: {e!s}",
                 "output_format": output_format,
                 "document_type": "document",
             }
@@ -132,7 +132,7 @@ class BaseDocumentTemplate:
         if not sections and "data" in content:
             self._build_from_data(content["data"])
 
-    def _add_section(self, section: Dict[str, Any]):
+    def _add_section(self, section: dict[str, Any]):
         """Add a section to the document."""
         # Section heading
         if "heading" in section:
@@ -156,7 +156,7 @@ class BaseDocumentTemplate:
         if "table" in section:
             self._add_table_from_data(section["table"])
 
-    def _add_content_item(self, item: Dict[str, Any]):
+    def _add_content_item(self, item: dict[str, Any]):
         """Add a content item to the document."""
         if item.get("type") == "paragraph":
             self.add_paragraph(item.get("text", ""), style=item.get("style"))
@@ -221,11 +221,11 @@ class BaseDocumentTemplate:
         for run in heading.runs:
             run.font.name = self.HEADING_FONT
             run.font.size = Pt(
-                self.HEADING_SIZE if level <= 1 else self.SUBHEADING_SIZE
+                self.HEADING_SIZE if level <= 1 else self.SUBHEADING_SIZE,
             )
         return heading
 
-    def add_paragraph(self, text: str, style: Optional[str] = None):
+    def add_paragraph(self, text: str, style: str | None = None):
         """Add a paragraph to the document."""
         para = self.document.add_paragraph(text, style=style)
         # Apply formatting
@@ -262,7 +262,7 @@ class BaseDocumentTemplate:
         except Exception as e:
             return {
                 "success": False,
-                "message": f"Error reading output file: {str(e)}",
+                "message": f"Error reading output file: {e!s}",
                 "output_format": output_format,
             }
 
@@ -296,29 +296,29 @@ output_format = "{output_format}"
 def generate_document():
     # Parse CSV
     df = pd.read_csv(io.StringIO(csv_data))
-    
+
     # Create document
     doc = Document()
-    
+
     # Set margins
     for section in doc.sections:
         section.top_margin = Inches(1.0)
         section.bottom_margin = Inches(1.0)
         section.left_margin = Inches(1.0)
         section.right_margin = Inches(1.0)
-    
+
     content = CONTENT_JSON
-    
+
     # Title
     if "title" in content:
         heading = doc.add_heading(content["title"], level=0)
         heading.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    
+
     # Subtitle
     if "subtitle" in content:
         para = doc.add_paragraph(content["subtitle"])
         para.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    
+
     # Sections
     sections = content.get("sections", [])
     for section in sections:
@@ -326,7 +326,7 @@ def generate_document():
         if "heading" in section:
             level = section.get("level", 1)
             doc.add_heading(section["heading"], level=level)
-        
+
         # Section content
         if "content" in section:
             if isinstance(section["content"], list):
@@ -342,7 +342,7 @@ def generate_document():
                         doc.add_paragraph(str(item))
             else:
                 doc.add_paragraph(str(section["content"]))
-        
+
         # Data table
         if "table" in section:
             table_data = section["table"]
@@ -351,22 +351,22 @@ def generate_document():
                     headers = list(table_data[0].keys())
                     table = doc.add_table(rows=len(table_data) + 1, cols=len(headers))
                     table.style = "Table Grid"
-                    
+
                     # Headers
                     for i, h in enumerate(headers):
                         table.rows[0].cells[i].text = h
                         table.rows[0].cells[i].paragraphs[0].runs[0].font.bold = True
-                    
+
                     # Data rows
                     for row_idx, row in enumerate(table_data):
                         for col_idx, header in enumerate(headers):
                             if col_idx < len(table.rows[row_idx + 1].cells):
                                 table.rows[row_idx + 1].cells[col_idx].text = str(row.get(header, ""))
-    
+
     # Save
     output_filename = f"output.{{output_format}}"
     doc.save(output_filename)
-    
+
     return output_filename
 
 if __name__ == "__main__":
@@ -376,7 +376,7 @@ if __name__ == "__main__":
 
 
 def get_template_code(
-    content_json: Dict[str, Any], csv_data: str, output_format: str = "docx"
+    content_json: dict[str, Any], csv_data: str, output_format: str = "docx",
 ) -> str:
     """
     Get the executable template code with injected content.
@@ -399,8 +399,6 @@ def get_template_code(
     # Actually, we need to be careful here - let's use f-string differently
 
     # Use a different approach - build the template with placeholders
-    template = BASE_DOCUMENT_TEMPLATE_CODE.replace("{content_json}", content_str)
+    template = BASE_DOCUMENT_TEMPLATE_CODE.replace(f"{content_json}", content_str)
     template = template.replace("{csv_data}", csv_data)
-    template = template.replace("{output_format}", output_format)
-
-    return template
+    return template.replace("{output_format}", output_format)

@@ -1,5 +1,5 @@
 """
-Migration: Add Unique Constraints to Domain Models (Issue #33)
+Migration: Add Unique Constraints to Domain Models (Issue #33).
 
 This migration adds unique constraints to critical fields in the database
 to prevent duplicate data and maintain data integrity.
@@ -48,8 +48,8 @@ def upgrade(db_session):
             connection.execute(
                 text(
                     "CREATE UNIQUE INDEX IF NOT EXISTS idx_client_email_unique "
-                    "ON client_profiles(client_email)"
-                )
+                    "ON client_profiles(client_email)",
+                ),
             )
             logger.info("✓ Created unique index on client_profiles.client_email")
         except Exception as e:
@@ -60,8 +60,8 @@ def upgrade(db_session):
             connection.execute(
                 text(
                     "CREATE UNIQUE INDEX IF NOT EXISTS idx_stripe_session_id_unique "
-                    "ON tasks(stripe_session_id)"
-                )
+                    "ON tasks(stripe_session_id)",
+                ),
             )
             logger.info("✓ Created unique index on tasks.stripe_session_id")
         except Exception as e:
@@ -72,8 +72,8 @@ def upgrade(db_session):
             connection.execute(
                 text(
                     "CREATE UNIQUE INDEX IF NOT EXISTS idx_delivery_token_unique "
-                    "ON tasks(delivery_token)"
-                )
+                    "ON tasks(delivery_token)",
+                ),
             )
             logger.info("✓ Created unique index on tasks.delivery_token")
         except Exception as e:
@@ -85,8 +85,8 @@ def upgrade(db_session):
             connection.execute(
                 text(
                     "ALTER TABLE client_profiles "
-                    "ADD CONSTRAINT unique_client_email UNIQUE (client_email)"
-                )
+                    "ADD CONSTRAINT unique_client_email UNIQUE (client_email)",
+                ),
             )
             logger.info("✓ Added UNIQUE constraint on client_profiles.client_email")
         except Exception as e:
@@ -97,8 +97,8 @@ def upgrade(db_session):
             connection.execute(
                 text(
                     "ALTER TABLE tasks "
-                    "ADD CONSTRAINT unique_stripe_session_id UNIQUE (stripe_session_id)"
-                )
+                    "ADD CONSTRAINT unique_stripe_session_id UNIQUE (stripe_session_id)",
+                ),
             )
             logger.info("✓ Added UNIQUE constraint on tasks.stripe_session_id")
         except Exception as e:
@@ -109,8 +109,8 @@ def upgrade(db_session):
             connection.execute(
                 text(
                     "ALTER TABLE tasks "
-                    "ADD CONSTRAINT unique_delivery_token UNIQUE (delivery_token)"
-                )
+                    "ADD CONSTRAINT unique_delivery_token UNIQUE (delivery_token)",
+                ),
             )
             logger.info("✓ Added UNIQUE constraint on tasks.delivery_token")
         except Exception as e:
@@ -123,8 +123,8 @@ def upgrade(db_session):
             connection.execute(
                 text(
                     "ALTER TABLE client_profiles "
-                    "ADD CONSTRAINT unique_client_email UNIQUE (client_email)"
-                )
+                    "ADD CONSTRAINT unique_client_email UNIQUE (client_email)",
+                ),
             )
             logger.info("✓ Added UNIQUE constraint on client_profiles.client_email")
         except Exception as e:
@@ -135,8 +135,8 @@ def upgrade(db_session):
             connection.execute(
                 text(
                     "ALTER TABLE tasks "
-                    "ADD CONSTRAINT unique_stripe_session_id UNIQUE (stripe_session_id)"
-                )
+                    "ADD CONSTRAINT unique_stripe_session_id UNIQUE (stripe_session_id)",
+                ),
             )
             logger.info("✓ Added UNIQUE constraint on tasks.stripe_session_id")
         except Exception as e:
@@ -147,8 +147,8 @@ def upgrade(db_session):
             connection.execute(
                 text(
                     "ALTER TABLE tasks "
-                    "ADD CONSTRAINT unique_delivery_token UNIQUE (delivery_token)"
-                )
+                    "ADD CONSTRAINT unique_delivery_token UNIQUE (delivery_token)",
+                ),
             )
             logger.info("✓ Added UNIQUE constraint on tasks.delivery_token")
         except Exception as e:
@@ -172,7 +172,7 @@ def downgrade(db_session):
 
         try:
             connection.execute(
-                text("DROP INDEX IF EXISTS idx_stripe_session_id_unique")
+                text("DROP INDEX IF EXISTS idx_stripe_session_id_unique"),
             )
             logger.info("✓ Dropped unique index on tasks.stripe_session_id")
         except Exception as e:
@@ -189,8 +189,8 @@ def downgrade(db_session):
             connection.execute(
                 text(
                     "ALTER TABLE client_profiles "
-                    "DROP CONSTRAINT IF EXISTS unique_client_email"
-                )
+                    "DROP CONSTRAINT IF EXISTS unique_client_email",
+                ),
             )
             logger.info("✓ Dropped UNIQUE constraint on client_profiles.client_email")
         except Exception as e:
@@ -200,8 +200,8 @@ def downgrade(db_session):
             connection.execute(
                 text(
                     "ALTER TABLE tasks "
-                    "DROP CONSTRAINT IF EXISTS unique_stripe_session_id"
-                )
+                    "DROP CONSTRAINT IF EXISTS unique_stripe_session_id",
+                ),
             )
             logger.info("✓ Dropped UNIQUE constraint on tasks.stripe_session_id")
         except Exception as e:
@@ -210,8 +210,8 @@ def downgrade(db_session):
         try:
             connection.execute(
                 text(
-                    "ALTER TABLE tasks DROP CONSTRAINT IF EXISTS unique_delivery_token"
-                )
+                    "ALTER TABLE tasks DROP CONSTRAINT IF EXISTS unique_delivery_token",
+                ),
             )
             logger.info("✓ Dropped UNIQUE constraint on tasks.delivery_token")
         except Exception as e:
@@ -220,7 +220,7 @@ def downgrade(db_session):
     elif db_type == "mysql":
         try:
             connection.execute(
-                text("ALTER TABLE client_profiles DROP INDEX unique_client_email")
+                text("ALTER TABLE client_profiles DROP INDEX unique_client_email"),
             )
             logger.info("✓ Dropped UNIQUE constraint on client_profiles.client_email")
         except Exception as e:
@@ -229,7 +229,7 @@ def downgrade(db_session):
 
         try:
             connection.execute(
-                text("ALTER TABLE tasks DROP INDEX unique_stripe_session_id")
+                text("ALTER TABLE tasks DROP INDEX unique_stripe_session_id"),
             )
             logger.info("✓ Dropped UNIQUE constraint on tasks.stripe_session_id")
         except Exception as e:
@@ -238,7 +238,7 @@ def downgrade(db_session):
 
         try:
             connection.execute(
-                text("ALTER TABLE tasks DROP INDEX unique_delivery_token")
+                text("ALTER TABLE tasks DROP INDEX unique_delivery_token"),
             )
             logger.info("✓ Dropped UNIQUE constraint on tasks.delivery_token")
         except Exception as e:

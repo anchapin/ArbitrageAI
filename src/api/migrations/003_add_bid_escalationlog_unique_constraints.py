@@ -1,5 +1,5 @@
 """
-Migration: Add Unique Constraints to Bid and EscalationLog Models (Issue #33)
+Migration: Add Unique Constraints to Bid and EscalationLog Models (Issue #33).
 
 This migration adds unique constraints to the Bid and EscalationLog models
 to prevent duplicate data and enforce data integrity at the database level.
@@ -46,14 +46,14 @@ def upgrade(db_session):
             connection.execute(
                 text(
                     "CREATE UNIQUE INDEX IF NOT EXISTS idx_bid_job_marketplace_unique "
-                    "ON bids(job_id, marketplace)"
-                )
+                    "ON bids(job_id, marketplace)",
+                ),
             )
             logger.info("✓ Created unique index on bids(job_id, marketplace)")
         except Exception as e:
             logger.warning(
                 f"Warning: Could not create unique index on bids "
-                f"(job_id, marketplace): {e}"
+                f"(job_id, marketplace): {e}",
             )
 
         try:
@@ -61,14 +61,14 @@ def upgrade(db_session):
             connection.execute(
                 text(
                     "CREATE UNIQUE INDEX IF NOT EXISTS idx_escalation_task_key_unique "
-                    "ON escalation_logs(task_id, idempotency_key)"
-                )
+                    "ON escalation_logs(task_id, idempotency_key)",
+                ),
             )
             logger.info("✓ Created unique index on escalation_logs(task_id, idempotency_key)")
         except Exception as e:
             logger.warning(
                 f"Warning: Could not create unique index on escalation_logs "
-                f"(task_id, idempotency_key): {e}"
+                f"(task_id, idempotency_key): {e}",
             )
 
     # PostgreSQL-specific constraint creation
@@ -78,15 +78,15 @@ def upgrade(db_session):
                 text(
                     "ALTER TABLE bids "
                     "ADD CONSTRAINT unique_bid_per_posting "
-                    "UNIQUE (job_id, marketplace)"
-                )
+                    "UNIQUE (job_id, marketplace)",
+                ),
             )
             logger.info("✓ Added UNIQUE constraint on bids(job_id, marketplace)")
         except Exception as e:
             if "already exists" not in str(e):
                 logger.warning(
                     f"Warning: Could not add constraint on bids "
-                    f"(job_id, marketplace): {e}"
+                    f"(job_id, marketplace): {e}",
                 )
 
         try:
@@ -94,15 +94,15 @@ def upgrade(db_session):
                 text(
                     "ALTER TABLE escalation_logs "
                     "ADD CONSTRAINT unique_escalation_per_task "
-                    "UNIQUE (task_id, idempotency_key)"
-                )
+                    "UNIQUE (task_id, idempotency_key)",
+                ),
             )
             logger.info("✓ Added UNIQUE constraint on escalation_logs(task_id, idempotency_key)")
         except Exception as e:
             if "already exists" not in str(e):
                 logger.warning(
                     f"Warning: Could not add constraint on escalation_logs "
-                    f"(task_id, idempotency_key): {e}"
+                    f"(task_id, idempotency_key): {e}",
                 )
 
     # MySQL-specific constraint creation
@@ -112,15 +112,15 @@ def upgrade(db_session):
                 text(
                     "ALTER TABLE bids "
                     "ADD CONSTRAINT unique_bid_per_posting "
-                    "UNIQUE (job_id, marketplace)"
-                )
+                    "UNIQUE (job_id, marketplace)",
+                ),
             )
             logger.info("✓ Added UNIQUE constraint on bids(job_id, marketplace)")
         except Exception as e:
             if "already exists" not in str(e) and "Duplicate key" not in str(e):
                 logger.warning(
                     f"Warning: Could not add constraint on bids "
-                    f"(job_id, marketplace): {e}"
+                    f"(job_id, marketplace): {e}",
                 )
 
         try:
@@ -128,15 +128,15 @@ def upgrade(db_session):
                 text(
                     "ALTER TABLE escalation_logs "
                     "ADD CONSTRAINT unique_escalation_per_task "
-                    "UNIQUE (task_id, idempotency_key)"
-                )
+                    "UNIQUE (task_id, idempotency_key)",
+                ),
             )
             logger.info("✓ Added UNIQUE constraint on escalation_logs(task_id, idempotency_key)")
         except Exception as e:
             if "already exists" not in str(e) and "Duplicate key" not in str(e):
                 logger.warning(
                     f"Warning: Could not add constraint on escalation_logs "
-                    f"(task_id, idempotency_key): {e}"
+                    f"(task_id, idempotency_key): {e}",
                 )
 
     connection.commit()
@@ -150,7 +150,7 @@ def downgrade(db_session):
     if db_type == "sqlite":
         try:
             connection.execute(
-                text("DROP INDEX IF EXISTS idx_bid_job_marketplace_unique")
+                text("DROP INDEX IF EXISTS idx_bid_job_marketplace_unique"),
             )
             logger.info("✓ Dropped unique index on bids(job_id, marketplace)")
         except Exception as e:
@@ -158,7 +158,7 @@ def downgrade(db_session):
 
         try:
             connection.execute(
-                text("DROP INDEX IF EXISTS idx_escalation_task_key_unique")
+                text("DROP INDEX IF EXISTS idx_escalation_task_key_unique"),
             )
             logger.info("✓ Dropped unique index on escalation_logs(task_id, idempotency_key)")
         except Exception as e:
@@ -169,8 +169,8 @@ def downgrade(db_session):
             connection.execute(
                 text(
                     "ALTER TABLE bids "
-                    "DROP CONSTRAINT IF EXISTS unique_bid_per_posting"
-                )
+                    "DROP CONSTRAINT IF EXISTS unique_bid_per_posting",
+                ),
             )
             logger.info("✓ Dropped UNIQUE constraint on bids(job_id, marketplace)")
         except Exception as e:
@@ -180,8 +180,8 @@ def downgrade(db_session):
             connection.execute(
                 text(
                     "ALTER TABLE escalation_logs "
-                    "DROP CONSTRAINT IF EXISTS unique_escalation_per_task"
-                )
+                    "DROP CONSTRAINT IF EXISTS unique_escalation_per_task",
+                ),
             )
             logger.info("✓ Dropped UNIQUE constraint on escalation_logs(task_id, idempotency_key)")
         except Exception as e:
@@ -190,7 +190,7 @@ def downgrade(db_session):
     elif db_type == "mysql":
         try:
             connection.execute(
-                text("ALTER TABLE bids DROP INDEX unique_bid_per_posting")
+                text("ALTER TABLE bids DROP INDEX unique_bid_per_posting"),
             )
             logger.info("✓ Dropped UNIQUE constraint on bids(job_id, marketplace)")
         except Exception as e:
@@ -200,8 +200,8 @@ def downgrade(db_session):
         try:
             connection.execute(
                 text(
-                    "ALTER TABLE escalation_logs DROP INDEX unique_escalation_per_task"
-                )
+                    "ALTER TABLE escalation_logs DROP INDEX unique_escalation_per_task",
+                ),
             )
             logger.info("✓ Dropped UNIQUE constraint on escalation_logs(task_id, idempotency_key)")
         except Exception as e:

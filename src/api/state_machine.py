@@ -1,18 +1,19 @@
 """
-Task State Machine Validation
+Task State Machine Validation.
 
 Prevents invalid state transitions in the refactored Task model.
 
 Issue #5: Refactor overloaded Task model using composition pattern
 """
 
-from typing import Set, Dict
+
+from typing import ClassVar
 
 from src.api.models_composition import (
-    TaskStatus,
     ExecutionStatus,
     PlanningStatus,
     ReviewStatus,
+    TaskStatus,
 )
 from src.utils.logger import get_logger
 
@@ -27,7 +28,7 @@ class TaskStateMachine:
     """
 
     # Define valid transitions from each state
-    VALID_TRANSITIONS: Dict[TaskStatus, Set[TaskStatus]] = {
+    VALID_TRANSITIONS: ClassVar[dict[TaskStatus, set[TaskStatus]]] = {
         TaskStatus.PENDING: {TaskStatus.PLANNING, TaskStatus.FAILED},
         TaskStatus.PLANNING: {TaskStatus.PROCESSING, TaskStatus.FAILED},
         TaskStatus.PROCESSING: {
@@ -80,14 +81,14 @@ class TaskStateMachine:
         if not TaskStateMachine.is_valid_transition(current_status, new_status):
             raise ValueError(
                 f"Invalid task status transition: "
-                f"{current_status.value} → {new_status.value}"
+                f"{current_status.value} → {new_status.value}",
             )
 
 
 class ExecutionStateMachine:
     """Validates execution state transitions."""
 
-    VALID_TRANSITIONS: Dict[ExecutionStatus, Set[ExecutionStatus]] = {
+    VALID_TRANSITIONS: ClassVar[dict[ExecutionStatus, set[ExecutionStatus]]] = {
         ExecutionStatus.PENDING: {ExecutionStatus.RUNNING, ExecutionStatus.FAILED},
         ExecutionStatus.RUNNING: {ExecutionStatus.COMPLETED, ExecutionStatus.FAILED},
         ExecutionStatus.COMPLETED: set(),  # Terminal
@@ -96,7 +97,7 @@ class ExecutionStateMachine:
 
     @staticmethod
     def is_valid_transition(
-        current_status: ExecutionStatus, new_status: ExecutionStatus
+        current_status: ExecutionStatus, new_status: ExecutionStatus,
     ) -> bool:
         if current_status not in ExecutionStateMachine.VALID_TRANSITIONS:
             return False
@@ -106,7 +107,7 @@ class ExecutionStateMachine:
 class PlanningStateMachine:
     """Validates planning state transitions."""
 
-    VALID_TRANSITIONS: Dict[PlanningStatus, Set[PlanningStatus]] = {
+    VALID_TRANSITIONS: ClassVar[dict[PlanningStatus, set[PlanningStatus]]] = {
         PlanningStatus.PENDING: {PlanningStatus.GENERATING},
         PlanningStatus.GENERATING: {PlanningStatus.APPROVED, PlanningStatus.REJECTED},
         PlanningStatus.APPROVED: set(),  # Terminal
@@ -115,7 +116,7 @@ class PlanningStateMachine:
 
     @staticmethod
     def is_valid_transition(
-        current_status: PlanningStatus, new_status: PlanningStatus
+        current_status: PlanningStatus, new_status: PlanningStatus,
     ) -> bool:
         if current_status not in PlanningStateMachine.VALID_TRANSITIONS:
             return False
@@ -125,7 +126,7 @@ class PlanningStateMachine:
 class ReviewStateMachine:
     """Validates review state transitions."""
 
-    VALID_TRANSITIONS: Dict[ReviewStatus, Set[ReviewStatus]] = {
+    VALID_TRANSITIONS: ClassVar[dict[ReviewStatus, set[ReviewStatus]]] = {
         ReviewStatus.PENDING: {ReviewStatus.IN_REVIEW},
         ReviewStatus.IN_REVIEW: {ReviewStatus.RESOLVED, ReviewStatus.REJECTED},
         ReviewStatus.RESOLVED: set(),  # Terminal
@@ -134,7 +135,7 @@ class ReviewStateMachine:
 
     @staticmethod
     def is_valid_transition(
-        current_status: ReviewStatus, new_status: ReviewStatus
+        current_status: ReviewStatus, new_status: ReviewStatus,
     ) -> bool:
         if current_status not in ReviewStateMachine.VALID_TRANSITIONS:
             return False
@@ -142,7 +143,7 @@ class ReviewStateMachine:
 
 
 def validate_task_transition(
-    task_id: str, current_status: TaskStatus, new_status: TaskStatus
+    task_id: str, current_status: TaskStatus, new_status: TaskStatus,
 ) -> None:
     """
     Validate and log task status transition.

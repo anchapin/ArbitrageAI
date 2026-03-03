@@ -1,14 +1,13 @@
 """
-URL Circuit Breaker for Market Scanner
+URL Circuit Breaker for Market Scanner.
 
 Prevents repeated requests to failing marketplace URLs.
 
 Issue #4: Fix async Playwright resource leaks in market scanner
 """
 
-import time
-from typing import Dict, Optional
 from dataclasses import dataclass
+import time
 
 from src.utils.logger import get_logger
 
@@ -36,9 +35,9 @@ class URLCircuitBreaker:
         self.config = config or URLCircuitBreakerConfig()
 
         # Track failures per URL
-        self._failures: Dict[str, list] = {}  # url -> [timestamp, ...]
-        self._broken_urls: Dict[str, float] = {}  # url -> unbreak_time
-        self._successes: Dict[str, int] = {}  # url -> success_count
+        self._failures: dict[str, list] = {}  # url -> [timestamp, ...]
+        self._broken_urls: dict[str, float] = {}  # url -> unbreak_time
+        self._successes: dict[str, int] = {}  # url -> success_count
 
         # Metrics
         self.urls_broken = 0
@@ -61,13 +60,12 @@ class URLCircuitBreaker:
             unbreak_time = self._broken_urls[url]
             if now < unbreak_time:
                 return False
-            else:
-                # Cooldown expired, try again
-                del self._broken_urls[url]
-                self._failures[url] = []
-                self._successes[url] = 0
-                self.urls_recovered += 1
-                logger.info(f"Circuit breaker: URL {url} recovered from cooldown")
+            # Cooldown expired, try again
+            del self._broken_urls[url]
+            self._failures[url] = []
+            self._successes[url] = 0
+            self.urls_recovered += 1
+            logger.info(f"Circuit breaker: URL {url} recovered from cooldown")
 
         return True
 
@@ -101,7 +99,7 @@ class URLCircuitBreaker:
             logger.warning(
                 f"Circuit breaker: {url} broken after "
                 f"{len(self._failures[url])} failures, "
-                f"cooldown for {self.config.cooldown_seconds}s"
+                f"cooldown for {self.config.cooldown_seconds}s",
             )
 
         # Reset success counter on failure
@@ -126,7 +124,7 @@ class URLCircuitBreaker:
             self._successes[url] = 0
             logger.debug(f"Circuit breaker: {url} failure count reset")
 
-    def get_metrics(self) -> Dict[str, int]:
+    def get_metrics(self) -> dict[str, int]:
         """Get circuit breaker metrics."""
         return {
             "urls_broken": self.urls_broken,
@@ -137,12 +135,12 @@ class URLCircuitBreaker:
 
 
 # Global instance
-_url_circuit_breaker: Optional[URLCircuitBreaker] = None
+_url_circuit_breaker: URLCircuitBreaker | None = None
 
 
 def get_url_circuit_breaker() -> URLCircuitBreaker:
     """Get or create the global URLCircuitBreaker instance."""
-    global _url_circuit_breaker
+    global _url_circuit_breaker  # noqa: PLW0603
     if _url_circuit_breaker is None:
         _url_circuit_breaker = URLCircuitBreaker()
     return _url_circuit_breaker

@@ -4,15 +4,19 @@ Combines and replaces legacy configuration management.
 Provides validation and audit logging for configuration changes.
 """
 
-import os
 import logging
+import os
 import sys
-from typing import Any, Optional, Dict
+from typing import Any, ClassVar, Optional
 
 # Import logger
 try:
-    from ..utils.logger import get_logger
-    from ..utils.secrets import load_or_create_secrets, is_insecure_default, validate_secret_security
+    from src.utils.logger import get_logger
+    from src.utils.secrets import (
+        is_insecure_default,
+        load_or_create_secrets,
+        validate_secret_security,
+    )
 
     logger = get_logger(__name__)
 except (ImportError, ValueError):
@@ -22,8 +26,6 @@ except (ImportError, ValueError):
 class ValidationError(Exception):
     """Raised when configuration validation fails."""
 
-    pass
-
 
 class ConfigManager:
     """
@@ -32,10 +34,10 @@ class ConfigManager:
     """
 
     _instance: Optional["ConfigManager"] = None
-    _config_cache: Dict[str, Any] = {}
+    _config_cache: ClassVar[dict[str, Any]] = {}
 
     # DEFAULT CONFIGURATION VALUES (Match tests/test_config_manager.py)
-    _DEFAULTS = {
+    _DEFAULTS: ClassVar[dict[str, Any]] = {
         # LLM Routing
         "MIN_CLOUD_REVENUE": 3000,
         "CLOUD_GPT4O_OUTPUT_COST": 1000,
@@ -131,23 +133,23 @@ class ConfigManager:
         # Cross-field validations
         if self.MIN_BID_AMOUNT > self.MAX_BID_AMOUNT:
             raise ValidationError(
-                f"MIN_BID_AMOUNT ({self.MIN_BID_AMOUNT}) cannot exceed MAX_BID_AMOUNT ({self.MAX_BID_AMOUNT})"
+                f"MIN_BID_AMOUNT ({self.MIN_BID_AMOUNT}) cannot exceed MAX_BID_AMOUNT ({self.MAX_BID_AMOUNT})",
             )
 
         if self.DOCKER_SANDBOX_TIMEOUT > self.SANDBOX_TIMEOUT_SECONDS:
             raise ValidationError(
-                f"DOCKER_SANDBOX_TIMEOUT ({self.DOCKER_SANDBOX_TIMEOUT}) cannot exceed SANDBOX_TIMEOUT_SECONDS ({self.SANDBOX_TIMEOUT_SECONDS})"
+                f"DOCKER_SANDBOX_TIMEOUT ({self.DOCKER_SANDBOX_TIMEOUT}) cannot exceed SANDBOX_TIMEOUT_SECONDS ({self.SANDBOX_TIMEOUT_SECONDS})",
             )
 
         if self.LLM_HEALTH_CHECK_INITIAL_DELAY_MS > self.LLM_HEALTH_CHECK_MAX_DELAY_MS:
             raise ValidationError(
-                f"LLM_HEALTH_CHECK_INITIAL_DELAY_MS ({self.LLM_HEALTH_CHECK_INITIAL_DELAY_MS}) cannot exceed LLM_HEALTH_CHECK_MAX_DELAY_MS ({self.LLM_HEALTH_CHECK_MAX_DELAY_MS})"
+                f"LLM_HEALTH_CHECK_INITIAL_DELAY_MS ({self.LLM_HEALTH_CHECK_INITIAL_DELAY_MS}) cannot exceed LLM_HEALTH_CHECK_MAX_DELAY_MS ({self.LLM_HEALTH_CHECK_MAX_DELAY_MS})",
             )
 
     def _load_secure_secrets(self):
         """
         Load secure secrets from secure storage or environment variables.
-        
+
         This method:
         1. Attempts to load secrets from secure file storage
         2. Falls back to environment variables if not found
@@ -157,31 +159,28 @@ class ConfigManager:
         try:
             # Try to load from secure storage
             secrets = load_or_create_secrets()
-            
+
             # Set environment variables from loaded secrets
             # Only set if not already overridden by environment
             for key, value in secrets.items():
                 if key not in os.environ:
                     os.environ[key] = value
-            
+
             logger.info("✅ Loaded secrets from secure storage")
-            
+
         except Exception as e:
             logger.warning(f"Failed to load secrets from storage: {e}")
             logger.info("Using environment variables for secrets")
-            
+
             # Check if critical secrets are set in environment
             critical_secrets = ["JWT_SECRET_KEY", "CLIENT_AUTH_SECRET"]
-            missing = []
-            
-            for secret in critical_secrets:
-                if secret not in os.environ:
-                    missing.append(secret)
-            
+
+            missing = [secret for secret in critical_secrets if secret not in os.environ]
+
             if missing:
                 logger.warning(
                     f"Critical secrets not set in environment: {', '.join(missing)}\n"
-                    f"Run: python scripts/generate_secrets.py"
+                    f"Run: python scripts/generate_secrets.py",
                 )
 
     @classmethod
@@ -199,7 +198,7 @@ class ConfigManager:
         else:
             try:
                 if isinstance(default_val, bool):
-                    val = str(env_val).lower() in ("true", "1", "yes")
+                    val = str(env_val).lower() in {"true", "1", "yes"}
                 elif isinstance(default_val, int):
                     val = int(env_val)
                 elif isinstance(default_val, float):
@@ -253,28 +252,28 @@ class ConfigManager:
         cls._config_cache = {}
         cls._instance = None
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert all configuration to dictionary."""
-        return {key: getattr(self, key) for key in self._DEFAULTS.keys()}
+        return {key: getattr(self, key) for key in self._DEFAULTS}
 
     @staticmethod
     def validate_production_configuration() -> None:
         """
         Validate production configuration and fail fast on insecure defaults.
-        
+
         This function should be called during application startup,
         before any sensitive operations are performed.
-        
+
         Raises:
             SystemExit: If critical security requirements are not met
         """
         if os.getenv("ENVIRONMENT") != "production":
             logger.info("Skipping production validation (not in production mode)")
             return
-        
+
         errors = []
         warnings = []
-        
+
         # Critical secrets that MUST be secure in production
         critical_secrets = {
             "JWT_SECRET_KEY": "JWT signing secret",
@@ -282,46 +281,46 @@ class ConfigManager:
             "STRIPE_SECRET_KEY": "Stripe payment processing secret",
             "STRIPE_WEBHOOK_SECRET": "Stripe webhook verification secret",
         }
-        
+
         for env_var, description in critical_secrets.items():
             value = os.getenv(env_var, "")
-            
+
             if not value:
                 errors.append(f"❌ {env_var} is not set ({description})")
             elif is_insecure_default(value):
                 errors.append(
                     f"❌ {env_var} appears to be an insecure default ({description})\n"
                     f"   Current value: {value[:20]}...\n"
-                    f"   Action: Generate a secure random value"
+                    f"   Action: Generate a secure random value",
                 )
-        
+
         # Important but not critical
         if not os.getenv("DATABASE_URL"):
             warnings.append("⚠️  DATABASE_URL not set, using default SQLite")
-        
+
         # Log warnings
         for warning in warnings:
             logger.warning(warning)
-        
+
         # Fail on errors
         if errors:
-            logger.critical("\n" + "="*70)
+            logger.critical("\n" + "=" * 70)
             logger.critical("🚨 PRODUCTION SECURITY VALIDATION FAILED 🚨")
-            logger.critical("="*70)
+            logger.critical("=" * 70)
             logger.critical("\nThe following security issues must be resolved:\n")
-            
+
             for error in errors:
                 logger.critical(error)
-            
-            logger.critical("\n" + "="*70)
+
+            logger.critical("\n" + "=" * 70)
             logger.critical("ACTION REQUIRED:")
             logger.critical("1. Generate secure secrets: python scripts/generate_secrets.py")
             logger.critical("2. Set environment variables securely")
             logger.critical("3. Never commit secrets to version control")
-            logger.critical("="*70 + "\n")
-            
+            logger.critical("=" * 70 + "\n")
+
             sys.exit(1)
-        
+
         logger.info("✅ Production security validation passed")
 
 

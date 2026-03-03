@@ -1,20 +1,20 @@
 """
-Query Optimization Helpers for Issue #38
+Query Optimization Helpers for Issue #38.
 
 Provides optimized query builders with proper indexes and eager loading
 to prevent N+1 query problems and improve database performance.
 """
 
-from typing import List, Optional
-from sqlalchemy.orm import Session
-from sqlalchemy import and_
 
-from src.api.models import Task, Bid, TaskStatus, BidStatus
+from sqlalchemy import and_
+from sqlalchemy.orm import Session
+
+from src.api.models import Bid, BidStatus, Task, TaskStatus
 
 
 def get_client_tasks_optimized(
-    db: Session, client_email: str, limit: int = 100
-) -> List[Task]:
+    db: Session, client_email: str, limit: int = 100,
+) -> list[Task]:
     """
     Optimized query for client dashboard.
 
@@ -51,7 +51,7 @@ def get_client_tasks_optimized(
         return result if result else []
 
 
-def get_completed_tasks_by_domain_optimized(db: Session) -> List[Task]:
+def get_completed_tasks_by_domain_optimized(db: Session) -> list[Task]:
     """
     Optimized query for admin metrics by domain.
 
@@ -72,7 +72,7 @@ def get_completed_tasks_by_domain_optimized(db: Session) -> List[Task]:
     )
 
 
-def get_pending_tasks_optimized(db: Session, limit: Optional[int] = None) -> List[Task]:
+def get_pending_tasks_optimized(db: Session, limit: int | None = None) -> list[Task]:
     """
     Optimized query for pending task fetching.
 
@@ -98,8 +98,8 @@ def get_pending_tasks_optimized(db: Session, limit: Optional[int] = None) -> Lis
 
 
 def get_active_bids_optimized(
-    db: Session, marketplace: Optional[str] = None
-) -> List[Bid]:
+    db: Session, marketplace: str | None = None,
+) -> list[Bid]:
     """
     Optimized query for active bids.
 
@@ -119,8 +119,8 @@ def get_active_bids_optimized(
                 BidStatus.SUBMITTED,
                 BidStatus.PENDING,
                 BidStatus.APPROVED,
-            ]
-        )
+            ],
+        ),
     )
 
     if marketplace:
@@ -130,8 +130,8 @@ def get_active_bids_optimized(
 
 
 def get_recent_bids_optimized(
-    db: Session, marketplace: str, limit: int = 100
-) -> List[Bid]:
+    db: Session, marketplace: str, limit: int = 100,
+) -> list[Bid]:
     """
     Optimized query for recent bids on a marketplace.
 
@@ -155,7 +155,7 @@ def get_recent_bids_optimized(
     )
 
 
-def get_bid_dedup_set_optimized(db: Session, statuses: List[BidStatus]) -> set:
+def get_bid_dedup_set_optimized(db: Session, statuses: list[BidStatus]) -> set:
     """
     Optimized query for bid deduplication.
 
@@ -174,8 +174,8 @@ def get_bid_dedup_set_optimized(db: Session, statuses: List[BidStatus]) -> set:
 
 
 def get_task_by_client_and_status_optimized(
-    db: Session, client_email: str, status: TaskStatus
-) -> List[Task]:
+    db: Session, client_email: str, status: TaskStatus,
+) -> list[Task]:
     """
     Optimized query using composite index (client_email, status).
 
@@ -193,13 +193,13 @@ def get_task_by_client_and_status_optimized(
             and_(
                 Task.client_email == client_email,
                 Task.status == status,
-            )
+            ),
         )
         .all()
     )
 
 
-def get_tasks_for_metrics_optimized(db: Session) -> List[Task]:
+def get_tasks_for_metrics_optimized(db: Session) -> list[Task]:
     """
     Optimized query for admin metrics calculations.
 

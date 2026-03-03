@@ -5,23 +5,24 @@ Provides REST endpoints for scheduling tasks with cron expressions,
 managing recurring tasks, and viewing schedule analytics.
 """
 
-from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks
-from pydantic import BaseModel
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.exc import OperationalError, IntegrityError
-from typing import List, Optional, Dict, Any
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
+from typing import Any
 
-from ..agent_execution.scheduler import (
-    TaskScheduler,
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
+from pydantic import BaseModel
+from sqlalchemy.exc import IntegrityError, OperationalError
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from src.agent_execution.scheduler import (
     CronExpressionValidator,
+    TaskScheduler,
     schedule_daily_task,
-    schedule_weekly_task,
     schedule_monthly_task,
+    schedule_weekly_task,
 )
-from ..api.database import get_async_db
-from ..api.models import ScheduledTask, ScheduleHistory
-from ..utils.logger import get_logger
+from src.api.database import get_async_db
+from src.api.models import ScheduledTask, ScheduleHistory
+from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
 router = APIRouter(prefix="/api/scheduler", tags=["scheduler"])
@@ -31,28 +32,28 @@ class ScheduleTaskRequest(BaseModel):
     """Request model for scheduling a task."""
 
     title: str
-    description: Optional[str] = None
+    description: str | None = None
     domain: str = "general"
     cron_expression: str
     schedule_type: str = "RECURRING"
-    task_data: Dict[str, Any]
+    task_data: dict[str, Any]
     timezone: str = "UTC"
     avoid_peak_hours: bool = True
     batch_size: int = 1
     priority: int = 1
-    max_runs: Optional[int] = None
+    max_runs: int | None = None
 
 
 class ScheduleUpdateRequest(BaseModel):
     """Request model for updating a schedule."""
 
-    title: Optional[str] = None
-    description: Optional[str] = None
-    cron_expression: Optional[str] = None
-    avoid_peak_hours: Optional[bool] = None
-    batch_size: Optional[int] = None
-    priority: Optional[int] = None
-    max_runs: Optional[int] = None
+    title: str | None = None
+    description: str | None = None
+    cron_expression: str | None = None
+    avoid_peak_hours: bool | None = None
+    batch_size: int | None = None
+    priority: int | None = None
+    max_runs: int | None = None
 
 
 class ScheduleAnalyticsResponse(BaseModel):
@@ -66,17 +67,17 @@ class ScheduleAnalyticsResponse(BaseModel):
     failed_executions: int
     success_rate: float
     avg_execution_time_ms: float
-    next_run_at: Optional[str] = None
+    next_run_at: str | None = None
     cron_expression: str
     human_readable: str
-    recent_executions: List[Dict[str, Any]]
+    recent_executions: list[dict[str, Any]]
 
 
 @router.post("/schedule")
 async def schedule_task(
     request: ScheduleTaskRequest,
     background_tasks: BackgroundTasks,
-    db: AsyncSession = Depends(get_async_db),
+    db: AsyncSession = Depends(get_async_db),  # noqa: B008
 ):
     """
     Schedule a new task with cron expression.
@@ -116,10 +117,10 @@ async def schedule_task(
             "message": "Task scheduled successfully",
             "schedule_id": schedule_id,
             "next_run_at": CronExpressionValidator.get_next_occurrence(
-                request.cron_expression, request.timezone
+                request.cron_expression, request.timezone,
             ).isoformat(),
             "human_readable": CronExpressionValidator.get_human_readable(
-                request.cron_expression
+                request.cron_expression,
             ),
         }
 
@@ -138,7 +139,7 @@ async def schedule_task(
 async def schedule_daily_task_endpoint(
     request: ScheduleTaskRequest,
     background_tasks: BackgroundTasks,
-    db: AsyncSession = Depends(get_async_db),
+    db: AsyncSession = Depends(get_async_db),  # noqa: B008
 ):
     """
     Schedule a task to run daily at a specific time.
@@ -164,7 +165,7 @@ async def schedule_daily_task_endpoint(
             "schedule_id": schedule_id,
             "cron_expression": "0 9 * * *",
             "next_run_at": CronExpressionValidator.get_next_occurrence(
-                "0 9 * * *", request.timezone
+                "0 9 * * *", request.timezone,
             ).isoformat(),
         }
 
@@ -177,7 +178,7 @@ async def schedule_daily_task_endpoint(
     except Exception as e:
         logger.error(f"Failed to schedule daily task: {e}", exc_info=True)
         raise HTTPException(
-            status_code=500, detail=f"Failed to schedule daily task: {e}"
+            status_code=500, detail=f"Failed to schedule daily task: {e}",
         ) from e
 
 
@@ -187,7 +188,7 @@ async def schedule_weekly_task_endpoint(
     request: ScheduleTaskRequest,
     day_of_week: int = 1,  # Monday
     time_of_day: str = "09:00",
-    db: AsyncSession = Depends(get_async_db),
+    db: AsyncSession = Depends(get_async_db),  # noqa: B008
 ):
     """
     Schedule a task to run weekly on a specific day and time.
@@ -210,7 +211,7 @@ async def schedule_weekly_task_endpoint(
         background_tasks.add_task(scheduler.initialize)
 
         cron_expr = (
-            f"{time_of_day.split(':')[1]} {time_of_day.split(':')[0]} * * {day_of_week}"
+            f"{time_of_day.split(':')[1]} {time_of_day.split(':', maxsplit=1)[0]} * * {day_of_week}"
         )
 
         return {
@@ -218,7 +219,7 @@ async def schedule_weekly_task_endpoint(
             "schedule_id": schedule_id,
             "cron_expression": cron_expr,
             "next_run_at": CronExpressionValidator.get_next_occurrence(
-                cron_expr, request.timezone
+                cron_expr, request.timezone,
             ).isoformat(),
         }
 
@@ -231,7 +232,7 @@ async def schedule_weekly_task_endpoint(
     except Exception as e:
         logger.error(f"Failed to schedule weekly task: {e}", exc_info=True)
         raise HTTPException(
-            status_code=500, detail=f"Failed to schedule weekly task: {e}"
+            status_code=500, detail=f"Failed to schedule weekly task: {e}",
         ) from e
 
 
@@ -241,7 +242,7 @@ async def schedule_monthly_task_endpoint(
     request: ScheduleTaskRequest,
     day_of_month: int = 1,
     time_of_day: str = "09:00",
-    db: AsyncSession = Depends(get_async_db),
+    db: AsyncSession = Depends(get_async_db),  # noqa: B008
 ):
     """
     Schedule a task to run monthly on a specific day and time.
@@ -263,14 +264,14 @@ async def schedule_monthly_task_endpoint(
 
         background_tasks.add_task(scheduler.initialize)
 
-        cron_expr = f"{time_of_day.split(':')[1]} {time_of_day.split(':')[0]} {day_of_month} * *"
+        cron_expr = f"{time_of_day.split(':')[1]} {time_of_day.split(':', maxsplit=1)[0]} {day_of_month} * *"
 
         return {
             "message": "Monthly task scheduled successfully",
             "schedule_id": schedule_id,
             "cron_expression": cron_expr,
             "next_run_at": CronExpressionValidator.get_next_occurrence(
-                cron_expr, request.timezone
+                cron_expr, request.timezone,
             ).isoformat(),
         }
 
@@ -283,17 +284,15 @@ async def schedule_monthly_task_endpoint(
     except Exception as e:
         logger.error(f"Failed to schedule monthly task: {e}", exc_info=True)
         raise HTTPException(
-            status_code=500, detail=f"Failed to schedule monthly task: {e}"
+            status_code=500, detail=f"Failed to schedule monthly task: {e}",
         ) from e
 
 
 @router.get("/schedules")
 async def list_schedules(
-    status: Optional[str] = None, db: AsyncSession = Depends(get_async_db)
+    status: str | None = None, db: AsyncSession = Depends(get_async_db),  # noqa: B008
 ):
-    """
-    List all scheduled tasks, optionally filtered by status.
-    """
+    """List all scheduled tasks, optionally filtered by status."""
     scheduler = TaskScheduler(db_session=db)
 
     try:
@@ -323,7 +322,7 @@ async def list_schedules(
                     "updated_at": s.updated_at.isoformat(),
                 }
                 for s in schedules
-            ]
+            ],
         }
 
     except (ValueError, TypeError, KeyError) as e:
@@ -338,10 +337,8 @@ async def list_schedules(
 
 
 @router.get("/schedules/{schedule_id}")
-async def get_schedule(schedule_id: str, db: AsyncSession = Depends(get_async_db)):
-    """
-    Get details for a specific schedule.
-    """
+async def get_schedule(schedule_id: str, db: AsyncSession = Depends(get_async_db)):  # noqa: B008
+    """Get details for a specific schedule."""
     scheduler = TaskScheduler(db_session=db)
 
     try:
@@ -377,7 +374,7 @@ async def get_schedule(schedule_id: str, db: AsyncSession = Depends(get_async_db
             "created_at": schedule.created_at.isoformat(),
             "updated_at": schedule.updated_at.isoformat(),
             "human_readable": CronExpressionValidator.get_human_readable(
-                schedule.cron_expression
+                schedule.cron_expression,
             ),
         }
 
@@ -398,11 +395,9 @@ async def get_schedule(schedule_id: str, db: AsyncSession = Depends(get_async_db
 async def update_schedule(
     schedule_id: str,
     request: ScheduleUpdateRequest,
-    db: AsyncSession = Depends(get_async_db),
+    db: AsyncSession = Depends(get_async_db),  # noqa: B008
 ):
-    """
-    Update an existing schedule.
-    """
+    """Update an existing schedule."""
     scheduler = TaskScheduler(db_session=db)
 
     try:
@@ -426,7 +421,7 @@ async def update_schedule(
             schedule.cron_expression = request.cron_expression
             # Recalculate next run time
             next_run = CronExpressionValidator.get_next_occurrence(
-                request.cron_expression, schedule.timezone
+                request.cron_expression, schedule.timezone,
             )
             schedule.next_run_at = next_run
         if request.avoid_peak_hours is not None:
@@ -456,10 +451,8 @@ async def update_schedule(
 
 
 @router.post("/schedules/{schedule_id}/pause")
-async def pause_schedule(schedule_id: str, db: AsyncSession = Depends(get_async_db)):
-    """
-    Pause a scheduled task.
-    """
+async def pause_schedule(schedule_id: str, db: AsyncSession = Depends(get_async_db)):  # noqa: B008
+    """Pause a scheduled task."""
     scheduler = TaskScheduler(db_session=db)
 
     try:
@@ -478,10 +471,8 @@ async def pause_schedule(schedule_id: str, db: AsyncSession = Depends(get_async_
 
 
 @router.post("/schedules/{schedule_id}/resume")
-async def resume_schedule(schedule_id: str, db: AsyncSession = Depends(get_async_db)):
-    """
-    Resume a paused scheduled task.
-    """
+async def resume_schedule(schedule_id: str, db: AsyncSession = Depends(get_async_db)):  # noqa: B008
+    """Resume a paused scheduled task."""
     scheduler = TaskScheduler(db_session=db)
 
     try:
@@ -500,10 +491,8 @@ async def resume_schedule(schedule_id: str, db: AsyncSession = Depends(get_async
 
 
 @router.post("/schedules/{schedule_id}/cancel")
-async def cancel_schedule(schedule_id: str, db: AsyncSession = Depends(get_async_db)):
-    """
-    Cancel a scheduled task.
-    """
+async def cancel_schedule(schedule_id: str, db: AsyncSession = Depends(get_async_db)):  # noqa: B008
+    """Cancel a scheduled task."""
     scheduler = TaskScheduler(db_session=db)
 
     try:
@@ -523,11 +512,9 @@ async def cancel_schedule(schedule_id: str, db: AsyncSession = Depends(get_async
 
 @router.get("/schedules/{schedule_id}/analytics")
 async def get_schedule_analytics(
-    schedule_id: str, db: AsyncSession = Depends(get_async_db)
+    schedule_id: str, db: AsyncSession = Depends(get_async_db),  # noqa: B008
 ):
-    """
-    Get analytics for a specific schedule.
-    """
+    """Get analytics for a specific schedule."""
     scheduler = TaskScheduler(db_session=db)
 
     try:
@@ -543,7 +530,7 @@ async def get_schedule_analytics(
     except Exception as e:
         logger.error(f"Failed to get analytics for schedule {schedule_id}: {e}")
         raise HTTPException(
-            status_code=500, detail=f"Failed to get schedule analytics: {e}"
+            status_code=500, detail=f"Failed to get schedule analytics: {e}",
         ) from e
 
 
@@ -552,11 +539,9 @@ async def get_schedule_history(
     schedule_id: str,
     limit: int = 50,
     offset: int = 0,
-    db: AsyncSession = Depends(get_async_db),
+    db: AsyncSession = Depends(get_async_db),  # noqa: B008
 ):
-    """
-    Get execution history for a specific schedule.
-    """
+    """Get execution history for a specific schedule."""
     try:
         # Query schedule history
         history_query = (
@@ -594,15 +579,13 @@ async def get_schedule_history(
     except Exception as e:
         logger.error(f"Failed to get history for schedule {schedule_id}: {e}")
         raise HTTPException(
-            status_code=500, detail=f"Failed to get schedule history: {e}"
+            status_code=500, detail=f"Failed to get schedule history: {e}",
         ) from e
 
 
 @router.get("/cron/validate")
 async def validate_cron_expression(expression: str):
-    """
-    Validate a cron expression.
-    """
+    """Validate a cron expression."""
     try:
         is_valid = CronExpressionValidator.validate_expression(expression)
 
@@ -616,12 +599,11 @@ async def validate_cron_expression(expression: str):
                 "next_occurrence": next_occurrence.isoformat(),
                 "human_readable": human_readable,
             }
-        else:
-            return {
-                "valid": False,
-                "expression": expression,
-                "error": "Invalid cron expression",
-            }
+        return {
+            "valid": False,
+            "expression": expression,
+            "error": "Invalid cron expression",
+        }
 
     except Exception as e:
         logger.error(f"Failed to validate cron expression '{expression}': {e}")
@@ -630,9 +612,7 @@ async def validate_cron_expression(expression: str):
 
 @router.get("/cron/common")
 async def get_common_cron_expressions():
-    """
-    Get common cron expressions for reference.
-    """
+    """Get common cron expressions for reference."""
     common_expressions = {
         "daily_9am": {
             "expression": "0 9 * * *",
@@ -683,18 +663,16 @@ async def get_common_cron_expressions():
 
 
 @router.get("/status")
-async def get_scheduler_status(db: AsyncSession = Depends(get_async_db)):
-    """
-    Get scheduler status and statistics.
-    """
+async def get_scheduler_status(db: AsyncSession = Depends(get_async_db)):  # noqa: B008
+    """Get scheduler status and statistics."""
     try:
         from sqlalchemy import func, select
 
         status_counts = (
             await db.execute(
                 select(
-                    ScheduledTask.status, func.count(ScheduledTask.id).label("count")
-                ).group_by(ScheduledTask.status)
+                    ScheduledTask.status, func.count(ScheduledTask.id).label("count"),
+                ).group_by(ScheduledTask.status),
             )
         ).all()
 
@@ -702,27 +680,27 @@ async def get_scheduler_status(db: AsyncSession = Depends(get_async_db)):
             await db.execute(select(func.count(ScheduleHistory.id)))
         ).scalar()
 
-        yesterday = datetime.utcnow() - timedelta(hours=24)
+        yesterday = datetime.now(timezone.utc) - timedelta(hours=24)
         recent_executions = (
             await db.execute(
                 select(func.count(ScheduleHistory.id)).where(
-                    ScheduleHistory.execution_start >= yesterday
-                )
+                    ScheduleHistory.execution_start >= yesterday,
+                ),
             )
         ).scalar()
 
         return {
             "status": "running",
-            "schedule_counts": {status: count for status, count in status_counts},
+            "schedule_counts": dict(status_counts),
             "total_executions": total_executions,
             "recent_executions_24h": recent_executions,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         }
 
     except Exception as e:
         logger.error(f"Failed to get scheduler status: {e}")
         raise HTTPException(
-            status_code=500, detail=f"Failed to get scheduler status: {e}"
+            status_code=500, detail=f"Failed to get scheduler status: {e}",
         ) from e
 
 

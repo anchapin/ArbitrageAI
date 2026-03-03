@@ -8,13 +8,12 @@ Features:
 - Exception handling and security event tracking
 """
 
-import hmac
 import hashlib
+import hmac
 import json
 import time
-from typing import Dict, Optional
 
-from ..utils.logger import get_logger
+from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
 
@@ -22,25 +21,17 @@ logger = get_logger(__name__)
 class WebhookVerificationError(Exception):
     """Base exception for webhook verification failures."""
 
-    pass
-
 
 class InvalidSignatureError(WebhookVerificationError):
     """Raised when webhook signature verification fails."""
-
-    pass
 
 
 class ReplayAttackError(WebhookVerificationError):
     """Raised when webhook timestamp is outside acceptable window."""
 
-    pass
-
 
 class MissingHeaderError(WebhookVerificationError):
     """Raised when required webhook headers are missing."""
-
-    pass
 
 
 def verify_webhook_signature(
@@ -48,7 +39,7 @@ def verify_webhook_signature(
     signature: str,
     secret: str,
     timestamp_seconds: int = 300,
-) -> Dict[str, any]:
+) -> dict[str, any]:
     """
     Comprehensive webhook signature verification with replay attack prevention.
 
@@ -186,7 +177,7 @@ def verify_webhook_signature(
         )
         return event
     except json.JSONDecodeError as e:
-        error_msg = f"Invalid JSON in webhook payload: {str(e)}"
+        error_msg = f"Invalid JSON in webhook payload: {e!s}"
         logger.warning(f"[WEBHOOK SECURITY] {error_msg}", extra=logger_ctx)
         raise WebhookVerificationError(error_msg) from e
 
@@ -194,7 +185,7 @@ def verify_webhook_signature(
 def should_replay_webhook(
     webhook_id: str,
     webhook_timestamp: int,
-    recent_webhooks: Dict[str, int],
+    recent_webhooks: dict[str, int],
     dedup_window_seconds: int = 30,
 ) -> bool:
     """
@@ -243,10 +234,10 @@ def should_replay_webhook(
 
 def log_webhook_verification_attempt(
     success: bool,
-    error_type: Optional[str] = None,
-    event_type: Optional[str] = None,
-    event_id: Optional[str] = None,
-    additional_context: Optional[Dict] = None,
+    error_type: str | None = None,
+    event_type: str | None = None,
+    event_id: str | None = None,
+    additional_context: dict | None = None,
 ) -> None:
     """
     Log webhook verification attempt with structured context.
@@ -265,7 +256,7 @@ def log_webhook_verification_attempt(
             "success": success,
             "event_type": event_type,
             "event_id": event_id[:12] + "..." if event_id else None,
-        }
+        },
     )
 
     if error_type:

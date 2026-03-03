@@ -1,5 +1,5 @@
 """
-Distillation Data Collector
+Distillation Data Collector.
 
 This module captures successful outputs from cloud models (GPT-4o) for use
 in fine-tuning local models. It stores prompt-response pairs with metadata
@@ -15,7 +15,7 @@ The concept:
 from datetime import datetime, timezone
 import json
 import logging
-import os
+from pathlib import Path
 from typing import Any
 import uuid
 
@@ -27,12 +27,10 @@ logger = logging.getLogger(__name__)
 # =============================================================================
 
 # Default paths for dataset storage
-PROJECT_ROOT = os.path.dirname(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-)
-DISTILLATION_DIR = os.path.join(PROJECT_ROOT, "data", "distillation")
-TEACHER_EXAMPLES_FILE = os.path.join(DISTILLATION_DIR, "teacher_examples.jsonl")
-CURATED_DATASET_FILE = os.path.join(DISTILLATION_DIR, "curated_dataset.jsonl")
+PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
+DISTILLATION_DIR = PROJECT_ROOT / "data" / "distillation"
+TEACHER_EXAMPLES_FILE = DISTILLATION_DIR / "teacher_examples.jsonl"
+CURATED_DATASET_FILE = DISTILLATION_DIR / "curated_dataset.jsonl"
 
 # Minimum rating to include in curated dataset
 MIN_CURATION_RATING = 4  # 1-5 scale
@@ -72,15 +70,15 @@ class DistillationDataCollector:
         self.curated_file = curated_file or CURATED_DATASET_FILE
 
         # Ensure directory exists
-        os.makedirs(self.output_dir, exist_ok=True)
+        Path(self.output_dir).mkdir(parents=True, exist_ok=True)
 
         # Ensure files exist (create if not)
-        if not os.path.exists(self.teacher_file):
-            with open(self.teacher_file, "w"):
+        if not Path(self.teacher_file).exists():
+            with open(self.teacher_file, "w", encoding="utf-8"):
                 pass  # Create empty file
 
-        if not os.path.exists(self.curated_file):
-            with open(self.curated_file, "w"):
+        if not Path(self.curated_file).exists():
+            with open(self.curated_file, "w", encoding="utf-8"):
                 pass  # Create empty file
 
     def capture_success(
@@ -160,7 +158,7 @@ class DistillationDataCollector:
             The ID of the captured example, or None if not captured
         """
         # Only capture successful completions
-        if not task_result.get("success", False):
+        if not task_result.get("success"):
             return None
 
         # Determine rating based on task success and review feedback
@@ -222,24 +220,24 @@ class DistillationDataCollector:
         # Write to temporary file first to ensure atomic operation
         try:
             # Create temp file in same directory to ensure same filesystem
-            temp_dir = os.path.dirname(filepath) or "."
+            temp_dir = Path(filepath).parent or "."
             with tempfile.NamedTemporaryFile(
-                mode="w", dir=temp_dir, delete=False, suffix=".tmp"
+                encoding="utf-8", mode="w", dir=temp_dir, delete=False, suffix=".tmp",
             ) as tmp:
                 tmp.write(json.dumps(record) + "\n")
                 temp_path = tmp.name
 
             # Append temp file to actual file atomically
-            with open(filepath, "a") as f, open(temp_path) as tmp:
+            with open(filepath, "a", encoding="utf-8") as f, open(temp_path, encoding="utf-8") as tmp:
                 f.write(tmp.read())
 
             # Clean up temp file
-            os.unlink(temp_path)
+            Path(temp_path).unlink()
         except Exception as e:
             # Clean up temp file if it exists
             if "temp_path" in locals():
                 try:
-                    os.unlink(temp_path)
+                    Path(temp_path).unlink()
                 except (OSError, PermissionError) as cleanup_error:
                     logger.warning(f"Failed to clean up temp file {temp_path}: {cleanup_error}")
             raise OSError(f"Failed to write to {filepath}: {e}") from e
@@ -270,7 +268,7 @@ class DistillationDataCollector:
     def _count_jsonl_lines(self, filepath: str) -> int:
         """Count lines in a JSONL file."""
         try:
-            with open(filepath) as f:
+            with open(filepath, encoding="utf-8") as f:
                 return sum(1 for line in f if line.strip())
         except FileNotFoundError:
             return 0
@@ -279,7 +277,7 @@ class DistillationDataCollector:
         """Get distribution of examples by domain."""
         domain_counts = {}
         try:
-            with open(filepath) as f:
+            with open(filepath, encoding="utf-8") as f:
                 for line in f:
                     if line.strip():
                         try:
@@ -312,7 +310,7 @@ class DistillationDataCollector:
         examples = []
 
         try:
-            with open(self.curated_file) as f:
+            with open(self.curated_file, encoding="utf-8") as f:
                 for line in f:
                     if line.strip():
                         try:
@@ -336,7 +334,7 @@ class DistillationDataCollector:
         return examples
 
     def export_for_training(
-        self, output_path: str | None = None, format: str = "alpaca"
+        self, output_path: str | None = None, format: str = "alpaca",
     ) -> str:
         """
         Export the curated dataset in a specific format for training.
@@ -350,8 +348,8 @@ class DistillationDataCollector:
         """
         if output_path is None:
             timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
-            output_path = os.path.join(
-                self.output_dir, f"training_data_{timestamp}.json"
+            output_path = str(
+                Path(self.output_dir) / f"training_data_{timestamp}.json",
             )
 
         examples = self.get_curated_examples()
@@ -369,7 +367,7 @@ class DistillationDataCollector:
                     "conversations": [
                         {"from": "human", "value": ex["prompt"]},
                         {"from": "gpt", "value": ex["response"]},
-                    ]
+                    ],
                 }
                 for ex in examples
             ]
@@ -377,7 +375,7 @@ class DistillationDataCollector:
             # Raw format
             training_data = examples
 
-        with open(output_path, "w") as f:
+        with open(output_path, "w", encoding="utf-8") as f:
             json.dump(training_data, f, indent=2)
 
         return output_path
@@ -389,7 +387,7 @@ class DistillationDataCollector:
 
 
 def capture_cloud_success(
-    prompt: str, response: str, domain: str, task_type: str, **kwargs
+    prompt: str, response: str, domain: str, task_type: str, **kwargs,
 ) -> str:
     """
     Convenience function to capture a successful cloud model output.

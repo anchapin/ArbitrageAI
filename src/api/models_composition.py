@@ -1,5 +1,5 @@
 """
-Refactored Task Model Using Composition Pattern
+Refactored Task Model Using Composition Pattern.
 
 Decompose the monolithic Task model into focused entities:
 - Task: Core task information only
@@ -12,28 +12,29 @@ Decompose the monolithic Task model into focused entities:
 Issue #5: Refactor overloaded Task model using composition pattern
 """
 
-import uuid
 from datetime import datetime
 from enum import Enum as PyEnum
+import uuid
+
 from sqlalchemy import (
+    JSON,
+    Boolean,
     Column,
+    DateTime,
+    Enum,
+    Float,
+    ForeignKey,
+    Integer,
     String,
     Text,
-    Integer,
-    Enum,
-    DateTime,
-    Boolean,
-    JSON,
-    ForeignKey,
-    Float,
 )
-from sqlalchemy.orm import relationship, declarative_base
+from sqlalchemy.orm import declarative_base, relationship
 
 Base = declarative_base()
 
 
 # ============================================================================
-# ENUMS (existing, reused)
+# ENUMS (existing, reused)  # noqa: ERA001
 # ============================================================================
 
 
@@ -128,7 +129,7 @@ class Task(Base):
 
     # Relationships to composed entities (one-to-one)
     execution = relationship(
-        "TaskExecution", uselist=False, cascade="all, delete-orphan"
+        "TaskExecution", uselist=False, cascade="all, delete-orphan",
     )
     planning = relationship("TaskPlanning", uselist=False, cascade="all, delete-orphan")
     review = relationship("TaskReview", uselist=False, cascade="all, delete-orphan")
@@ -171,12 +172,12 @@ class TaskExecution(Base):
 
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     task_id = Column(
-        String, ForeignKey("tasks_refactored.id"), unique=True, nullable=False
+        String, ForeignKey("tasks_refactored.id"), unique=True, nullable=False,
     )
 
     # Execution status and tracking
     status = Column(
-        Enum(ExecutionStatus), default=ExecutionStatus.PENDING, nullable=False
+        Enum(ExecutionStatus), default=ExecutionStatus.PENDING, nullable=False,
     )
     retry_count = Column(Integer, default=0)
     error_message = Column(Text, nullable=True)
@@ -223,12 +224,12 @@ class TaskPlanning(Base):
 
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     task_id = Column(
-        String, ForeignKey("tasks_refactored.id"), unique=True, nullable=False
+        String, ForeignKey("tasks_refactored.id"), unique=True, nullable=False,
     )
 
     # Planning status
     status = Column(
-        Enum(PlanningStatus), default=PlanningStatus.PENDING, nullable=False
+        Enum(PlanningStatus), default=PlanningStatus.PENDING, nullable=False,
     )
 
     # Plan and research
@@ -274,7 +275,7 @@ class TaskReview(Base):
 
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     task_id = Column(
-        String, ForeignKey("tasks_refactored.id"), unique=True, nullable=False
+        String, ForeignKey("tasks_refactored.id"), unique=True, nullable=False,
     )
 
     # Review status
@@ -323,7 +324,7 @@ class TaskArena(Base):
 
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     task_id = Column(
-        String, ForeignKey("tasks_refactored.id"), unique=True, nullable=False
+        String, ForeignKey("tasks_refactored.id"), unique=True, nullable=False,
     )
 
     # Competition metadata
