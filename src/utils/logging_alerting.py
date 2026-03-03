@@ -26,6 +26,7 @@ Usage:
     await alert_manager.send_alert("High Error Rate", "error_rate", {"rate": 0.15})
 """
 
+import ast
 import asyncio
 import json
 import logging
@@ -448,19 +449,10 @@ class AlertManager:
             else:
                 raise ValueError(f"Unsupported expression: {type(node)}")
         
-        try:
-            # Parse the condition into an AST
-            tree = ast.parse(condition, mode='eval')
-            return eval_node(tree.body)
-        except (ValueError, SyntaxError, TypeError) as e:
-            # Fallback to the original eval method with restricted builtins
-            # This is less safe but maintains backward compatibility
-            logger.debug(f"AST evaluation failed, using fallback: {e}")
-            try:
-                return eval(condition, {"__builtins__": {}}, metrics)
-            except (SyntaxError, TypeError, NameError) as fallback_e:
-                logger.debug(f"Fallback evaluation also failed: {fallback_e}")
-                return False
+        # Parse and evaluate the condition using safe AST-based evaluator
+        # No fallback to eval() - security is paramount
+        tree = ast.parse(condition, mode='eval')
+        return eval_node(tree.body)
 
     async def _trigger_rule(
         self,
