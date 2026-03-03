@@ -98,13 +98,13 @@ def verify_webhook_signature(
         for part in signature.split(","):
             key, value = part.split("=", 1)
             signature_parts[key] = value
-    except ValueError:
+    except ValueError as error:
         error_msg = "Malformed stripe-signature header format"
         logger.warning(
             f"[WEBHOOK SECURITY] {error_msg}: {signature[:50]}",
             extra=logger_ctx,
         )
-        raise MissingHeaderError(f"Invalid signature header format: {error_msg}")
+        raise MissingHeaderError(f"Invalid signature header format: {error_msg}") from error
 
     # Extract timestamp and signature
     timestamp_str = signature_parts.get("t")
@@ -121,7 +121,7 @@ def verify_webhook_signature(
     except ValueError:
         error_msg = f"Invalid timestamp format: {timestamp_str}"
         logger.warning(f"[WEBHOOK SECURITY] {error_msg}", extra=logger_ctx)
-        raise MissingHeaderError(error_msg)
+        raise MissingHeaderError(error_msg) from None
 
     current_timestamp = int(time.time())
     time_difference = current_timestamp - webhook_timestamp
@@ -188,7 +188,7 @@ def verify_webhook_signature(
     except json.JSONDecodeError as e:
         error_msg = f"Invalid JSON in webhook payload: {str(e)}"
         logger.warning(f"[WEBHOOK SECURITY] {error_msg}", extra=logger_ctx)
-        raise WebhookVerificationError(error_msg)
+        raise WebhookVerificationError(error_msg) from e
 
 
 def should_replay_webhook(

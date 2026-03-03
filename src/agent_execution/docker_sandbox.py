@@ -157,7 +157,7 @@ class LocalDockerSandbox:
                 raise RuntimeError(
                     f"Failed to connect to Docker daemon: {e}. "
                     "Make sure Docker is running and accessible."
-                )
+                ) from e
 
         return self._client
 
