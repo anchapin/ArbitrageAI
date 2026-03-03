@@ -11,7 +11,9 @@ from typing import List, Optional, Dict, Any
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import text
+from sqlalchemy.exc import OperationalError, InterfaceError
 from pydantic import BaseModel, Field
+from botocore.exceptions import ClientError
 
 from src.api.database import get_db
 from src.utils.logger import get_logger
@@ -180,11 +182,11 @@ class DisasterRecoveryAPI:
             # Validate backup type
             try:
                 backup_type_enum = BackupType(backup_type.lower())
-            except ValueError:
+            except ValueError as e:
                 raise HTTPException(
                     status_code=400,
                     detail=f"Invalid backup type: {backup_type}. Valid types: {[bt.value for bt in BackupType]}",
-                )
+                ) from e
 
             # Create backup based on type
             if backup_type_enum == BackupType.FULL:
@@ -197,11 +199,11 @@ class DisasterRecoveryAPI:
                         backup_timestamp = datetime.fromisoformat(
                             timestamp.replace("Z", "+00:00")
                         )
-                    except ValueError:
+                    except ValueError as e:
                         raise HTTPException(
                             status_code=400,
                             detail="Invalid timestamp format. Use ISO format.",
-                        )
+                        ) from e
                 else:
                     backup_timestamp = None
                 metadata = await self.backup_manager.create_point_in_time_backup(
@@ -228,12 +230,12 @@ class DisasterRecoveryAPI:
             logger.error(f"File system error during backup creation: {e}", exc_info=True)
             raise HTTPException(
                 status_code=500, detail=f"Backup creation failed: {str(e)}"
-            )
+            ) from e
         except Exception as e:
             logger.error(f"Backup creation failed: {e}", exc_info=True)
             raise HTTPException(
                 status_code=500, detail=f"Backup creation failed: {str(e)}"
-            )
+            ) from e
 
     @task(name="list_backups_endpoint")
     async def list_backups(
@@ -256,11 +258,11 @@ class DisasterRecoveryAPI:
             if backup_type:
                 try:
                     backup_type_enum = BackupType(backup_type.lower())
-                except ValueError:
+                except ValueError as e:
                     raise HTTPException(
                         status_code=400,
                         detail=f"Invalid backup type: {backup_type}. Valid types: {[bt.value for bt in BackupType]}",
-                    )
+                    ) from e
 
             # Get backups
             backups = await self.backup_manager.list_backups(
@@ -283,12 +285,12 @@ class DisasterRecoveryAPI:
             logger.error(f"Validation error listing backups: {e}", exc_info=True)
             raise HTTPException(
                 status_code=400, detail=f"Invalid request: {str(e)}"
-            )
+            ) from e
         except Exception as e:
             logger.error(f"Failed to list backups: {e}", exc_info=True)
             raise HTTPException(
                 status_code=500, detail=f"Failed to list backups: {str(e)}"
-            )
+            ) from e
 
     @task(name="get_backup_details_endpoint")
     async def get_backup_details(self, backup_id: str) -> BackupMetadata:
@@ -316,12 +318,12 @@ class DisasterRecoveryAPI:
             logger.error(f"Backup file not found: {e}", exc_info=True)
             raise HTTPException(
                 status_code=404, detail=f"Backup not found: {str(e)}"
-            )
+            ) from e
         except Exception as e:
             logger.error(f"Failed to get backup details: {e}", exc_info=True)
             raise HTTPException(
                 status_code=500, detail=f"Failed to get backup details: {str(e)}"
-            )
+            ) from e
 
     @task(name="validate_backup_endpoint")
     async def validate_backup(self, backup_id: str) -> Dict[str, Any]:
@@ -350,12 +352,12 @@ class DisasterRecoveryAPI:
             logger.error(f"Backup validation failed (file error): {e}", exc_info=True)
             raise HTTPException(
                 status_code=400, detail=f"Backup validation failed: {str(e)}"
-            )
+            ) from e
         except Exception as e:
             logger.error(f"Backup validation failed: {e}", exc_info=True)
             raise HTTPException(
                 status_code=500, detail=f"Backup validation failed: {str(e)}"
-            )
+            ) from e
 
     @task(name="delete_backup_endpoint")
     async def delete_backup(self, backup_id: str) -> Dict[str, str]:
@@ -401,12 +403,12 @@ class DisasterRecoveryAPI:
             logger.error(f"File system error during backup deletion: {e}", exc_info=True)
             raise HTTPException(
                 status_code=500, detail=f"Backup deletion failed: {str(e)}"
-            )
+            ) from e
         except Exception as e:
             logger.error(f"Backup deletion failed: {e}", exc_info=True)
             raise HTTPException(
                 status_code=500, detail=f"Backup deletion failed: {str(e)}"
-            )
+            ) from e
 
     @task(name="execute_recovery_endpoint")
     async def execute_recovery(
@@ -452,12 +454,12 @@ class DisasterRecoveryAPI:
             logger.error(f"File system error during recovery: {e}", exc_info=True)
             raise HTTPException(
                 status_code=500, detail=f"Recovery execution failed: {str(e)}"
-            )
+            ) from e
         except Exception as e:
             logger.error(f"Recovery execution failed: {e}", exc_info=True)
             raise HTTPException(
                 status_code=500, detail=f"Recovery execution failed: {str(e)}"
-            )
+            ) from e
 
     @task(name="get_recovery_status_endpoint")
     async def get_recovery_status(
@@ -496,12 +498,12 @@ class DisasterRecoveryAPI:
             logger.error(f"Data error getting recovery status: {e}", exc_info=True)
             raise HTTPException(
                 status_code=400, detail=f"Invalid recovery status request: {str(e)}"
-            )
+            ) from e
         except Exception as e:
             logger.error(f"Failed to get recovery status: {e}", exc_info=True)
             raise HTTPException(
                 status_code=500, detail=f"Failed to get recovery status: {str(e)}"
-            )
+            ) from e
 
     @task(name="test_recovery_plan_endpoint")
     async def test_recovery_plan(self, plan_id: str) -> Dict[str, Any]:
@@ -524,12 +526,12 @@ class DisasterRecoveryAPI:
             logger.error(f"Recovery plan test failed (file error): {e}", exc_info=True)
             raise HTTPException(
                 status_code=400, detail=f"Recovery plan test failed: {str(e)}"
-            )
+            ) from e
         except Exception as e:
             logger.error(f"Recovery plan test failed: {e}", exc_info=True)
             raise HTTPException(
                 status_code=500, detail=f"Recovery plan test failed: {str(e)}"
-            )
+            ) from e
 
     @task(name="execute_disaster_recovery_endpoint")
     async def execute_disaster_recovery(
@@ -558,12 +560,12 @@ class DisasterRecoveryAPI:
             logger.error(f"File system error during disaster recovery: {e}", exc_info=True)
             raise HTTPException(
                 status_code=500, detail=f"Disaster recovery failed: {str(e)}"
-            )
+            ) from e
         except Exception as e:
             logger.error(f"Disaster recovery failed: {e}", exc_info=True)
             raise HTTPException(
                 status_code=500, detail=f"Disaster recovery failed: {str(e)}"
-            )
+            ) from e
 
     @task(name="get_recovery_plans_endpoint")
     async def get_recovery_plans(self) -> List[RecoveryPlanResponse]:
@@ -595,12 +597,12 @@ class DisasterRecoveryAPI:
             logger.error(f"Data error getting recovery plans: {e}", exc_info=True)
             raise HTTPException(
                 status_code=400, detail=f"Invalid request: {str(e)}"
-            )
+            ) from e
         except Exception as e:
             logger.error(f"Failed to get recovery plans: {e}", exc_info=True)
             raise HTTPException(
                 status_code=500, detail=f"Failed to get recovery plans: {str(e)}"
-            )
+            ) from e
 
     @task(name="get_recovery_metrics_endpoint")
     async def get_recovery_metrics(self) -> RecoveryMetricsResponse:
@@ -618,12 +620,12 @@ class DisasterRecoveryAPI:
             logger.error(f"Data error getting recovery metrics: {e}", exc_info=True)
             raise HTTPException(
                 status_code=400, detail=f"Invalid request: {str(e)}"
-            )
+            ) from e
         except Exception as e:
             logger.error(f"Failed to get recovery metrics: {e}", exc_info=True)
             raise HTTPException(
                 status_code=500, detail=f"Failed to get recovery metrics: {str(e)}"
-            )
+            ) from e
 
 
 # Initialize API instance

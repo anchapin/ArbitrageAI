@@ -226,7 +226,7 @@ class BackgroundJobQueue:
                             )
                             raise TimeoutError(timeout_error) from fallback_error
                     else:
-                        raise TimeoutError(timeout_error)
+                        raise TimeoutError(timeout_error) from timeout_error
 
             except Exception as e:
                 logger.error(

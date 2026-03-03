@@ -244,7 +244,7 @@ class BackupManager:
             logger.error(f"Full backup failed: {e}")
             metadata.status = BackupStatus.FAILED
             await self._store_backup_metadata(metadata)
-            raise HTTPException(status_code=500, detail=f"Backup failed: {str(e)}")
+            raise HTTPException(status_code=500, detail=f"Backup failed: {str(e)}") from e
 
     @task(name="create_incremental_backup")
     async def create_incremental_backup(self) -> BackupMetadata:
@@ -308,7 +308,7 @@ class BackupManager:
             await self._store_backup_metadata(metadata)
             raise HTTPException(
                 status_code=500, detail=f"Incremental backup failed: {str(e)}"
-            )
+            ) from e
 
     @task(name="create_point_in_time_backup")
     async def create_point_in_time_backup(
@@ -371,7 +371,7 @@ class BackupManager:
             await self._store_backup_metadata(metadata)
             raise HTTPException(
                 status_code=500, detail=f"Point-in-time backup failed: {str(e)}"
-            )
+            ) from e
 
     async def _backup_database(self, backup_path: Path):
         """Backup the database."""

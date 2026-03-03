@@ -96,7 +96,7 @@ class PeoplePerHourAdapter(MarketplaceAdapter):
         except httpx.HTTPError as e:
             raise AuthenticationError(
                 f"PeoplePerHour authentication failed: {str(e)}"
-            )
+            ) from e
 
     async def search(self, query: SearchQuery) -> List[SearchResult]:
         """
@@ -172,8 +172,8 @@ class PeoplePerHourAdapter(MarketplaceAdapter):
 
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 429:
-                raise RateLimitError("PeoplePerHour rate limit exceeded")
-            raise MarketplaceError(f"PeoplePerHour search failed: {str(e)}")
+                raise RateLimitError("PeoplePerHour rate limit exceeded") from e
+            raise MarketplaceError(f"PeoplePerHour search failed: {str(e)}") from e
 
     async def get_job_details(self, job_id: str) -> SearchResult:
         """
@@ -224,8 +224,8 @@ class PeoplePerHourAdapter(MarketplaceAdapter):
 
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 404:
-                raise NotFoundError(f"Project {job_id} not found")
-            raise MarketplaceError(f"Failed to get project details: {str(e)}")
+                raise NotFoundError(f"Project {job_id} not found") from e
+            raise MarketplaceError(f"Failed to get project details: {str(e)}") from e
 
     async def place_bid(self, proposal: BidProposal) -> PlacedBid:
         """
@@ -279,8 +279,8 @@ class PeoplePerHourAdapter(MarketplaceAdapter):
 
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 429:
-                raise RateLimitError("PeoplePerHour rate limit exceeded")
-            raise MarketplaceError(f"Failed to place PeoplePerHour offer: {str(e)}")
+                raise RateLimitError("PeoplePerHour rate limit exceeded") from e
+            raise MarketplaceError(f"Failed to place PeoplePerHour offer: {str(e)}") from e
 
     async def get_bid_status(self, bid_id: str) -> BidStatusUpdate:
         """
@@ -326,8 +326,8 @@ class PeoplePerHourAdapter(MarketplaceAdapter):
 
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 404:
-                raise NotFoundError(f"Offer {bid_id} not found")
-            raise MarketplaceError(f"Failed to get offer status: {str(e)}")
+                raise NotFoundError(f"Offer {bid_id} not found") from e
+            raise MarketplaceError(f"Failed to get offer status: {str(e)}") from e
 
     async def withdraw_bid(self, bid_id: str) -> BidStatusUpdate:
         """
@@ -363,8 +363,8 @@ class PeoplePerHourAdapter(MarketplaceAdapter):
 
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 404:
-                raise NotFoundError(f"Offer {bid_id} not found")
-            raise MarketplaceError(f"Failed to withdraw offer: {str(e)}")
+                raise NotFoundError(f"Offer {bid_id} not found") from e
+            raise MarketplaceError(f"Failed to withdraw offer: {str(e)}") from e
 
     async def check_inbox(self) -> List[InboxMessage]:
         """
@@ -404,7 +404,7 @@ class PeoplePerHourAdapter(MarketplaceAdapter):
             return messages
 
         except httpx.HTTPStatusError as e:
-            raise MarketplaceError(f"Failed to check PeoplePerHour inbox: {str(e)}")
+            raise MarketplaceError(f"Failed to check PeoplePerHour inbox: {str(e)}") from e
 
     async def mark_message_read(self, message_id: str) -> bool:
         """
@@ -431,8 +431,8 @@ class PeoplePerHourAdapter(MarketplaceAdapter):
 
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 404:
-                raise NotFoundError(f"Message {message_id} not found")
-            raise MarketplaceError(f"Failed to mark message as read: {str(e)}")
+                raise NotFoundError(f"Message {message_id} not found") from e
+            raise MarketplaceError(f"Failed to mark message as read: {str(e)}") from e
 
     async def sync_portfolio(self, portfolio_items: List[Dict[str, Any]]) -> bool:
         """
@@ -466,7 +466,7 @@ class PeoplePerHourAdapter(MarketplaceAdapter):
         except httpx.HTTPStatusError as e:
             raise MarketplaceError(
                 f"Failed to sync PeoplePerHour portfolio: {str(e)}"
-            )
+            ) from e
 
     async def close(self) -> None:
         """Clean up resources."""

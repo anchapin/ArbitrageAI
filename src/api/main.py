@@ -1216,7 +1216,7 @@ class TaskSubmission(BaseModel):
                 )
             except ValueError as e:
                 # Propagate validation errors as Pydantic errors (returns 422 to client)
-                raise ValueError(f"File validation failed: {str(e)}")
+                raise ValueError(f"File validation failed: {str(e)}") from e
 
         return v
 
@@ -1315,7 +1315,7 @@ async def create_checkout_session(task: TaskSubmission, db: Session = Depends(ge
             domain=task.domain, complexity=task.complexity, urgency=task.urgency
         )
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
     try:
         # Sanitize filename and validate file if present (Issue #34)
@@ -1331,7 +1331,7 @@ async def create_checkout_session(task: TaskSubmission, db: Session = Depends(ge
                 # Should have been caught by Pydantic validator, but safety first
                 raise HTTPException(
                     status_code=422, detail=f"File validation failed: {str(e)}"
-                )
+                ) from e
 
         # Determine if this is a high-value task (Pillar 1.7 - Profit Protection)
         is_high_value = amount >= HIGH_VALUE_THRESHOLD
@@ -1416,16 +1416,16 @@ async def create_checkout_session(task: TaskSubmission, db: Session = Depends(ge
         raise HTTPException(
             status_code=503,
             detail="Stripe API is temporarily unavailable (network timeout). Please try again later.",
-        )
+        ) from e
     except stripe.error.StripeError as e:
         logger.error(f"Stripe general error: {e}")
-        raise HTTPException(status_code=500, detail=f"Stripe error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Stripe error: {str(e)}") from e
     except OperationalError as e:
         logger.error(f"Database operational error: {e}")
         raise HTTPException(
             status_code=500,
             detail="Database error occurred. Our team has been notified.",
-        )
+        ) from e
     except Exception as e:
         # Check for concurrency conflicts (Issue #29)
         from sqlalchemy.orm.exc import StaleDataError
@@ -1435,10 +1435,10 @@ async def create_checkout_session(task: TaskSubmission, db: Session = Depends(ge
             raise HTTPException(
                 status_code=409,
                 detail="A concurrency conflict occurred. Please try again.",
-            )
+            ) from e
 
         logger.error(f"Unexpected error creating checkout session: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}") from e
 
 
 @app.get("/api/domains")
@@ -1503,7 +1503,7 @@ async def get_price_estimate(
             "formula": f"${base_rate} × {complexity_mult} × {urgency_mult} = ${amount}",
         }
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
 
 @app.post("/api/webhook")
@@ -1860,17 +1860,17 @@ async def get_secure_delivery(
         logger.warning(f"[DELIVERY] Validation failed: {str(e)} ip={client_ip}")
         _record_ip_delivery_attempt(client_ip)
         _record_delivery_failure(task_id, client_ip)
-        raise HTTPException(status_code=400, detail=f"Invalid input: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Invalid input: {str(e)}") from e
     except (ValueError, TypeError) as e:
         logger.warning(f"[DELIVERY] Type validation failed: {str(e)} ip={client_ip}")
         _record_ip_delivery_attempt(client_ip)
         _record_delivery_failure(task_id, client_ip)
-        raise HTTPException(status_code=400, detail=f"Invalid input: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Invalid input: {str(e)}") from e
     except Exception as e:
         logger.warning(f"[DELIVERY] Validation failed: {str(e)} ip={client_ip}")
         _record_ip_delivery_attempt(client_ip)
         _record_delivery_failure(task_id, client_ip)
-        raise HTTPException(status_code=400, detail=f"Invalid input: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Invalid input: {str(e)}") from e
 
     # 2. IP-level rate limiting (Issue #18)
     if not _check_delivery_ip_rate_limit(client_ip):
@@ -3295,15 +3295,15 @@ async def create_threshold_petition(
     except (OperationalError, IntegrityError) as e:
         logger.error(f"Database error creating threshold petition: {e}", exc_info=True)
         db.rollback()
-        raise HTTPException(status_code=500, detail="Database error occurred")
+        raise HTTPException(status_code=500, detail="Database error occurred") from e
     except (ValueError, TypeError, KeyError) as e:
         logger.error(f"Data error creating threshold petition: {e}", exc_info=True)
         db.rollback()
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
         logger.error(f"Failed to create threshold petition: {e}", exc_info=True)
         db.rollback()
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
     finally:
         db.close()
 
@@ -3494,15 +3494,15 @@ async def decide_threshold_petition(
     except (OperationalError, IntegrityError) as e:
         logger.error(f"Database error deciding petition: {e}", exc_info=True)
         db.rollback()
-        raise HTTPException(status_code=500, detail="Database error occurred")
+        raise HTTPException(status_code=500, detail="Database error occurred") from e
     except (ValueError, TypeError, KeyError) as e:
         logger.error(f"Data error deciding petition: {e}", exc_info=True)
         db.rollback()
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
         logger.error(f"Failed to decide petition: {e}", exc_info=True)
         db.rollback()
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
     finally:
         db.close()
 
@@ -3719,17 +3719,17 @@ async def oauth_callback(
 
     except (ValueError, TypeError) as e:
         logger.error(f"OAuth validation error for {platform}: {e}", exc_info=True)
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except (ConnectionError, TimeoutError) as e:
         logger.error(f"OAuth network error for {platform}: {e}", exc_info=True)
         raise HTTPException(
             status_code=503, detail=f"Network error during OAuth: {str(e)}"
-        )
+        ) from e
     except Exception as e:
         logger.error(f"OAuth callback failed for {platform}: {e}", exc_info=True)
         raise HTTPException(
             status_code=500, detail=f"Failed to complete OAuth flow: {str(e)}"
-        )
+        ) from e
 
 
 @app.get("/api/v1/marketplace/oauth/{platform}/status", response_model=dict)
@@ -3830,13 +3830,13 @@ async def refresh_oauth_token(platform: str):
 
     except (ValueError, TypeError) as e:
         logger.error(f"Token refresh validation error for {platform}: {e}", exc_info=True)
-        raise HTTPException(status_code=400, detail=f"Token refresh failed: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Token refresh failed: {str(e)}") from e
     except (ConnectionError, TimeoutError) as e:
         logger.error(f"Token refresh network error for {platform}: {e}", exc_info=True)
-        raise HTTPException(status_code=503, detail=f"Network error during token refresh: {str(e)}")
+        raise HTTPException(status_code=503, detail=f"Network error during token refresh: {str(e)}") from e
     except Exception as e:
         logger.error(f"Failed to refresh {platform} token: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Token refresh failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Token refresh failed: {str(e)}") from e
 
 
 @app.post("/api/v1/marketplace/oauth/{platform}/revoke", response_model=dict)
@@ -3935,13 +3935,13 @@ async def record_job_completion(
 
     except (ValueError, TypeError) as e:
         logger.error(f"Validation error recording job completion: {e}", exc_info=True)
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except (KeyError, IndexError) as e:
         logger.error(f"Data error recording job completion: {e}", exc_info=True)
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
         logger.error(f"Failed to record job completion: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @app.get("/api/v1/learning/accuracy", response_model=dict)
@@ -3973,13 +3973,13 @@ async def get_prediction_accuracy(
         )
     except (ValueError, TypeError) as e:
         logger.error(f"Validation error calculating prediction accuracy: {e}", exc_info=True)
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except (KeyError, IndexError) as e:
         logger.error(f"Data error calculating prediction accuracy: {e}", exc_info=True)
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
         logger.error(f"Failed to calculate prediction accuracy: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @app.get("/api/v1/learning/insights", response_model=dict)
@@ -4009,13 +4009,13 @@ async def get_learning_insights(
         )
     except (ValueError, TypeError) as e:
         logger.error(f"Validation error getting learning insights: {e}", exc_info=True)
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except (KeyError, IndexError) as e:
         logger.error(f"Data error getting learning insights: {e}", exc_info=True)
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
         logger.error(f"Failed to get learning insights: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @app.post("/api/v1/learning/weekly-review", response_model=dict)
@@ -4040,13 +4040,13 @@ async def perform_weekly_review():
         return learning_system.perform_weekly_review()
     except (ValueError, TypeError) as e:
         logger.error(f"Validation error performing weekly review: {e}", exc_info=True)
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except (KeyError, IndexError) as e:
         logger.error(f"Data error performing weekly review: {e}", exc_info=True)
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
         logger.error(f"Failed to perform weekly review: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @app.get("/api/v1/learning/history", response_model=list)
@@ -4082,13 +4082,13 @@ async def get_learning_history(
         return [entry.to_dict() for entry in entries]
     except (ValueError, TypeError) as e:
         logger.error(f"Validation error getting learning history: {e}", exc_info=True)
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except (KeyError, IndexError) as e:
         logger.error(f"Data error getting learning history: {e}", exc_info=True)
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
         logger.error(f"Failed to get learning history: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 # Register scheduler routes
