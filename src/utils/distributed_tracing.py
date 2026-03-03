@@ -25,10 +25,9 @@ Usage:
 """
 
 import contextvars
-import uuid
 import logging
-from typing import Optional, Dict, Any
-
+from typing import Any
+import uuid
 
 # W3C Trace Context specification constants
 TRACE_PARENT_HEADER = "traceparent"
@@ -36,12 +35,12 @@ TRACE_STATE_HEADER = "tracestate"
 
 # ContextVar for storing the current trace ID across async boundaries
 _trace_id_context: contextvars.ContextVar[str] = contextvars.ContextVar(
-    "trace_id", default=None
+    "trace_id", default=None,
 )
 
 # ContextVar for storing the parent span ID
 _span_id_context: contextvars.ContextVar[str] = contextvars.ContextVar(
-    "span_id", default=None
+    "span_id", default=None,
 )
 
 # ContextVar for storing the trace flags (sampled flag)
@@ -77,7 +76,7 @@ def generate_span_id() -> str:
 
 
 def init_trace_context(
-    trace_id: Optional[str] = None, span_id: Optional[str] = None
+    trace_id: str | None = None, span_id: str | None = None,
 ) -> str:
     """
     Initialize a new trace context for the current async task.
@@ -104,7 +103,7 @@ def init_trace_context(
     return trace_id
 
 
-def get_trace_id() -> Optional[str]:
+def get_trace_id() -> str | None:
     """
     Get the current trace ID for the async context.
 
@@ -117,7 +116,7 @@ def get_trace_id() -> Optional[str]:
     return _trace_id_context.get()
 
 
-def get_span_id() -> Optional[str]:
+def get_span_id() -> str | None:
     """Get the current span ID for the async context."""
     return _span_id_context.get()
 
@@ -150,7 +149,7 @@ def propagate_trace_context() -> str:
     return f"00-{trace_id}-{span_id}-{trace_flags}"
 
 
-def extract_trace_context_from_headers(headers: Dict[str, str]) -> Dict[str, str]:
+def extract_trace_context_from_headers(headers: dict[str, str]) -> dict[str, str]:
     """
     Extract trace context from request headers (W3C traceparent format).
 
@@ -187,7 +186,7 @@ def extract_trace_context_from_headers(headers: Dict[str, str]) -> Dict[str, str
         return {}
 
 
-def init_trace_from_headers(headers: Dict[str, str]) -> str:
+def init_trace_from_headers(headers: dict[str, str]) -> str:
     """
     Initialize trace context from request headers (for propagating from upstream services).
 
@@ -210,9 +209,8 @@ def init_trace_from_headers(headers: Dict[str, str]) -> str:
         _trace_flags_context.set(trace_flags)
 
         return trace_id
-    else:
-        # No incoming trace context, initialize new
-        return init_trace_context()
+    # No incoming trace context, initialize new
+    return init_trace_context()
 
 
 def clear_trace_context() -> None:
@@ -255,7 +253,7 @@ class TraceContextFilter(logging.Filter):
 
 
 def setup_trace_logging(
-    logger: logging.Logger, pattern: str = "[%(trace_id)s] [%(span_id)s]"
+    logger: logging.Logger, pattern: str = "[%(trace_id)s] [%(span_id)s]",
 ) -> None:
     """
     Setup a logger with trace context logging.
@@ -278,7 +276,7 @@ def setup_trace_logging(
             if pattern not in current_format:
                 new_format = f"{pattern} {current_format}"
                 handler.setFormatter(
-                    logging.Formatter(new_format, datefmt="%Y-%m-%d %H:%M:%S")
+                    logging.Formatter(new_format, datefmt="%Y-%m-%d %H:%M:%S"),
                 )
 
 
@@ -295,7 +293,7 @@ class DistributedTraceContext:
                 # Perform async work...
     """
 
-    def __init__(self, trace_id: Optional[str] = None, span_id: Optional[str] = None):
+    def __init__(self, trace_id: str | None = None, span_id: str | None = None):
         """
         Initialize trace context.
 
@@ -330,7 +328,7 @@ class DistributedTraceContext:
             _trace_id_context.reset(self._token)
 
 
-def get_trace_context_dict() -> Dict[str, Any]:
+def get_trace_context_dict() -> dict[str, Any]:
     """
     Get the current trace context as a dictionary.
 

@@ -1,9 +1,8 @@
 """Secure file upload handler with size limits and type validation - Issue #34"""
 
 import os
-import tempfile
 from pathlib import Path
-from typing import Optional
+import tempfile
 
 MAX_FILE_SIZE = 50 * 1024 * 1024  # 50MB
 ALLOWED_MIME_TYPES = {
@@ -25,7 +24,7 @@ def sanitize_filename(filename: str) -> str:
 
 
 def validate_file_upload(
-    filepath: str, file_size: int, mime_type: Optional[str] = None
+    filepath: str, file_size: int, mime_type: str | None = None,
 ) -> bool:
     """Validate file size, type, and path safety"""
     if file_size > MAX_FILE_SIZE:

@@ -1,24 +1,25 @@
-import uuid
-import logging
 from datetime import datetime
-from typing import Dict, Any
 from enum import Enum as PyEnum
+import logging
+from typing import Any
+import uuid
+
 from sqlalchemy import (
+    JSON,
+    Boolean,
     Column,
+    DateTime,
+    Enum,
+    Float,
+    ForeignKey,
+    Index,
+    Integer,
     String,
     Text,
-    Integer,
-    Float,
-    Enum,
-    DateTime,
-    Boolean,
-    JSON,
     UniqueConstraint,
-    Index,
-    ForeignKey,
 )
-from sqlalchemy.orm import relationship, declarative_base
 from sqlalchemy.ext.hybrid import hybrid_property
+from sqlalchemy.orm import declarative_base, relationship
 
 logger = logging.getLogger(__name__)
 
@@ -105,7 +106,7 @@ class ClientProfile(Base):
 
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     client_email = Column(
-        String, nullable=False, index=True
+        String, nullable=False, index=True,
     )  # Client email (indexed + unique, prevents duplicate profiles)
 
     # Extracted preferences from previous tasks
@@ -116,10 +117,10 @@ class ClientProfile(Base):
 
     # General preferences (style, tone, formatting)
     style_preferences = Column(
-        JSON, nullable=True
+        JSON, nullable=True,
     )  # e.g., {"formal": true, "detailed": false}
     domain_specific_preferences = Column(
-        JSON, nullable=True
+        JSON, nullable=True,
     )  # Domain-specific preferences
 
     # Feedback history (raw feedback for reference)
@@ -168,11 +169,11 @@ class ClientProfile(Base):
             parts.append(f"Preferred fonts: {', '.join(self.preferred_fonts)}")
         if self.preferred_chart_types:
             parts.append(
-                f"Preferred chart types: {', '.join(self.preferred_chart_types)}"
+                f"Preferred chart types: {', '.join(self.preferred_chart_types)}",
             )
         if self.preferred_output_formats:
             parts.append(
-                f"Preferred output formats: {', '.join(self.preferred_output_formats)}"
+                f"Preferred output formats: {', '.join(self.preferred_output_formats)}",
             )
 
         if self.style_preferences:
@@ -474,7 +475,7 @@ class Task(Base):
             existing.output_url = value
         elif value:
             self.outputs.append(
-                TaskOutput(output_type=OutputType.IMAGE, output_url=value)
+                TaskOutput(output_type=OutputType.IMAGE, output_url=value),
             )
 
     @hybrid_property
@@ -511,7 +512,7 @@ class Task(Base):
             existing.output_url = value
         elif value:
             self.outputs.append(
-                TaskOutput(output_type=OutputType.DOCUMENT, output_url=value)
+                TaskOutput(output_type=OutputType.DOCUMENT, output_url=value),
             )
 
     @hybrid_property
@@ -540,7 +541,7 @@ class Task(Base):
             existing.output_url = value
         elif value:
             self.outputs.append(
-                TaskOutput(output_type=OutputType.SPREADSHEET, output_url=value)
+                TaskOutput(output_type=OutputType.SPREADSHEET, output_url=value),
             )
 
     def __init__(self, **kwargs):
@@ -618,7 +619,7 @@ class Task(Base):
                 if isinstance(self.review_status, ReviewStatus)
                 else self.review_status,
                 "extracted_context": self.extracted_context,
-            }
+            },
         )
 
         # Also include nested structure for new code
@@ -645,7 +646,7 @@ class TaskExecution(Base):
     task_id = Column(String, ForeignKey("tasks.id"), unique=True, nullable=False)
 
     status = Column(
-        Enum(ExecutionStatus), default=ExecutionStatus.PENDING, nullable=False
+        Enum(ExecutionStatus), default=ExecutionStatus.PENDING, nullable=False,
     )
     retry_count = Column(Integer, default=0)
     error_message = Column(Text, nullable=True)
@@ -681,7 +682,7 @@ class TaskPlanning(Base):
     task_id = Column(String, ForeignKey("tasks.id"), unique=True, nullable=False)
 
     status = Column(
-        Enum(PlanningStatus), default=PlanningStatus.PENDING, nullable=False
+        Enum(PlanningStatus), default=PlanningStatus.PENDING, nullable=False,
     )
     plan_content = Column(Text, nullable=True)
     research_findings = Column(JSON, nullable=True)
@@ -836,7 +837,7 @@ class Bid(Base):
     __table_args__ = (
         UniqueConstraint("job_id", "marketplace", name="unique_bid_per_posting"),
         UniqueConstraint(
-            "marketplace", "job_id", "status", name="unique_active_bid_per_posting"
+            "marketplace", "job_id", "status", name="unique_active_bid_per_posting",
         ),
         # Performance indexes (Issue #38)
         Index("idx_bid_posting_id", "job_id"),
@@ -869,11 +870,11 @@ class Bid(Base):
 
     # Withdrawal tracking (Issue #8: Distributed lock & deduplication)
     withdrawn_reason = Column(
-        String, nullable=True
+        String, nullable=True,
     )  # Reason for withdrawal (if status=WITHDRAWN)
     withdrawal_timestamp = Column(DateTime, nullable=True)  # When bid was withdrawn
     posting_cached_at = Column(
-        DateTime, nullable=True
+        DateTime, nullable=True,
     )  # When posting was cached (for TTL validation)
 
     # Timestamps
@@ -1039,7 +1040,7 @@ class EscalationLog(Base):
     # only one escalation log per task per idempotency key
     __table_args__ = (
         UniqueConstraint(
-            "task_id", "idempotency_key", name="unique_escalation_per_task"
+            "task_id", "idempotency_key", name="unique_escalation_per_task",
         ),
     )
 
@@ -1050,20 +1051,20 @@ class EscalationLog(Base):
 
     # Escalation details
     reason = Column(
-        String, nullable=False
+        String, nullable=False,
     )  # e.g., "max_retries_exceeded", "high_value_task_failed"
     error_message = Column(Text, nullable=True)  # Optional error context
 
     # Notification tracking
     notification_sent = Column(
-        Boolean, default=False
+        Boolean, default=False,
     )  # Whether Telegram notification was sent
     notification_attempt_count = Column(
-        Integer, default=0
+        Integer, default=0,
     )  # Number of notification attempts
     last_notification_attempt_at = Column(DateTime, nullable=True)
     notification_error = Column(
-        Text, nullable=True
+        Text, nullable=True,
     )  # Error message if notification failed
 
     # Idempotency key (prevents duplicate notifications on retry)
@@ -1080,7 +1081,7 @@ class EscalationLog(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     resolved_at = Column(
-        DateTime, nullable=True
+        DateTime, nullable=True,
     )  # When human reviewer resolved the escalation
 
     def to_dict(self):
@@ -1164,19 +1165,19 @@ class UserQuota(Base):
 
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     user_id = Column(
-        String, nullable=False, unique=True, index=True
+        String, nullable=False, unique=True, index=True,
     )  # Email or user identifier
     tier = Column(Enum(PricingTier), default=PricingTier.FREE, nullable=False)
 
     # Monthly limits (resets on billing cycle)
     monthly_task_limit = Column(
-        Integer, default=10
+        Integer, default=10,
     )  # Free: 10, Pro: 1000, Enterprise: unlimited
     monthly_api_calls_limit = Column(
-        Integer, default=100
+        Integer, default=100,
     )  # Free: 100, Pro: 10000, Enterprise: unlimited
     monthly_compute_minutes_limit = Column(
-        Integer, default=60
+        Integer, default=60,
     )  # Free: 60, Pro: 600, Enterprise: unlimited
 
     # Rate limiting (requests per second + burst)
@@ -1422,7 +1423,7 @@ class SimulationBid(Base):
     # Bid details
     bid_amount = Column(Integer, nullable=False)  # Bid amount in cents
     strategy_type = Column(
-        String, nullable=False
+        String, nullable=False,
     )  # e.g., "aggressive", "conservative", "balanced"
     confidence = Column(Integer, nullable=True)  # Evaluation confidence (0-100)
 
@@ -1430,12 +1431,12 @@ class SimulationBid(Base):
     would_have_won = Column(Boolean, nullable=True)  # Simulated outcome
     outcome_reasoning = Column(Text, nullable=True)  # Why bid would have won/lost
     actual_outcome = Column(
-        String, nullable=True
+        String, nullable=True,
     )  # Actual result from marketplace if tracking
 
     # Analysis metadata
     job_marketplace = Column(
-        String, nullable=True
+        String, nullable=True,
     )  # Which marketplace (upwork, fiverr, etc.)
     skills_matched = Column(JSON, nullable=True)  # List of matched skills
 
@@ -1497,7 +1498,7 @@ class ThresholdPetition(Base):
 
     # Decision
     status = Column(
-        String, default="PENDING", nullable=False
+        String, default="PENDING", nullable=False,
     )  # APPROVED, REJECTED, PENDING
     human_decision = Column(String, nullable=True)
     decided_at = Column(DateTime, nullable=True)
@@ -1880,7 +1881,7 @@ class LearningEntry(Base):
     # Timestamps
     created_at = Column(DateTime, default=datetime.utcnow, index=True)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
         return {
             "id": self.id,

@@ -13,9 +13,10 @@ Issue #40: Database race condition in bid withdrawal with transactions
 """
 
 from datetime import datetime, timedelta, timezone
+import uuid
+
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
-import uuid
 
 from src.api.models import Bid, BidStatus
 from src.utils.logger import get_logger
@@ -48,7 +49,6 @@ async def should_bid(
     Returns:
         True if we should proceed with bidding, False otherwise
     """
-
     if not posting_id or not marketplace_id:
         logger.error("posting_id and marketplace_id must not be empty")
         return False
@@ -68,7 +68,7 @@ async def should_bid(
         if existing_bid:
             logger.warning(
                 f"Deduplication: Found existing ACTIVE bid {existing_bid.id} "
-                f"for posting {marketplace_id}:{posting_id}"
+                f"for posting {marketplace_id}:{posting_id}",
             )
             return False
 
@@ -92,12 +92,12 @@ async def should_bid(
                     logger.warning(
                         f"Posting freshness check: posting {marketplace_id}:{posting_id} "
                         f"was cached {(datetime.now(timezone.utc) - bid.posting_cached_at).total_seconds() / 3600:.1f} hours ago, "
-                        f"exceeds TTL of {ttl_hours}h"
+                        f"exceeds TTL of {ttl_hours}h",
                     )
                     return False
 
         logger.info(
-            f"Deduplication check passed: ok to bid on {marketplace_id}:{posting_id}"
+            f"Deduplication check passed: ok to bid on {marketplace_id}:{posting_id}",
         )
         return True
 
@@ -146,7 +146,7 @@ async def mark_bid_withdrawn(db_session: Session, bid_id: str, reason: str) -> b
             if bid.status not in [BidStatus.ACTIVE, BidStatus.SUBMITTED]:
                 logger.warning(
                     f"[{event_id}] Cannot withdraw bid {bid_id} with status "
-                    f"{bid.status.value}"
+                    f"{bid.status.value}",
                 )
                 savepoint.rollback()
                 return False
@@ -166,7 +166,7 @@ async def mark_bid_withdrawn(db_session: Session, bid_id: str, reason: str) -> b
             # Atomic logging (Issue #40)
             logger.info(
                 f"[{event_id}] Bid {bid_id} withdrawn: {reason} "
-                f"(status: {previous_status} -> WITHDRAWN)"
+                f"(status: {previous_status} -> WITHDRAWN)",
             )
             return True
 
@@ -189,7 +189,7 @@ async def mark_bid_withdrawn(db_session: Session, bid_id: str, reason: str) -> b
 
 
 def get_active_bids_for_posting(
-    db_session: Session, posting_id: str, marketplace_id: str
+    db_session: Session, posting_id: str, marketplace_id: str,
 ) -> list[Bid]:
     """
     Get all ACTIVE bids for a posting.
@@ -224,7 +224,7 @@ def get_active_bids_for_posting(
 
 
 def get_bids_by_status(
-    db_session: Session, marketplace_id: str, status: BidStatus
+    db_session: Session, marketplace_id: str, status: BidStatus,
 ) -> list[Bid]:
     """
     Get all bids for a marketplace with a specific status.
@@ -248,7 +248,7 @@ def get_bids_by_status(
 
     except Exception as e:
         logger.error(
-            f"Error querying bids with status {status.value}: {e}", exc_info=True
+            f"Error querying bids with status {status.value}: {e}", exc_info=True,
         )
         return []
 
@@ -314,7 +314,7 @@ async def create_bid_atomically(
         db_session.rollback()
         logger.warning(
             f"Duplicate bid prevented (atomic): "
-            f"{marketplace_id}:{posting_id} already has an ACTIVE bid"
+            f"{marketplace_id}:{posting_id} already has an ACTIVE bid",
         )
         return None
     except Exception as e:

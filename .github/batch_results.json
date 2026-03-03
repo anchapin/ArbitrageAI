@@ -1,6 +1,6 @@
 {
-  "timestamp": "2026-03-03T12:39:09.515466",
-  "dry_run": false,
+  "timestamp": "2026-03-03T15:13:34.170780",
+  "dry_run": true,
   "summary": {
     "total": 11,
     "success": 11,
@@ -13,142 +13,142 @@
       "title": "[SECURITY] Replace eval() with Safe Expression Parser in logging_alerting.py",
       "priority": "critical",
       "labels": [
-        "critical",
         "documentation",
+        "security",
         "testing",
-        "qaqc-review",
-        "security"
+        "critical",
+        "qaqc-review"
       ],
-      "number": 170,
-      "url": "https://github.com/anchapin/ArbitrageAI/issues/170",
-      "branch": "issue/170-security-replace-eval-with-safe-expression-parser-in-loggingalertingpy",
-      "status": "created",
-      "created_at": "2026-03-03T12:38:56.796736"
+      "number": null,
+      "url": null,
+      "branch": null,
+      "status": "dry-run",
+      "created_at": null
     },
     {
       "file": "/home/alex/Projects/ArbitrageAI/.github/ISSUES/QAQC-002-security-insecure-defaults.md",
       "title": "[SECURITY] Implement Secure Random Secret Generation on Startup",
       "priority": "critical",
       "labels": [
-        "critical",
         "documentation",
-        "testing",
-        "qaqc-review",
         "security",
+        "testing",
+        "critical",
+        "qaqc-review",
         "architecture"
       ],
-      "number": 171,
-      "url": "https://github.com/anchapin/ArbitrageAI/issues/171",
-      "branch": "issue/171-security-implement-secure-random-secret-generation-on-startup",
-      "status": "created",
-      "created_at": "2026-03-03T12:38:57.917004"
+      "number": null,
+      "url": null,
+      "branch": null,
+      "status": "dry-run",
+      "created_at": null
     },
     {
       "file": "/home/alex/Projects/ArbitrageAI/.github/ISSUES/QAQC-003-security-production-validation.md",
       "title": "[SECURITY] Add Production Validation to Fail on Default Secrets",
       "priority": "critical",
       "labels": [
-        "critical",
         "documentation",
-        "testing",
-        "qaqc-review",
         "security",
+        "testing",
+        "critical",
+        "qaqc-review",
         "architecture"
       ],
-      "number": 172,
-      "url": "https://github.com/anchapin/ArbitrageAI/issues/172",
-      "branch": "issue/172-security-add-production-validation-to-fail-on-default-secrets",
-      "status": "created",
-      "created_at": "2026-03-03T12:38:59.133668"
+      "number": null,
+      "url": null,
+      "branch": null,
+      "status": "dry-run",
+      "created_at": null
     },
     {
       "file": "/home/alex/Projects/ArbitrageAI/.github/ISSUES/QAQC-004-code-quality-undefined-names.md",
       "title": "[CODE QUALITY] Fix 50 Undefined Name Errors (F821)",
       "priority": "high",
       "labels": [
-        "code-quality",
-        "high",
         "documentation",
         "testing",
-        "qaqc-review"
+        "qaqc-review",
+        "high",
+        "code-quality"
       ],
-      "number": 173,
-      "url": "https://github.com/anchapin/ArbitrageAI/issues/173",
-      "branch": "issue/173-code-quality-fix-50-undefined-name-errors-f821",
-      "status": "created",
-      "created_at": "2026-03-03T12:39:00.149031"
+      "number": null,
+      "url": null,
+      "branch": null,
+      "status": "dry-run",
+      "created_at": null
     },
     {
       "file": "/home/alex/Projects/ArbitrageAI/.github/ISSUES/QAQC-005-code-quality-monolithic-files.md",
       "title": "[CODE QUALITY] Refactor Monolithic Files (>1000 Lines)",
       "priority": "high",
       "labels": [
-        "code-quality",
-        "high",
         "documentation",
+        "security",
         "testing",
         "qaqc-review",
-        "security",
-        "architecture"
+        "high",
+        "architecture",
+        "code-quality"
       ],
-      "number": 174,
-      "url": "https://github.com/anchapin/ArbitrageAI/issues/174",
-      "branch": "issue/174-code-quality-refactor-monolithic-files-1000-lines",
-      "status": "created",
-      "created_at": "2026-03-03T12:39:01.505319"
+      "number": null,
+      "url": null,
+      "branch": null,
+      "status": "dry-run",
+      "created_at": null
     },
     {
       "file": "/home/alex/Projects/ArbitrageAI/.github/ISSUES/QAQC-006-code-quality-exception-handling.md",
       "title": "[CODE QUALITY] Fix Exception Handling Anti-Patterns (B904)",
       "priority": "high",
       "labels": [
-        "code-quality",
-        "high",
         "documentation",
         "testing",
         "qaqc-review",
-        "architecture"
+        "high",
+        "architecture",
+        "code-quality"
       ],
-      "number": 175,
-      "url": "https://github.com/anchapin/ArbitrageAI/issues/175",
-      "branch": "issue/175-code-quality-fix-exception-handling-anti-patterns-b904",
-      "status": "created",
-      "created_at": "2026-03-03T12:39:02.395736"
+      "number": null,
+      "url": null,
+      "branch": null,
+      "status": "dry-run",
+      "created_at": null
     },
     {
       "file": "/home/alex/Projects/ArbitrageAI/.github/ISSUES/QAQC-007-code-quality-all-ruff-violations.md",
       "title": "[CODE QUALITY] Fix All Ruff Linting Violations",
       "priority": "medium",
       "labels": [
-        "code-quality",
         "documentation",
         "testing",
+        "medium",
         "qaqc-review",
-        "medium"
+        "code-quality"
       ],
-      "number": 176,
-      "url": "https://github.com/anchapin/ArbitrageAI/issues/176",
-      "branch": "issue/176-code-quality-fix-all-ruff-linting-violations",
-      "status": "created",
-      "created_at": "2026-03-03T12:39:03.644726"
+      "number": null,
+      "url": null,
+      "branch": null,
+      "status": "dry-run",
+      "created_at": null
     },
     {
       "file": "/home/alex/Projects/ArbitrageAI/.github/ISSUES/QAQC-008-architecture-database-migrations.md",
       "title": "[ARCHITECTURE] Implement Database Migration Framework (Alembic)",
       "priority": "high",
       "labels": [
-        "high",
         "documentation",
-        "testing",
         "performance",
+        "testing",
         "qaqc-review",
+        "high",
         "architecture"
       ],
-      "number": 177,
-      "url": "https://github.com/anchapin/ArbitrageAI/issues/177",
-      "branch": "issue/177-architecture-implement-database-migration-framework-alembic",
-      "status": "created",
-      "created_at": "2026-03-03T12:39:04.628726"
+      "number": null,
+      "url": null,
+      "branch": null,
+      "status": "dry-run",
+      "created_at": null
     },
     {
       "file": "/home/alex/Projects/ArbitrageAI/.github/ISSUES/QAQC-009-performance-redis-rate-limiting.md",
@@ -156,36 +156,36 @@
       "priority": "medium",
       "labels": [
         "documentation",
-        "testing",
-        "performance",
-        "qaqc-review",
         "security",
-        "architecture",
-        "medium"
+        "performance",
+        "testing",
+        "medium",
+        "qaqc-review",
+        "architecture"
       ],
-      "number": 178,
-      "url": "https://github.com/anchapin/ArbitrageAI/issues/178",
-      "branch": "issue/178-performance-replace-in-memory-rate-limiting-with-redis",
-      "status": "created",
-      "created_at": "2026-03-03T12:39:06.168636"
+      "number": null,
+      "url": null,
+      "branch": null,
+      "status": "dry-run",
+      "created_at": null
     },
     {
       "file": "/home/alex/Projects/ArbitrageAI/.github/ISSUES/QAQC-010-performance-database-indexes.md",
       "title": "[PERFORMANCE] Add Database Indexes for Frequently Queried Fields",
       "priority": "medium",
       "labels": [
-        "code-quality",
-        "testing",
         "performance",
+        "testing",
+        "medium",
         "qaqc-review",
         "architecture",
-        "medium"
+        "code-quality"
       ],
-      "number": 179,
-      "url": "https://github.com/anchapin/ArbitrageAI/issues/179",
-      "branch": "issue/179-performance-add-database-indexes-for-frequently-queried-fields",
-      "status": "created",
-      "created_at": "2026-03-03T12:39:08.286316"
+      "number": null,
+      "url": null,
+      "branch": null,
+      "status": "dry-run",
+      "created_at": null
     },
     {
       "file": "/home/alex/Projects/ArbitrageAI/.github/ISSUES/QAQC-011-performance-n-plus-one-queries.md",
@@ -193,17 +193,17 @@
       "priority": "medium",
       "labels": [
         "documentation",
-        "testing",
         "performance",
+        "testing",
+        "medium",
         "qaqc-review",
-        "architecture",
-        "medium"
+        "architecture"
       ],
-      "number": 180,
-      "url": "https://github.com/anchapin/ArbitrageAI/issues/180",
-      "branch": "issue/180-performance-fix-n1-query-problems-with-eager-loading",
-      "status": "created",
-      "created_at": "2026-03-03T12:39:09.515446"
+      "number": null,
+      "url": null,
+      "branch": null,
+      "status": "dry-run",
+      "created_at": null
     }
   ],
   "errors": []

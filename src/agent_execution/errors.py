@@ -11,8 +11,6 @@ This allows the executor to intelligently retry only transient errors.
 Issue #37: Error type categorization
 """
 
-from typing import Type, Tuple
-
 
 class AgentError(Exception):
     """Base exception for all agent execution errors."""
@@ -47,19 +45,13 @@ class TransientError(AgentError):
 class NetworkError(TransientError):
     """Network-related transient errors (timeout, connection reset, DNS)."""
 
-    pass
-
 
 class TimeoutError(TransientError):
     """Request timeout - try again."""
 
-    pass
-
 
 class ResourceExhaustedError(TransientError):
     """Memory, disk, or process limits hit - may recover."""
-
-    pass
 
 
 class PermanentError(AgentError):
@@ -76,19 +68,13 @@ class PermanentError(AgentError):
 class AuthenticationError(PermanentError):
     """Authentication or authorization failure."""
 
-    pass
-
 
 class ValidationError(PermanentError):
     """Input validation failure - invalid format, missing field, etc."""
 
-    pass
-
 
 class NotFoundError(PermanentError):
     """Resource not found (file, API endpoint, database record)."""
-
-    pass
 
 
 class FatalError(AgentError):
@@ -105,23 +91,17 @@ class FatalError(AgentError):
 class DataCorruptionError(FatalError):
     """Data integrity violation detected."""
 
-    pass
-
 
 class SecurityError(FatalError):
     """Security-related error (auth bypass attempt, injection detected)."""
-
-    pass
 
 
 class SchedulingError(PermanentError):
     """Error related to task scheduling, cron parsing, or job queue operations."""
 
-    pass
-
 
 # Mapping of exception types to error categories
-ERROR_CLASSIFICATION: dict[Type[Exception], Type[AgentError]] = {
+ERROR_CLASSIFICATION: dict[type[Exception], type[AgentError]] = {
     # Network/Transient
     ConnectionError: NetworkError,
     ConnectionRefusedError: NetworkError,
@@ -152,7 +132,7 @@ ERROR_CLASSIFICATION: dict[Type[Exception], Type[AgentError]] = {
 
 def categorize_exception(
     exception: Exception,
-) -> Tuple[Type[AgentError], str]:
+) -> tuple[type[AgentError], str]:
     """
     Categorize an exception into error type.
 
@@ -211,5 +191,5 @@ def wrap_exception(
         AgentError subclass instance
     """
     error_class, exc_name = categorize_exception(exception)
-    message = f"{context}: {str(exception)}" if context else str(exception)
+    message = f"{context}: {exception!s}" if context else str(exception)
     return error_class(message, original_error=exception)

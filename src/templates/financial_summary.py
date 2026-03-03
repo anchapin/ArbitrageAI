@@ -8,16 +8,16 @@ The LLM generates structured JSON content which is injected into this template,
 ensuring proper financial formatting without Python errors.
 """
 
+import base64
+from datetime import datetime
 import io
 import json
-import base64
-import pandas as pd
-from datetime import datetime
-from typing import Dict, Any, List
+from typing import Any
 
 from docx import Document
-from docx.shared import Inches, Pt
 from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.shared import Inches, Pt
+import pandas as pd
 
 
 class FinancialSummaryTemplate:
@@ -48,7 +48,7 @@ class FinancialSummaryTemplate:
 
     def generate(
         self,
-        content_json: Dict[str, Any],
+        content_json: dict[str, Any],
         csv_data: str,
         output_format: str = "docx",
         **kwargs,
@@ -91,7 +91,7 @@ class FinancialSummaryTemplate:
         except Exception as e:
             return {
                 "success": False,
-                "message": f"Financial document generation error: {str(e)}",
+                "message": f"Financial document generation error: {e!s}",
                 "output_format": output_format,
                 "document_type": "financial_summary",
             }
@@ -116,7 +116,7 @@ class FinancialSummaryTemplate:
 
         # Subtitle/Date
         subtitle = content.get(
-            "subtitle", f"Report Date: {datetime.now().strftime('%B %d, %Y')}"
+            "subtitle", f"Report Date: {datetime.now().strftime('%B %d, %Y')}",
         )
         self.add_paragraph(subtitle, align="center")
 
@@ -158,7 +158,7 @@ class FinancialSummaryTemplate:
 
         self.document.add_paragraph()
 
-    def _add_key_metrics(self, metrics: Dict[str, Any]):
+    def _add_key_metrics(self, metrics: dict[str, Any]):
         """Add key financial metrics section."""
         self.add_heading("Key Financial Metrics", level=1)
 
@@ -190,7 +190,7 @@ class FinancialSummaryTemplate:
 
         self.document.add_paragraph()
 
-    def _add_highlights(self, highlights: List[Dict[str, Any]]):
+    def _add_highlights(self, highlights: list[dict[str, Any]]):
         """Add financial highlights section."""
         self.add_heading("Financial Highlights", level=1)
 
@@ -223,7 +223,7 @@ class FinancialSummaryTemplate:
 
         self.document.add_paragraph()
 
-    def _add_analysis(self, analysis: List[Dict[str, Any]]):
+    def _add_analysis(self, analysis: list[dict[str, Any]]):
         """Add detailed analysis section."""
         self.add_heading("Detailed Analysis", level=1)
 
@@ -246,7 +246,7 @@ class FinancialSummaryTemplate:
 
         self.document.add_paragraph()
 
-    def _add_data_tables(self, tables: List[Dict[str, Any]]):
+    def _add_data_tables(self, tables: list[dict[str, Any]]):
         """Add data tables to the document."""
         for table_info in tables:
             if isinstance(table_info, dict):
@@ -263,7 +263,7 @@ class FinancialSummaryTemplate:
 
         self.document.add_paragraph()
 
-    def _create_table_from_data(self, table_data: List):
+    def _create_table_from_data(self, table_data: list):
         """Create a table from data."""
         if not table_data or len(table_data) == 0:
             return
@@ -307,7 +307,7 @@ class FinancialSummaryTemplate:
                         else str(value)
                     )
 
-    def _add_conclusions(self, conclusions: List[str]):
+    def _add_conclusions(self, conclusions: list[str]):
         """Add conclusions section."""
         self.add_heading("Conclusions", level=1)
 
@@ -397,7 +397,7 @@ class FinancialSummaryTemplate:
         except Exception as e:
             return {
                 "success": False,
-                "message": f"Error reading output file: {str(e)}",
+                "message": f"Error reading output file: {e!s}",
                 "output_format": output_format,
             }
 
@@ -571,7 +571,7 @@ if __name__ == "__main__":
 
 
 def get_financial_template_code(
-    content_json: Dict[str, Any], csv_data: str, output_format: str = "docx"
+    content_json: dict[str, Any], csv_data: str, output_format: str = "docx",
 ) -> str:
     """
     Get the executable financial template code with injected content.

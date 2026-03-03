@@ -5,27 +5,29 @@ Implements marketplace adapter for PeoplePerHour platform.
 Handles project searching, offer placement, and portfolio sync.
 """
 
-from typing import List, Optional, Dict, Any
 from datetime import datetime
+from typing import Any
+
 import httpx
 
+from src.agent_execution.exponential_backoff import ExponentialBackoff
+from src.utils.logger import get_logger
+
 from .base import (
-    MarketplaceAdapter,
-    SearchQuery,
-    SearchResult,
+    AuthenticationError,
     BidProposal,
     BidStatus,
     BidStatusUpdate,
+    InboxMessage,
+    MarketplaceAdapter,
+    MarketplaceError,
+    NotFoundError,
     PlacedBid,
     PricingModel,
-    InboxMessage,
-    MarketplaceError,
-    AuthenticationError,
     RateLimitError,
-    NotFoundError,
+    SearchQuery,
+    SearchResult,
 )
-from src.utils.logger import get_logger
-from src.agent_execution.exponential_backoff import ExponentialBackoff
 
 logger = get_logger(__name__)
 
@@ -47,8 +49,8 @@ class PeoplePerHourAdapter(MarketplaceAdapter):
 
     def __init__(
         self,
-        api_key: Optional[str] = None,
-        api_secret: Optional[str] = None,
+        api_key: str | None = None,
+        api_secret: str | None = None,
     ):
         """
         Initialize PeoplePerHour adapter.
@@ -58,8 +60,8 @@ class PeoplePerHourAdapter(MarketplaceAdapter):
             api_secret: PeoplePerHour API secret
         """
         super().__init__("peoplehour", api_key, api_secret)
-        self.client: Optional[httpx.AsyncClient] = None
-        self.user_id: Optional[str] = None
+        self.client: httpx.AsyncClient | None = None
+        self.user_id: str | None = None
 
     async def authenticate(self) -> bool:
         """
@@ -80,7 +82,7 @@ class PeoplePerHourAdapter(MarketplaceAdapter):
             # Verify authentication by getting user profile
             headers = self._get_auth_headers()
             response = await self.client.get(
-                f"{self.API_BASE_URL}/user/profile", headers=headers
+                f"{self.API_BASE_URL}/user/profile", headers=headers,
             )
 
             if response.status_code == 401:
@@ -95,10 +97,10 @@ class PeoplePerHourAdapter(MarketplaceAdapter):
 
         except httpx.HTTPError as e:
             raise AuthenticationError(
-                f"PeoplePerHour authentication failed: {str(e)}"
+                f"PeoplePerHour authentication failed: {e!s}",
             ) from e
 
-    async def search(self, query: SearchQuery) -> List[SearchResult]:
+    async def search(self, query: SearchQuery) -> list[SearchResult]:
         """
         Search for projects on PeoplePerHour.
 
@@ -136,7 +138,7 @@ class PeoplePerHourAdapter(MarketplaceAdapter):
 
             # Make search request
             response = await self._request(
-                "GET", f"{self.API_BASE_URL}/projects/search", params=params
+                "GET", f"{self.API_BASE_URL}/projects/search", params=params,
             )
 
             results = []
@@ -166,14 +168,14 @@ class PeoplePerHourAdapter(MarketplaceAdapter):
                 results.append(result)
 
             logger.info(
-                f"PeoplePerHour search returned {len(results)} results for '{query.keywords}'"
+                f"PeoplePerHour search returned {len(results)} results for '{query.keywords}'",
             )
             return results
 
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 429:
                 raise RateLimitError("PeoplePerHour rate limit exceeded") from e
-            raise MarketplaceError(f"PeoplePerHour search failed: {str(e)}") from e
+            raise MarketplaceError(f"PeoplePerHour search failed: {e!s}") from e
 
     async def get_job_details(self, job_id: str) -> SearchResult:
         """
@@ -194,7 +196,7 @@ class PeoplePerHourAdapter(MarketplaceAdapter):
 
         try:
             response = await self._request(
-                "GET", f"{self.API_BASE_URL}/projects/{job_id}"
+                "GET", f"{self.API_BASE_URL}/projects/{job_id}",
             )
 
             project = response.get("project", {})
@@ -225,7 +227,7 @@ class PeoplePerHourAdapter(MarketplaceAdapter):
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 404:
                 raise NotFoundError(f"Project {job_id} not found") from e
-            raise MarketplaceError(f"Failed to get project details: {str(e)}") from e
+            raise MarketplaceError(f"Failed to get project details: {e!s}") from e
 
     async def place_bid(self, proposal: BidProposal) -> PlacedBid:
         """
@@ -261,7 +263,7 @@ class PeoplePerHourAdapter(MarketplaceAdapter):
                 payload["availability"] = proposal.availability
 
             response = await self._request(
-                "POST", f"{self.API_BASE_URL}/offers", json=payload
+                "POST", f"{self.API_BASE_URL}/offers", json=payload,
             )
 
             offer = response.get("offer", {})
@@ -280,7 +282,7 @@ class PeoplePerHourAdapter(MarketplaceAdapter):
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 429:
                 raise RateLimitError("PeoplePerHour rate limit exceeded") from e
-            raise MarketplaceError(f"Failed to place PeoplePerHour offer: {str(e)}") from e
+            raise MarketplaceError(f"Failed to place PeoplePerHour offer: {e!s}") from e
 
     async def get_bid_status(self, bid_id: str) -> BidStatusUpdate:
         """
@@ -301,7 +303,7 @@ class PeoplePerHourAdapter(MarketplaceAdapter):
 
         try:
             response = await self._request(
-                "GET", f"{self.API_BASE_URL}/offers/{bid_id}"
+                "GET", f"{self.API_BASE_URL}/offers/{bid_id}",
             )
 
             offer = response.get("offer", {})
@@ -318,7 +320,7 @@ class PeoplePerHourAdapter(MarketplaceAdapter):
                 bid_id=bid_id,
                 job_id=offer.get("project_id", ""),
                 status=status_map.get(
-                    offer.get("status", "").lower(), BidStatus.PENDING
+                    offer.get("status", "").lower(), BidStatus.PENDING,
                 ),
                 last_updated=self._parse_datetime(offer.get("updated_at")),
                 metadata=offer,
@@ -327,7 +329,7 @@ class PeoplePerHourAdapter(MarketplaceAdapter):
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 404:
                 raise NotFoundError(f"Offer {bid_id} not found") from e
-            raise MarketplaceError(f"Failed to get offer status: {str(e)}") from e
+            raise MarketplaceError(f"Failed to get offer status: {e!s}") from e
 
     async def withdraw_bid(self, bid_id: str) -> BidStatusUpdate:
         """
@@ -348,7 +350,7 @@ class PeoplePerHourAdapter(MarketplaceAdapter):
 
         try:
             response = await self._request(
-                "POST", f"{self.API_BASE_URL}/offers/{bid_id}/withdraw"
+                "POST", f"{self.API_BASE_URL}/offers/{bid_id}/withdraw",
             )
 
             offer = response.get("offer", {})
@@ -364,9 +366,9 @@ class PeoplePerHourAdapter(MarketplaceAdapter):
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 404:
                 raise NotFoundError(f"Offer {bid_id} not found") from e
-            raise MarketplaceError(f"Failed to withdraw offer: {str(e)}") from e
+            raise MarketplaceError(f"Failed to withdraw offer: {e!s}") from e
 
-    async def check_inbox(self) -> List[InboxMessage]:
+    async def check_inbox(self) -> list[InboxMessage]:
         """
         Check for new messages in inbox.
 
@@ -404,7 +406,7 @@ class PeoplePerHourAdapter(MarketplaceAdapter):
             return messages
 
         except httpx.HTTPStatusError as e:
-            raise MarketplaceError(f"Failed to check PeoplePerHour inbox: {str(e)}") from e
+            raise MarketplaceError(f"Failed to check PeoplePerHour inbox: {e!s}") from e
 
     async def mark_message_read(self, message_id: str) -> bool:
         """
@@ -425,16 +427,16 @@ class PeoplePerHourAdapter(MarketplaceAdapter):
 
         try:
             await self._request(
-                "POST", f"{self.API_BASE_URL}/messages/{message_id}/read"
+                "POST", f"{self.API_BASE_URL}/messages/{message_id}/read",
             )
             return True
 
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 404:
                 raise NotFoundError(f"Message {message_id} not found") from e
-            raise MarketplaceError(f"Failed to mark message as read: {str(e)}") from e
+            raise MarketplaceError(f"Failed to mark message as read: {e!s}") from e
 
-    async def sync_portfolio(self, portfolio_items: List[Dict[str, Any]]) -> bool:
+    async def sync_portfolio(self, portfolio_items: list[dict[str, Any]]) -> bool:
         """
         Sync portfolio with PeoplePerHour.
 
@@ -459,13 +461,13 @@ class PeoplePerHourAdapter(MarketplaceAdapter):
             )
 
             logger.info(
-                f"Synced {len(portfolio_items)} portfolio items to PeoplePerHour"
+                f"Synced {len(portfolio_items)} portfolio items to PeoplePerHour",
             )
             return True
 
         except httpx.HTTPStatusError as e:
             raise MarketplaceError(
-                f"Failed to sync PeoplePerHour portfolio: {str(e)}"
+                f"Failed to sync PeoplePerHour portfolio: {e!s}",
             ) from e
 
     async def close(self) -> None:
@@ -483,7 +485,7 @@ class PeoplePerHourAdapter(MarketplaceAdapter):
         method: str,
         url: str,
         **kwargs,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Make HTTP request with automatic retry and error handling.
 
@@ -516,7 +518,7 @@ class PeoplePerHourAdapter(MarketplaceAdapter):
         backoff = ExponentialBackoff(base_delay=1.0)
         return await backoff.with_retry(_do_request, max_retries=3)
 
-    def _get_auth_headers(self) -> Dict[str, str]:
+    def _get_auth_headers(self) -> dict[str, str]:
         """Get authentication headers for PeoplePerHour API."""
         return {
             "Authorization": f"Bearer {self.api_key}",
@@ -524,7 +526,7 @@ class PeoplePerHourAdapter(MarketplaceAdapter):
         }
 
     @staticmethod
-    def _parse_datetime(dt_str: Optional[str]) -> Optional[datetime]:
+    def _parse_datetime(dt_str: str | None) -> datetime | None:
         """Parse datetime string from PeoplePerHour API."""
         if not dt_str:
             return None

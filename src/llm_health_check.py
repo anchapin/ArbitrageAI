@@ -15,11 +15,11 @@ Pillar 2.6 - Ollama Circuit Breaker (Issue #7)
 """
 
 import asyncio
-import threading
-from enum import Enum
-from typing import Optional, Dict, Any
-from datetime import datetime, timezone
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
+from enum import Enum
+import threading
+from typing import Any
 
 from src.utils.logger import get_logger
 
@@ -42,14 +42,14 @@ class HealthMetrics:
     state: CircuitState = CircuitState.CLOSED
 
     # Health check tracking
-    last_health_check_at: Optional[datetime] = None
-    last_healthy_at: Optional[datetime] = None
+    last_health_check_at: datetime | None = None
+    last_healthy_at: datetime | None = None
     consecutive_failures: int = 0
     total_requests: int = 0
     total_failures: int = 0
 
     # Circuit breaker state
-    opened_at: Optional[datetime] = None
+    opened_at: datetime | None = None
     failure_threshold: int = 3  # Open after 3 consecutive failures
     recovery_timeout_seconds: int = 60  # Try recovery after 60 seconds
 
@@ -104,8 +104,8 @@ class LLMHealthChecker:
 
     def __init__(self, check_interval_seconds: int = 30):
         self.check_interval_seconds = check_interval_seconds
-        self.health_status: Dict[str, HealthMetrics] = {}
-        self._check_thread: Optional[threading.Thread] = None
+        self.health_status: dict[str, HealthMetrics] = {}
+        self._check_thread: threading.Thread | None = None
         self._running = False
         self._lock = threading.Lock()
 
@@ -171,7 +171,7 @@ class LLMHealthChecker:
                 metrics.opened_at = datetime.now(timezone.utc)
                 logger.warning(
                     f"[CIRCUIT] {endpoint} OPEN after {metrics.consecutive_failures} failures. "
-                    f"Last error: {error[:100]}"
+                    f"Last error: {error[:100]}",
                 )
 
     def should_allow_request(self, endpoint: str) -> bool:
@@ -181,7 +181,7 @@ class LLMHealthChecker:
         if metrics.state == CircuitState.CLOSED:
             # Always allow
             return True
-        elif metrics.state == CircuitState.OPEN:
+        if metrics.state == CircuitState.OPEN:
             # Check if we should try recovery (half-open)
             if metrics.opened_at:
                 elapsed = datetime.now(timezone.utc) - metrics.opened_at
@@ -192,20 +192,20 @@ class LLMHealthChecker:
                     logger.info(f"[CIRCUIT] {endpoint} HALF_OPEN - testing recovery")
                     return True
             return False
-        elif metrics.state == CircuitState.HALF_OPEN:
+        if metrics.state == CircuitState.HALF_OPEN:
             # Allow one test request
             return True
 
         return True
 
-    def get_metrics_summary(self, endpoint: str) -> Dict[str, Any]:
+    def get_metrics_summary(self, endpoint: str) -> dict[str, Any]:
         """Get human-readable metrics summary."""
         metrics = self.get_health_status(endpoint)
 
         avg_response_time = 0
         if metrics.response_times:
             avg_response_time = sum(metrics.response_times) / len(
-                metrics.response_times
+                metrics.response_times,
             )
 
         return {
@@ -231,7 +231,7 @@ class LLMHealthChecker:
         }
 
     async def health_check(
-        self, endpoint: str, timeout_seconds: int = 5
+        self, endpoint: str, timeout_seconds: int = 5,
     ) -> bool:
         """
         Perform health check on Ollama endpoint.
@@ -266,11 +266,10 @@ class LLMHealthChecker:
                 if response.status_code == 200:
                     logger.debug(f"[HEALTH] {endpoint} is healthy")
                     return True
-                else:
-                    logger.warning(
-                        f"[HEALTH] {endpoint} returned status {response.status_code}"
-                    )
-                    return False
+                logger.warning(
+                    f"[HEALTH] {endpoint} returned status {response.status_code}",
+                )
+                return False
 
         except asyncio.TimeoutError:
             logger.warning(f"[HEALTH] Health check timeout for {endpoint}")
@@ -281,7 +280,7 @@ class LLMHealthChecker:
 
 
 # Global health checker instance
-_global_health_checker: Optional[LLMHealthChecker] = None
+_global_health_checker: LLMHealthChecker | None = None
 
 
 def get_health_checker() -> LLMHealthChecker:
@@ -294,5 +293,3 @@ def get_health_checker() -> LLMHealthChecker:
 
 class CircuitBreakerError(Exception):
     """Raised when circuit breaker is open."""
-
-    pass

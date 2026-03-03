@@ -16,6 +16,7 @@ from datetime import datetime, timezone
 import json
 import logging
 import os
+import pathlib
 from typing import Any
 import uuid
 
@@ -27,9 +28,7 @@ logger = logging.getLogger(__name__)
 # =============================================================================
 
 # Default paths for dataset storage
-PROJECT_ROOT = os.path.dirname(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-)
+PROJECT_ROOT = pathlib.Path(pathlib.Path(pathlib.Path(pathlib.Path(__file__).resolve()).parent).parent).parent
 DISTILLATION_DIR = os.path.join(PROJECT_ROOT, "data", "distillation")
 TEACHER_EXAMPLES_FILE = os.path.join(DISTILLATION_DIR, "teacher_examples.jsonl")
 CURATED_DATASET_FILE = os.path.join(DISTILLATION_DIR, "curated_dataset.jsonl")
@@ -75,11 +74,11 @@ class DistillationDataCollector:
         os.makedirs(self.output_dir, exist_ok=True)
 
         # Ensure files exist (create if not)
-        if not os.path.exists(self.teacher_file):
+        if not pathlib.Path(self.teacher_file).exists():
             with open(self.teacher_file, "w"):
                 pass  # Create empty file
 
-        if not os.path.exists(self.curated_file):
+        if not pathlib.Path(self.curated_file).exists():
             with open(self.curated_file, "w"):
                 pass  # Create empty file
 
@@ -160,7 +159,7 @@ class DistillationDataCollector:
             The ID of the captured example, or None if not captured
         """
         # Only capture successful completions
-        if not task_result.get("success", False):
+        if not task_result.get("success"):
             return None
 
         # Determine rating based on task success and review feedback
@@ -222,9 +221,9 @@ class DistillationDataCollector:
         # Write to temporary file first to ensure atomic operation
         try:
             # Create temp file in same directory to ensure same filesystem
-            temp_dir = os.path.dirname(filepath) or "."
+            temp_dir = pathlib.Path(filepath).parent or "."
             with tempfile.NamedTemporaryFile(
-                mode="w", dir=temp_dir, delete=False, suffix=".tmp"
+                mode="w", dir=temp_dir, delete=False, suffix=".tmp",
             ) as tmp:
                 tmp.write(json.dumps(record) + "\n")
                 temp_path = tmp.name
@@ -234,12 +233,12 @@ class DistillationDataCollector:
                 f.write(tmp.read())
 
             # Clean up temp file
-            os.unlink(temp_path)
+            pathlib.Path(temp_path).unlink()
         except Exception as e:
             # Clean up temp file if it exists
             if "temp_path" in locals():
                 try:
-                    os.unlink(temp_path)
+                    pathlib.Path(temp_path).unlink()
                 except (OSError, PermissionError) as cleanup_error:
                     logger.warning(f"Failed to clean up temp file {temp_path}: {cleanup_error}")
             raise OSError(f"Failed to write to {filepath}: {e}") from e
@@ -336,7 +335,7 @@ class DistillationDataCollector:
         return examples
 
     def export_for_training(
-        self, output_path: str | None = None, format: str = "alpaca"
+        self, output_path: str | None = None, format: str = "alpaca",
     ) -> str:
         """
         Export the curated dataset in a specific format for training.
@@ -351,7 +350,7 @@ class DistillationDataCollector:
         if output_path is None:
             timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
             output_path = os.path.join(
-                self.output_dir, f"training_data_{timestamp}.json"
+                self.output_dir, f"training_data_{timestamp}.json",
             )
 
         examples = self.get_curated_examples()
@@ -369,7 +368,7 @@ class DistillationDataCollector:
                     "conversations": [
                         {"from": "human", "value": ex["prompt"]},
                         {"from": "gpt", "value": ex["response"]},
-                    ]
+                    ],
                 }
                 for ex in examples
             ]
@@ -389,7 +388,7 @@ class DistillationDataCollector:
 
 
 def capture_cloud_success(
-    prompt: str, response: str, domain: str, task_type: str, **kwargs
+    prompt: str, response: str, domain: str, task_type: str, **kwargs,
 ) -> str:
     """
     Convenience function to capture a successful cloud model output.

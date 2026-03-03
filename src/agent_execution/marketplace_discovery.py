@@ -14,12 +14,13 @@ Features:
 - Autonomous discovery loop with self-improvement
 """
 
-import os
-import json
 import asyncio
-from typing import Optional, Dict, Any, List
-from dataclasses import dataclass, asdict, field
+from dataclasses import asdict, dataclass, field
 from datetime import datetime
+import json
+import os
+import pathlib
+from typing import Any
 
 from dotenv import load_dotenv
 
@@ -61,7 +62,7 @@ if not PLAYWRIGHT_AVAILABLE:
 
 MARKETPLACES_FILE = os.environ.get(
     "MARKETPLACES_FILE",
-    os.path.join(os.path.dirname(__file__), "../../data/marketplaces.json"),
+    os.path.join(pathlib.Path(__file__).parent, "../../data/marketplaces.json"),
 )
 
 
@@ -78,7 +79,7 @@ class DiscoveredMarketplace:
     url: str
     category: str  # "freelance", "remote", "gig", "enterprise"
     discovered_at: datetime
-    last_scanned: Optional[datetime] = None
+    last_scanned: datetime | None = None
     scan_count: int = 0
     jobs_found: int = 0
     bids_placed: int = 0
@@ -87,9 +88,9 @@ class DiscoveredMarketplace:
     success_rate: float = 0.0  # wins / bids_placed
     is_active: bool = True
     priority_score: float = 0.0  # Computed: success_rate * total_revenue
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for JSON serialization."""
         data = asdict(self)
         data["discovered_at"] = (
@@ -105,7 +106,7 @@ class DiscoveredMarketplace:
         return data
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "DiscoveredMarketplace":
+    def from_dict(cls, data: dict[str, Any]) -> "DiscoveredMarketplace":
         """Create instance from dictionary."""
         # Parse datetime fields
         if isinstance(data.get("discovered_at"), str):
@@ -120,18 +121,18 @@ class DiscoveredMarketplace:
 class DiscoveryConfig:
     """Configuration for marketplace discovery."""
 
-    search_keywords: List[str]
+    search_keywords: list[str]
     min_success_rate: float
     max_marketplaces: int
     discovery_interval_hours: int
     rescore_interval_hours: int
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for JSON serialization."""
         return asdict(self)
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "DiscoveryConfig":
+    def from_dict(cls, data: dict[str, Any]) -> "DiscoveryConfig":
         """Create instance from dictionary."""
         return cls(**data)
 
@@ -161,15 +162,15 @@ class MarketplaceDiscovery:
             config_file: Path to the marketplaces.json configuration file
         """
         self.config_file = config_file
-        self.marketplaces: List[DiscoveredMarketplace] = []
-        self.config: Optional[DiscoveryConfig] = None
+        self.marketplaces: list[DiscoveredMarketplace] = []
+        self.config: DiscoveryConfig | None = None
 
         # Load existing configuration
         self._load_marketplaces()
 
     def _load_marketplaces(self) -> None:
         """Load marketplaces from JSON file."""
-        if not os.path.exists(self.config_file):
+        if not pathlib.Path(self.config_file).exists():
             logger.warning(f"Marketplaces file not found: {self.config_file}")
             self.config = DiscoveryConfig(
                 search_keywords=[],
@@ -181,7 +182,7 @@ class MarketplaceDiscovery:
             return
 
         try:
-            with open(self.config_file, "r") as f:
+            with open(self.config_file) as f:
                 data = json.load(f)
 
             # Load config
@@ -213,7 +214,7 @@ class MarketplaceDiscovery:
             return
 
         # Ensure directory exists
-        os.makedirs(os.path.dirname(self.config_file), exist_ok=True)
+        os.makedirs(pathlib.Path(self.config_file).parent, exist_ok=True)
 
         data = {
             "version": "1.0",
@@ -229,7 +230,7 @@ class MarketplaceDiscovery:
         except Exception as e:
             logger.error(f"Failed to save marketplaces: {e}")
 
-    def get_active_marketplaces(self) -> List[DiscoveredMarketplace]:
+    def get_active_marketplaces(self) -> list[DiscoveredMarketplace]:
         """
         Get active marketplaces sorted by priority score.
 
@@ -239,7 +240,7 @@ class MarketplaceDiscovery:
         active = [m for m in self.marketplaces if m.is_active]
         return sorted(active, key=lambda m: m.priority_score, reverse=True)
 
-    def get_marketplace_by_url(self, url: str) -> Optional[DiscoveredMarketplace]:
+    def get_marketplace_by_url(self, url: str) -> DiscoveredMarketplace | None:
         """Get a marketplace by its URL."""
         for m in self.marketplaces:
             if m.url == url:
@@ -251,7 +252,7 @@ class MarketplaceDiscovery:
         name: str,
         url: str,
         category: str,
-        metadata: Optional[Dict[str, Any]] = None,
+        metadata: dict[str, Any] | None = None,
     ) -> DiscoveredMarketplace:
         """
         Add a new marketplace to the list.
@@ -370,8 +371,8 @@ class MarketplaceDiscovery:
         logger.info("Rescored all marketplaces")
 
     async def search_marketplaces(
-        self, keywords: Optional[List[str]] = None, limit: int = 5
-    ) -> List[Dict[str, Any]]:
+        self, keywords: list[str] | None = None, limit: int = 5,
+    ) -> list[dict[str, Any]]:
         """
         Search for new marketplaces using web search.
 
@@ -431,7 +432,7 @@ class MarketplaceDiscovery:
 
         return discovered
 
-    async def evaluate_marketplace(self, url: str, timeout: int = 30) -> Dict[str, Any]:
+    async def evaluate_marketplace(self, url: str, timeout: int = 30) -> dict[str, Any]:
         """
         Evaluate a marketplace by visiting it with Playwright.
 
@@ -475,7 +476,7 @@ class MarketplaceDiscovery:
                 try:
                     # Navigate to marketplace with timeout
                     response = await page.goto(
-                        url, wait_until="domcontentloaded", timeout=timeout * 1000
+                        url, wait_until="domcontentloaded", timeout=timeout * 1000,
                     )
 
                     if not response or response.status >= 400:
@@ -496,7 +497,7 @@ class MarketplaceDiscovery:
                             "[data-testid='job-post']",
                             ".listing-item",
                             "article.job",
-                        ]
+                        ],
                     )
 
                     job_count = len(job_elements) if job_elements else 0
@@ -552,7 +553,7 @@ class MarketplaceDiscovery:
                 "error": str(e),
             }
 
-    async def discover_and_update(self) -> Dict[str, Any]:
+    async def discover_and_update(self) -> dict[str, Any]:
         """
         Main orchestration: discovers new marketplaces and updates existing stats.
 
@@ -571,7 +572,7 @@ class MarketplaceDiscovery:
             # Search for new marketplaces
             if self.config:
                 new_marketplaces = await self.search_marketplaces(
-                    keywords=self.config.search_keywords, limit=3
+                    keywords=self.config.search_keywords, limit=3,
                 )
 
                 for marketplace_data in new_marketplaces:
@@ -611,7 +612,7 @@ class MarketplaceDiscovery:
 
 def load_marketplaces(
     config_file: str = MARKETPLACES_FILE,
-) -> List[DiscoveredMarketplace]:
+) -> list[DiscoveredMarketplace]:
     """
     Load marketplace list from JSON file.
 
@@ -626,7 +627,7 @@ def load_marketplaces(
 
 
 def save_marketplaces_config(
-    marketplaces: List[DiscoveredMarketplace], config_file: str = MARKETPLACES_FILE
+    marketplaces: list[DiscoveredMarketplace], config_file: str = MARKETPLACES_FILE,
 ) -> None:
     """
     Save marketplace list to JSON file.
@@ -642,7 +643,7 @@ def save_marketplaces_config(
 
 async def discover_new_marketplaces(
     config_file: str = MARKETPLACES_FILE,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Discover new marketplaces and update the configuration.
 

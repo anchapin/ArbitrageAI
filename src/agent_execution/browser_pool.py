@@ -7,9 +7,9 @@ Issue #4: Fix async Playwright resource leaks in market scanner
 """
 
 import asyncio
-from typing import Optional, Dict, Any
 from dataclasses import dataclass
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, timezone
+from typing import Any
 
 try:
     from playwright.async_api import async_playwright
@@ -31,7 +31,7 @@ class PooledBrowser:
     created_at: datetime
     in_use: bool = False
     page_count: int = 0
-    last_used: Optional[datetime] = None
+    last_used: datetime | None = None
     error_count: int = 0
 
 
@@ -58,7 +58,7 @@ class BrowserPool:
         self.headless = headless
 
         # Pool storage
-        self._browsers: Dict[str, PooledBrowser] = {}
+        self._browsers: dict[str, PooledBrowser] = {}
         self._browser_queue: asyncio.Queue = asyncio.Queue()
         self._lock = asyncio.Lock()
 
@@ -125,21 +125,20 @@ class BrowserPool:
                             self.browsers_reused += 1
                             logger.debug(f"Reusing browser {browser_id}")
                             return pooled.browser
-                        else:
-                            logger.debug(
-                                f"Browser {browser_id} exceeded error threshold, removing"
-                            )
-                            try:
-                                await pooled.browser.close()
-                            except Exception as e:
-                                logger.warning(f"Error closing failed browser: {e}")
-                            del self._browsers[browser_id]
+                        logger.debug(
+                            f"Browser {browser_id} exceeded error threshold, removing",
+                        )
+                        try:
+                            await pooled.browser.close()
+                        except Exception as e:
+                            logger.warning(f"Error closing failed browser: {e}")
+                        del self._browsers[browser_id]
 
             # Create new browser if under limit
             if len(self._browsers) < self.max_browsers:
                 try:
                     browser = await self._playwright.chromium.launch(
-                        headless=self.headless
+                        headless=self.headless,
                     )
                     browser_id = f"browser_{len(self._browsers)}"
                     self._browsers[browser_id] = PooledBrowser(
@@ -177,7 +176,7 @@ class BrowserPool:
                         pooled.error_count += 1
                         logger.debug(
                             f"Released browser {browser_id} with error "
-                            f"(error_count={pooled.error_count})"
+                            f"(error_count={pooled.error_count})",
                         )
                     else:
                         logger.debug(f"Released browser {browser_id}")
@@ -230,7 +229,7 @@ class BrowserPool:
             logger.debug(f"Browser health check failed: {e}")
             return False
 
-    def get_metrics(self) -> Dict[str, Any]:
+    def get_metrics(self) -> dict[str, Any]:
         """Get pool metrics."""
         active_count = sum(1 for p in self._browsers.values() if p.in_use)
         total_errors = sum(p.error_count for p in self._browsers.values())
@@ -253,7 +252,7 @@ class BrowserPool:
 
 
 # Global pool instance
-_browser_pool: Optional[BrowserPool] = None
+_browser_pool: BrowserPool | None = None
 
 
 def get_browser_pool(max_browsers: int = 3) -> BrowserPool:

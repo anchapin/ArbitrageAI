@@ -132,7 +132,7 @@ class ModelConfig:
             cloud_model=os.environ.get("CLOUD_MODEL", DEFAULT_CLOUD_MODEL),
             local_model=os.environ.get("LOCAL_MODEL", DEFAULT_LOCAL_MODEL),
             local_base_url=os.environ.get(
-                "LOCAL_BASE_URL"
+                "LOCAL_BASE_URL",
             ),  # Will use get_ollama_url() via __init__ if None
             local_api_key=os.environ.get("LOCAL_API_KEY", "not-needed"),
             use_local_by_default=os.environ.get("USE_LOCAL_BY_DEFAULT", "false").lower()
@@ -142,7 +142,7 @@ class ModelConfig:
         )
 
     def get_model_for_task(
-        self, task_type: str, prefer_local: bool | None = None
+        self, task_type: str, prefer_local: bool | None = None,
     ) -> tuple:
         """
         Get the appropriate model and configuration for a task type.
@@ -173,13 +173,12 @@ class ModelConfig:
         # Return configuration
         if use_local:
             return (model, self.local_base_url, self.local_api_key, True)
-        else:
-            return (
-                model,
-                os.environ.get("BASE_URL", "https://api.openai.com/v1"),
-                os.environ.get("API_KEY", "dummy-key-for-local"),
-                False,
-            )
+        return (
+            model,
+            os.environ.get("BASE_URL", "https://api.openai.com/v1"),
+            os.environ.get("API_KEY", "dummy-key-for-local"),
+            False,
+        )
 
 
 # Global default model config
@@ -308,7 +307,7 @@ class LLMService:
         """
         # Get base_url from parameter, environment, or .env file
         self.base_url = base_url or os.environ.get(
-            "BASE_URL", "https://api.openai.com/v1"
+            "BASE_URL", "https://api.openai.com/v1",
         )
 
         # Get api_key from parameter, environment, or .env file
@@ -332,7 +331,7 @@ class LLMService:
             self._health_checker = get_health_checker()
             # Register this endpoint for monitoring
             self._health_checker.register_endpoint(
-                self.base_url, failure_threshold=3, recovery_timeout_seconds=60
+                self.base_url, failure_threshold=3, recovery_timeout_seconds=60,
             )
 
         # Initialize the OpenAI client with custom base URL
@@ -369,7 +368,7 @@ class LLMService:
             if not self._health_checker.should_allow_request(self.base_url):
                 raise CircuitBreakerError(
                     f"Circuit breaker is OPEN for {self.base_url}. "
-                    f"Service appears to be unavailable."
+                    f"Service appears to be unavailable.",
                 )
 
         # Stealth mode: add random delay to mimic human typing speed
@@ -543,7 +542,7 @@ class LLMService:
 
     @classmethod
     def for_task(
-        cls, task_type: str, model_config: ModelConfig | None = None, **kwargs
+        cls, task_type: str, model_config: ModelConfig | None = None, **kwargs,
     ) -> "LLMService":
         """
         Create an LLMService instance configured for a specific task type.
@@ -620,7 +619,7 @@ class LLMService:
 
         # Get the distilled model name from config or environment
         distilled_model = model or os.environ.get(
-            "DISTILLED_MODEL_NAME", DEFAULT_DISTILLED_MODEL
+            "DISTILLED_MODEL_NAME", DEFAULT_DISTILLED_MODEL,
         )
 
         return cls(
@@ -707,9 +706,8 @@ class LLMService:
         if potential_revenue_cents < threshold:
             # Low revenue: use local model (free, cost optimization)
             return cls.with_local(**kwargs)
-        else:
-            # High revenue: use cloud model (best quality for high-value tasks)
-            return cls.with_cloud(**kwargs)
+        # High revenue: use cloud model (best quality for high-value tasks)
+        return cls.with_cloud(**kwargs)
 
     # =========================================================================
     # FALLBACK MECHANISM
@@ -750,7 +748,7 @@ class LLMService:
         # Delays between attempts: [0s, 2s, 5s]
         timeouts = [10, 20, 30]
         ExponentialBackoff(
-            initial_delay_ms=0, base=2.0, max_delay_ms=5000, jitter_factor=0.1
+            initial_delay_ms=0, base=2.0, max_delay_ms=5000, jitter_factor=0.1,
         )
 
         last_error = None
@@ -800,7 +798,7 @@ class LLMService:
 
             # Create local service (with larger timeout for local)
             local_service = self.with_local(
-                enable_circuit_breaker=self.enable_circuit_breaker
+                enable_circuit_breaker=self.enable_circuit_breaker,
             )
 
             try:
@@ -820,7 +818,7 @@ class LLMService:
                 return result
             except Exception as local_error:
                 # Both failed, raise the original error
-                raise last_error if last_error else local_error
+                raise last_error if last_error else local_error from local_error
 
         # Fallback disabled or already local, re-raise
         raise (

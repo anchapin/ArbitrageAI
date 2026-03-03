@@ -14,9 +14,8 @@ Features:
 - Integration with Telegram notifications for low budget alerts
 """
 
-from typing import Optional, Dict, Any
 from datetime import datetime, timedelta
-
+from typing import Any
 
 from ..api.database import SessionLocal
 from ..api.models import VirtualWallet as VirtualWalletModel
@@ -40,7 +39,7 @@ class VirtualWalletManager:
     def __init__(self):
         """Initialize wallet manager."""
         self.wallet_id = "default"
-        self._wallet: Optional[VirtualWallet] = None
+        self._wallet: VirtualWallet | None = None
         self._load_wallet()
 
     def _load_wallet(self):
@@ -55,7 +54,7 @@ class VirtualWalletManager:
             self._wallet = wallet
             logger.info(
                 f"Wallet loaded - Balance: ${self._wallet.balance_cents / 100:.2f}, "
-                f"Budget Remaining: ${(self._wallet.budget_cap_cents - self._wallet.budget_spent_cents) / 100:.2f}"
+                f"Budget Remaining: ${(self._wallet.budget_cap_cents - self._wallet.budget_spent_cents) / 100:.2f}",
             )
         finally:
             db.close()
@@ -80,7 +79,7 @@ class VirtualWalletManager:
 
         logger.info(
             f"Created default wallet - Initial seed: ${initial_seed_cents / 100:.2f}, "
-            f"Budget cap: ${budget_cap_cents / 100:.2f}/{reset_period}"
+            f"Budget cap: ${budget_cap_cents / 100:.2f}/{reset_period}",
         )
 
         return wallet
@@ -89,7 +88,7 @@ class VirtualWalletManager:
         self,
         cost_type: str,
         amount_cents: int,
-        task_id: Optional[str] = None,
+        task_id: str | None = None,
     ) -> bool:
         """
         Deduct cost from wallet and budget.
@@ -121,7 +120,7 @@ class VirtualWalletManager:
                     f"Budget/Insufficient balance for {cost_type}: "
                     f"Needed ${amount_cents / 100:.2f}, "
                     f"Available budget: ${available_budget / 100:.2f}, "
-                    f"Available balance: ${available_balance / 100:.2f}"
+                    f"Available balance: ${available_balance / 100:.2f}",
                 )
                 return False
 
@@ -137,7 +136,7 @@ class VirtualWalletManager:
             logger.info(
                 f"Deducted ${amount_cents / 100:.2f} for {cost_type} - "
                 f"Balance: ${wallet.balance_cents / 100:.2f}, "
-                f"Budget spent: ${wallet.budget_spent_cents / 100:.2f}/${wallet.budget_cap_cents / 100:.2f}"
+                f"Budget spent: ${wallet.budget_spent_cents / 100:.2f}/${wallet.budget_cap_cents / 100:.2f}",
             )
 
             # Check if we need to send alerts
@@ -152,7 +151,7 @@ class VirtualWalletManager:
         finally:
             db.close()
 
-    def add_revenue(self, amount_cents: int, task_id: Optional[str] = None) -> bool:
+    def add_revenue(self, amount_cents: int, task_id: str | None = None) -> bool:
         """
         Add revenue from completed task to wallet.
 
@@ -182,7 +181,7 @@ class VirtualWalletManager:
             logger.info(
                 f"Added revenue ${amount_cents / 100:.2f} - "
                 f"Balance: ${wallet.balance_cents / 100:.2f}, "
-                f"Total earned: ${wallet.total_earned_cents / 100:.2f}"
+                f"Total earned: ${wallet.total_earned_cents / 100:.2f}",
             )
 
             return True
@@ -194,7 +193,7 @@ class VirtualWalletManager:
         finally:
             db.close()
 
-    def get_available_budget(self) -> Dict[str, Any]:
+    def get_available_budget(self) -> dict[str, Any]:
         """
         Get available budget information.
 
@@ -235,7 +234,7 @@ class VirtualWalletManager:
         finally:
             db.close()
 
-    def get_wallet_status(self) -> Dict[str, Any]:
+    def get_wallet_status(self) -> dict[str, Any]:
         """
         Get complete wallet status.
 
@@ -281,7 +280,7 @@ class VirtualWalletManager:
             self._wallet = wallet
 
             logger.info(
-                f"Added seed money ${amount_cents / 100:.2f} - New balance: ${wallet.balance_cents / 100:.2f}"
+                f"Added seed money ${amount_cents / 100:.2f} - New balance: ${wallet.balance_cents / 100:.2f}",
             )
 
             return True
@@ -296,7 +295,7 @@ class VirtualWalletManager:
     def set_budget_cap(
         self,
         budget_cap_cents: int,
-        reset_period: Optional[str] = None,
+        reset_period: str | None = None,
     ) -> bool:
         """
         Set budget cap and reset period.
@@ -332,7 +331,7 @@ class VirtualWalletManager:
 
             logger.info(
                 f"Budget updated - Cap: ${budget_cap_cents / 100:.2f}, "
-                f"Period: {reset_period or wallet.budget_reset_period}"
+                f"Period: {reset_period or wallet.budget_reset_period}",
             )
 
             return True
@@ -367,7 +366,7 @@ class VirtualWalletManager:
             db.commit()
             logger.info(
                 f"Budget reset - Period: {wallet.budget_reset_period}, "
-                f"New cap: ${wallet.budget_cap_cents / 100:.2f}"
+                f"New cap: ${wallet.budget_cap_cents / 100:.2f}",
             )
 
     def _check_budget_alerts(self, db, wallet: VirtualWallet):
@@ -397,7 +396,7 @@ class VirtualWalletManager:
                     f"Budget: ${wallet.budget_spent_cents / 100:.2f} / ${wallet.budget_cap_cents / 100:.2f}\n"
                     f"Used: {budget_used_pct:.1f}%\n"
                     f"Period: {wallet.budget_reset_period}\n\n"
-                    f"Agent will stop bidding when budget is exhausted."
+                    f"Agent will stop bidding when budget is exhausted.",
                 )
                 logger.info(f"Low budget alert sent at {budget_used_pct:.1f}%")
             except Exception as e:
@@ -422,7 +421,7 @@ class VirtualWalletManager:
                     f"Budget: ${wallet.budget_spent_cents / 100:.2f} / ${wallet.budget_cap_cents / 100:.2f}\n"
                     f"Used: {budget_used_pct:.1f}%\n"
                     f"Period: {wallet.budget_reset_period}\n\n"
-                    f"Agent will STOP bidding soon. Add seed money immediately."
+                    f"Agent will STOP bidding soon. Add seed money immediately.",
                 )
                 logger.info(f"Critical budget alert sent at {budget_used_pct:.1f}%")
             except Exception as e:
@@ -430,7 +429,7 @@ class VirtualWalletManager:
 
 
 # Global singleton instance
-_wallet_manager_instance: Optional[VirtualWalletManager] = None
+_wallet_manager_instance: VirtualWalletManager | None = None
 
 
 def get_virtual_wallet() -> VirtualWalletManager:

@@ -1,16 +1,17 @@
 import os
+import pathlib
+
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, Session
-from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.orm import Session, sessionmaker
+
 from .models import Base
 
 # Get the database URL from environment variable or use default SQLite path
 # Use absolute path to ensure data directory is at project root
-PROJECT_ROOT = os.path.dirname(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-)
+PROJECT_ROOT = pathlib.Path(pathlib.Path(pathlib.Path(pathlib.Path(__file__).resolve()).parent).parent).parent
 DATABASE_URL = os.getenv(
-    "DATABASE_URL", f"sqlite:///{os.path.join(PROJECT_ROOT, 'data', 'tasks.db')}"
+    "DATABASE_URL", f"sqlite:///{os.path.join(PROJECT_ROOT, 'data', 'tasks.db')}",
 )
 
 # Create engine based on database type
@@ -28,7 +29,7 @@ if DATABASE_URL.startswith("sqlite"):
 else:
     engine = create_engine(DATABASE_URL, echo=False)
     ASYNC_DATABASE_URL = DATABASE_URL.replace(
-        "postgresql://", "postgresql+asyncpg://"
+        "postgresql://", "postgresql+asyncpg://",
     ).replace("mysql://", "mysql+aiomysql://")
 
 # Create async engine
@@ -39,7 +40,7 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 # Create AsyncSessionLocal class for creating async database sessions
 AsyncSessionLocal = async_sessionmaker(
-    autocommit=False, autoflush=False, bind=async_engine, expire_on_commit=False
+    autocommit=False, autoflush=False, bind=async_engine, expire_on_commit=False,
 )
 
 

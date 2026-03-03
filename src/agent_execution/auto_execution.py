@@ -27,23 +27,22 @@ Usage:
 """
 
 import asyncio
-import time
+from dataclasses import dataclass
 from datetime import datetime
-from typing import Dict, List, Optional, Any, Tuple
 from enum import Enum
-from dataclasses import dataclass, asdict
-import json
+import time
+from typing import Any
 
 from sqlalchemy.orm import Session
 
+from ..api.database import SessionLocal
+from ..api.models import Bid, BidStatus, Task, TaskStatus
 from ..utils.logger import get_logger
 from ..utils.telemetry import get_tracer
-from ..api.models import Task, TaskStatus, Bid, BidStatus
-from ..api.database import SessionLocal
-from .confidence_tracker import ConfidenceTracker, get_confidence_tracker
-from .self_adjusting_algorithm import SelfAdjustingConfidenceAlgorithm, get_self_adjusting_algorithm
-from .marketplace_discovery import MarketplaceDiscovery
+from .confidence_tracker import get_confidence_tracker
 from .executor import TaskRouter
+from .marketplace_discovery import MarketplaceDiscovery
+from .self_adjusting_algorithm import get_self_adjusting_algorithm
 
 logger = get_logger(__name__)
 
@@ -60,14 +59,14 @@ class ExecutionStrategy(str, Enum):
 class ExecutionResult:
     """Result of auto-execution."""
     success: bool
-    task_id: Optional[str]
-    bid_id: Optional[str]
+    task_id: str | None
+    bid_id: str | None
     bid_amount_cents: int
     confidence_score: float
     execution_time_ms: float
     strategy_used: str
-    error_message: Optional[str] = None
-    metadata: Optional[Dict[str, Any]] = None
+    error_message: str | None = None
+    metadata: dict[str, Any] | None = None
 
 
 @dataclass
@@ -107,13 +106,13 @@ class AutoExecutionPipeline:
         self.max_concurrent_tasks = max_concurrent_tasks
         self.retry_attempts = retry_attempts
         self.retry_delay_seconds = retry_delay_seconds
-        
+
         self.confidence_tracker = get_confidence_tracker()
         self.self_adjusting_algorithm = get_self_adjusting_algorithm()
         self.marketplace_discovery = MarketplaceDiscovery()
         self.task_router = TaskRouter()
-        
-        self._active_tasks: Dict[str, asyncio.Task] = {}
+
+        self._active_tasks: dict[str, asyncio.Task] = {}
         self._execution_count = 0
         self._success_count = 0
         self._total_revenue_cents = 0
@@ -122,16 +121,16 @@ class AutoExecutionPipeline:
     async def initialize(self) -> None:
         """Initialize the auto-execution pipeline."""
         logger.info("Initializing auto-execution pipeline")
-        
+
         # Initialize components
         await self.marketplace_discovery.initialize()
-        
+
         logger.info("Auto-execution pipeline initialized")
 
     async def shutdown(self) -> None:
         """Shutdown the pipeline gracefully."""
         logger.info("Shutting down auto-execution pipeline")
-        
+
         # Cancel active tasks
         for task_id, task in list(self._active_tasks.items()):
             task.cancel()
@@ -139,15 +138,15 @@ class AutoExecutionPipeline:
                 await task
             except asyncio.CancelledError:
                 pass
-        
+
         await self.marketplace_discovery.close()
 
         logger.info("Auto-execution pipeline shutdown complete")
 
     async def execute_opportunity(
         self,
-        opportunity: Dict[str, Any],
-        db: Optional[Session] = None,
+        opportunity: dict[str, Any],
+        db: Session | None = None,
     ) -> ExecutionResult:
         """
         Execute a marketplace opportunity.
@@ -160,14 +159,14 @@ class AutoExecutionPipeline:
             ExecutionResult: Result of execution
         """
         start_time = time.time()
-        
+
         if db is None:
             db = SessionLocal()
-        
+
         try:
             # Step 1: Analyze opportunity
             bid_decision = await self._analyze_opportunity(opportunity)
-            
+
             if not bid_decision.should_bid:
                 return ExecutionResult(
                     success=False,
@@ -179,14 +178,14 @@ class AutoExecutionPipeline:
                     strategy_used=self.strategy.value,
                     reasoning=f"Did not bid: {bid_decision.reasoning}",
                 )
-            
+
             # Step 2: Place bid
             bid_result = await self._place_bid(
                 opportunity=opportunity,
                 amount_cents=bid_decision.recommended_amount_cents,
                 db=db,
             )
-            
+
             if not bid_result["success"]:
                 return ExecutionResult(
                     success=False,
@@ -198,7 +197,7 @@ class AutoExecutionPipeline:
                     strategy_used=self.strategy.value,
                     error_message=bid_result.get("error"),
                 )
-            
+
             # Step 3: Execute task if bid won
             if bid_result.get("status") == "won":
                 execution_result = await self._execute_task(
@@ -206,7 +205,7 @@ class AutoExecutionPipeline:
                     bid_id=bid_result["bid_id"],
                     db=db,
                 )
-                
+
                 return ExecutionResult(
                     success=execution_result["success"],
                     task_id=execution_result.get("task_id"),
@@ -217,7 +216,7 @@ class AutoExecutionPipeline:
                     strategy_used=self.strategy.value,
                     metadata=execution_result.get("metadata"),
                 )
-            
+
             # Bid placed but not yet won
             return ExecutionResult(
                 success=True,
@@ -229,7 +228,7 @@ class AutoExecutionPipeline:
                 strategy_used=self.strategy.value,
                 metadata={"bid_status": "pending"},
             )
-            
+
         except Exception as e:
             logger.exception(f"Auto-execution failed: {e}")
             return ExecutionResult(
@@ -248,7 +247,7 @@ class AutoExecutionPipeline:
 
     async def _analyze_opportunity(
         self,
-        opportunity: Dict[str, Any],
+        opportunity: dict[str, Any],
     ) -> BidDecision:
         """
         Analyze an opportunity and decide whether to bid.
@@ -269,21 +268,21 @@ class AutoExecutionPipeline:
         confidence_score = self.confidence_tracker.calculate_confidence_score(
             threshold=self.min_confidence_threshold,
         )
-        
+
         # Adjust based on self-adjusting algorithm
         adjusted_threshold = self.self_adjusting_algorithm.get_adjusted_threshold(
-            self.min_confidence_threshold
+            self.min_confidence_threshold,
         )
-        
+
         # Strategy-based adjustments
         if self.strategy == ExecutionStrategy.AGGRESSIVE:
             adjusted_threshold *= 0.8  # Lower threshold
         elif self.strategy == ExecutionStrategy.CONSERVATIVE:
             adjusted_threshold *= 1.2  # Higher threshold
-        
+
         # Make decision
         should_bid = confidence_score >= adjusted_threshold
-        
+
         # Calculate recommended bid amount
         if should_bid:
             recommended_amount = self._calculate_bid_amount(
@@ -293,7 +292,7 @@ class AutoExecutionPipeline:
             )
         else:
             recommended_amount = 0
-        
+
         # Determine risk level
         if confidence_score >= 0.8:
             risk_level = "low"
@@ -301,7 +300,7 @@ class AutoExecutionPipeline:
             risk_level = "medium"
         else:
             risk_level = "high"
-        
+
         return BidDecision(
             should_bid=should_bid,
             confidence=confidence_score,
@@ -330,27 +329,27 @@ class AutoExecutionPipeline:
             percentage = 0.6  # 60% of budget
         else:
             percentage = 0.4  # 40% of budget
-        
+
         # Strategy adjustments
         if strategy == ExecutionStrategy.AGGRESSIVE:
             percentage = min(percentage + 0.1, 0.95)
         elif strategy == ExecutionStrategy.CONSERVATIVE:
             percentage = max(percentage - 0.1, 0.3)
-        
+
         bid_amount = int(budget_cents * percentage)
-        
+
         # Apply limits
         bid_amount = min(bid_amount, self.max_bid_amount_cents)
         bid_amount = max(bid_amount, 100)  # Minimum $1
-        
+
         return bid_amount
 
     async def _place_bid(
         self,
-        opportunity: Dict[str, Any],
+        opportunity: dict[str, Any],
         amount_cents: int,
         db: Session,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Place a bid on an opportunity.
         
@@ -372,29 +371,29 @@ class AutoExecutionPipeline:
                 bid_amount_cents=amount_cents,
                 status=BidStatus.PENDING,
                 confidence_score=self.confidence_tracker.calculate_confidence_score(
-                    threshold=self.min_confidence_threshold
+                    threshold=self.min_confidence_threshold,
                 ),
             )
-            
+
             db.add(bid)
             db.commit()
             db.refresh(bid)
-            
-            logger.info(f"Bid placed: {bid.id} - ${amount_cents/100:.2f}")
-            
+
+            logger.info(f"Bid placed: {bid.id} - ${amount_cents / 100:.2f}")
+
             # Record bid in confidence tracker
             self.confidence_tracker.record_bid(
                 threshold=bid.confidence_score,
                 bid_amount_cents=amount_cents,
             )
-            
+
             return {
                 "success": True,
                 "bid_id": bid.id,
                 "status": "pending",
                 "amount_cents": amount_cents,
             }
-            
+
         except Exception as e:
             db.rollback()
             logger.exception(f"Failed to place bid: {e}")
@@ -405,10 +404,10 @@ class AutoExecutionPipeline:
 
     async def _execute_task(
         self,
-        task_data: Dict[str, Any],
+        task_data: dict[str, Any],
         bid_id: str,
         db: Session,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Execute a task after winning the bid.
         
@@ -421,7 +420,7 @@ class AutoExecutionPipeline:
             Dict with execution result
         """
         task_id = None
-        
+
         try:
             # Create task record
             task = Task(
@@ -433,34 +432,34 @@ class AutoExecutionPipeline:
                 bid_id=bid_id,
                 budget_cents=task_data.get("budget_cents", 0),
             )
-            
+
             db.add(task)
             db.commit()
             db.refresh(task)
             task_id = task.id
-            
+
             # Update bid with task ID
             bid = db.query(Bid).filter(Bid.id == bid_id).first()
             if bid:
                 bid.task_id = task_id
                 bid.status = BidStatus.ACCEPTED
                 db.commit()
-            
+
             # Execute task with retries
             result = await self._execute_with_retries(
                 task_data=task_data,
                 task_id=task_id,
                 domain=task.domain,
             )
-            
+
             if result["success"]:
                 task.status = TaskStatus.COMPLETED
                 task.result = result.get("output", "")
-                
+
                 # Update revenue tracking
                 self._success_count += 1
                 self._total_revenue_cents += task.budget_cents
-                
+
                 # Record successful outcome
                 self.confidence_tracker.update_outcome(
                     entry_id=task_id,
@@ -470,11 +469,11 @@ class AutoExecutionPipeline:
             else:
                 task.status = TaskStatus.FAILED
                 task.error_message = result.get("error", "Unknown error")
-            
+
             db.commit()
-            
+
             logger.info(f"Task execution completed: {task_id} - {task.status.value}")
-            
+
             return {
                 "success": result["success"],
                 "task_id": task_id,
@@ -482,18 +481,18 @@ class AutoExecutionPipeline:
                 "error": result.get("error"),
                 "metadata": result.get("metadata"),
             }
-            
+
         except Exception as e:
             db.rollback()
             logger.exception(f"Task execution failed: {e}")
-            
+
             if task_id:
                 self.confidence_tracker.update_outcome(
                     entry_id=task_id,
                     won=False,
                     profit_cents=0,
                 )
-            
+
             return {
                 "success": False,
                 "task_id": task_id,
@@ -502,10 +501,10 @@ class AutoExecutionPipeline:
 
     async def _execute_with_retries(
         self,
-        task_data: Dict[str, Any],
+        task_data: dict[str, Any],
         task_id: str,
         domain: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Execute task with retry logic.
         
@@ -518,7 +517,7 @@ class AutoExecutionPipeline:
             Dict with execution result
         """
         last_error = None
-        
+
         for attempt in range(self.retry_attempts):
             try:
                 # Route and execute task
@@ -527,36 +526,36 @@ class AutoExecutionPipeline:
                     user_request=task_data.get("title", ""),
                     csv_data=task_data.get("data", ""),
                 )
-                
+
                 return {
                     "success": True,
                     "output": result,
                     "metadata": {"attempts": attempt + 1},
                 }
-                
+
             except Exception as e:
                 last_error = e
                 logger.warning(f"Execution attempt {attempt + 1} failed: {e}")
-                
+
                 if attempt < self.retry_attempts - 1:
                     # Wait before retry with exponential backoff
                     delay = self.retry_delay_seconds * (2 ** attempt)
                     await asyncio.sleep(delay)
-        
+
         return {
             "success": False,
             "error": f"All {self.retry_attempts} attempts failed. Last error: {last_error}",
             "metadata": {"attempts": self.retry_attempts},
         }
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get execution statistics."""
         success_rate = (
             self._success_count / self._execution_count * 100
             if self._execution_count > 0
             else 0.0
         )
-        
+
         return {
             "total_executions": self._execution_count,
             "successful_executions": self._success_count,
@@ -568,7 +567,7 @@ class AutoExecutionPipeline:
 
 
 # Global pipeline instance
-_auto_execution_pipeline: Optional[AutoExecutionPipeline] = None
+_auto_execution_pipeline: AutoExecutionPipeline | None = None
 
 
 def get_auto_execution_pipeline() -> AutoExecutionPipeline:

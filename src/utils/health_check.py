@@ -17,17 +17,18 @@ Usage:
 """
 
 import asyncio
-import time
-import psutil
+from dataclasses import dataclass
 from datetime import datetime
-from typing import Dict, List, Optional, Any
 from enum import Enum
-from dataclasses import dataclass, asdict
+import time
+from typing import Any
+
 import aiohttp
+import psutil
 from sqlalchemy import text
 
-from .logger import get_logger
 from ..api.database import SessionLocal
+from .logger import get_logger
 
 logger = get_logger(__name__)
 
@@ -59,9 +60,9 @@ class HealthCheckResult:
     service: str
     service_type: ServiceType
     status: HealthStatus
-    response_time_ms: Optional[float] = None
+    response_time_ms: float | None = None
     message: str = ""
-    details: Optional[Dict[str, Any]] = None
+    details: dict[str, Any] | None = None
     timestamp: str = ""
 
     def __post_init__(self):
@@ -74,8 +75,8 @@ class SystemHealth:
     """Overall system health status."""
     status: HealthStatus
     timestamp: str
-    checks: List[HealthCheckResult]
-    system_metrics: Optional[Dict[str, Any]] = None
+    checks: list[HealthCheckResult]
+    system_metrics: dict[str, Any] | None = None
     uptime_seconds: float = 0.0
     version: str = "1.0.0"
 
@@ -94,8 +95,8 @@ class HealthMonitor:
 
     def __init__(
         self,
-        database_url: Optional[str] = None,
-        redis_url: Optional[str] = None,
+        database_url: str | None = None,
+        redis_url: str | None = None,
         ollama_url: str = "http://localhost:11434",
         openai_url: str = "https://api.openai.com/v1",
         timeout_seconds: float = 5.0,
@@ -116,7 +117,7 @@ class HealthMonitor:
             SystemHealth: Overall system health status
         """
         start = time.time()
-        
+
         # Run all health checks concurrently
         tasks = [
             self.check_database(),
@@ -127,9 +128,9 @@ class HealthMonitor:
             self.check_scheduler(),
             self.check_worker(),
         ]
-        
+
         results = await asyncio.gather(*tasks, return_exceptions=True)
-        
+
         # Process results
         health_checks = []
         for result in results:
@@ -138,17 +139,17 @@ class HealthMonitor:
                     service="unknown",
                     service_type=ServiceType.API,
                     status=HealthStatus.UNHEALTHY,
-                    message=f"Health check failed: {str(result)}",
+                    message=f"Health check failed: {result!s}",
                 ))
             elif isinstance(result, HealthCheckResult):
                 health_checks.append(result)
-        
+
         # Add system metrics
         system_metrics = self._get_system_metrics()
-        
+
         # Determine overall status
         overall_status = self._calculate_overall_status(health_checks)
-        
+
         return SystemHealth(
             status=overall_status,
             timestamp=datetime.utcnow().isoformat(),
@@ -166,9 +167,9 @@ class HealthMonitor:
                 # Test connection
                 result = db.execute(text("SELECT 1"))
                 result.fetchone()
-                
+
                 response_time = (time.time() - start) * 1000
-                
+
                 return HealthCheckResult(
                     service="PostgreSQL",
                     service_type=ServiceType.DATABASE,
@@ -183,14 +184,14 @@ class HealthMonitor:
                 service="PostgreSQL",
                 service_type=ServiceType.DATABASE,
                 status=HealthStatus.UNHEALTHY,
-                message=f"Database connection timeout: {str(e)}",
+                message=f"Database connection timeout: {e!s}",
             )
         except (ConnectionError, ConnectionRefusedError) as e:
             return HealthCheckResult(
                 service="PostgreSQL",
                 service_type=ServiceType.DATABASE,
                 status=HealthStatus.UNHEALTHY,
-                message=f"Database connection error: {str(e)}",
+                message=f"Database connection error: {e!s}",
             )
         except Exception as e:
             logger.error(f"Database health check failed: {e}", exc_info=True)
@@ -198,7 +199,7 @@ class HealthMonitor:
                 service="PostgreSQL",
                 service_type=ServiceType.DATABASE,
                 status=HealthStatus.UNHEALTHY,
-                message=f"Database connection failed: {str(e)}",
+                message=f"Database connection failed: {e!s}",
             )
 
     async def check_redis(self) -> HealthCheckResult:
@@ -206,18 +207,18 @@ class HealthMonitor:
         start = time.time()
         try:
             import redis.asyncio as redis
-            
+
             if self._redis_client is None:
                 self._redis_client = redis.from_url(
                     self.redis_url or "redis://localhost:6379/0",
                     encoding="utf-8",
                     decode_responses=True,
                 )
-            
+
             # Test connection
             await self._redis_client.ping()
             response_time = (time.time() - start) * 1000
-            
+
             return HealthCheckResult(
                 service="Redis",
                 service_type=ServiceType.REDIS,
@@ -230,14 +231,14 @@ class HealthMonitor:
                 service="Redis",
                 service_type=ServiceType.REDIS,
                 status=HealthStatus.UNHEALTHY,
-                message=f"Redis connection timeout: {str(e)}",
+                message=f"Redis connection timeout: {e!s}",
             )
         except (ConnectionError, ConnectionRefusedError) as e:
             return HealthCheckResult(
                 service="Redis",
                 service_type=ServiceType.REDIS,
                 status=HealthStatus.UNHEALTHY,
-                message=f"Redis connection error: {str(e)}",
+                message=f"Redis connection error: {e!s}",
             )
         except Exception as e:
             logger.error(f"Redis health check failed: {e}", exc_info=True)
@@ -245,7 +246,7 @@ class HealthMonitor:
                 service="Redis",
                 service_type=ServiceType.REDIS,
                 status=HealthStatus.UNHEALTHY,
-                message=f"Redis connection failed: {str(e)}",
+                message=f"Redis connection failed: {e!s}",
             )
 
     async def check_llm_local(self) -> HealthCheckResult:
@@ -261,10 +262,10 @@ class HealthMonitor:
                         data = await response.json()
                         models = data.get("models", [])
                         response_time = (time.time() - start) * 1000
-                        
+
                         status = HealthStatus.HEALTHY if models else HealthStatus.DEGRADED
                         message = f"Ollama healthy with {len(models)} models" if models else "Ollama running but no models loaded"
-                        
+
                         return HealthCheckResult(
                             service="Ollama (Local LLM)",
                             service_type=ServiceType.LLM_LOCAL,
@@ -273,26 +274,25 @@ class HealthMonitor:
                             message=message,
                             details={"models": len(models)},
                         )
-                    else:
-                        return HealthCheckResult(
-                            service="Ollama (Local LLM)",
-                            service_type=ServiceType.LLM_LOCAL,
-                            status=HealthStatus.UNHEALTHY,
-                            message=f"Ollama returned status {response.status}",
-                        )
+                    return HealthCheckResult(
+                        service="Ollama (Local LLM)",
+                        service_type=ServiceType.LLM_LOCAL,
+                        status=HealthStatus.UNHEALTHY,
+                        message=f"Ollama returned status {response.status}",
+                    )
         except (TimeoutError, asyncio.TimeoutError) as e:
             return HealthCheckResult(
                 service="Ollama (Local LLM)",
                 service_type=ServiceType.LLM_LOCAL,
                 status=HealthStatus.UNHEALTHY,
-                message=f"Ollama health check timeout: {str(e)}",
+                message=f"Ollama health check timeout: {e!s}",
             )
         except (ConnectionError, ConnectionRefusedError, aiohttp.ClientError) as e:
             return HealthCheckResult(
                 service="Ollama (Local LLM)",
                 service_type=ServiceType.LLM_LOCAL,
                 status=HealthStatus.UNHEALTHY,
-                message=f"Ollama connection error: {str(e)}",
+                message=f"Ollama connection error: {e!s}",
             )
         except Exception as e:
             logger.error(f"Ollama health check failed: {e}", exc_info=True)
@@ -300,7 +300,7 @@ class HealthMonitor:
                 service="Ollama (Local LLM)",
                 service_type=ServiceType.LLM_LOCAL,
                 status=HealthStatus.UNHEALTHY,
-                message=f"Ollama health check failed: {str(e)}",
+                message=f"Ollama health check failed: {e!s}",
             )
 
     async def check_llm_cloud(self) -> HealthCheckResult:
@@ -308,8 +308,9 @@ class HealthMonitor:
         start = time.time()
         try:
             import os
+
             from openai import AsyncOpenAI
-            
+
             api_key = os.getenv("OPENAI_API_KEY")
             if not api_key:
                 return HealthCheckResult(
@@ -318,13 +319,13 @@ class HealthMonitor:
                     status=HealthStatus.DEGRADED,
                     message="OpenAI API key not configured",
                 )
-            
+
             client = AsyncOpenAI(api_key=api_key)
-            
+
             # Test with a simple request
             await client.models.list()
             response_time = (time.time() - start) * 1000
-            
+
             return HealthCheckResult(
                 service="OpenAI (Cloud LLM)",
                 service_type=ServiceType.LLM_CLOUD,
@@ -337,14 +338,14 @@ class HealthMonitor:
                 service="OpenAI (Cloud LLM)",
                 service_type=ServiceType.LLM_CLOUD,
                 status=HealthStatus.UNHEALTHY,
-                message=f"OpenAI API timeout: {str(e)}",
+                message=f"OpenAI API timeout: {e!s}",
             )
         except (ConnectionError, ConnectionRefusedError) as e:
             return HealthCheckResult(
                 service="OpenAI (Cloud LLM)",
                 service_type=ServiceType.LLM_CLOUD,
                 status=HealthStatus.UNHEALTHY,
-                message=f"OpenAI API connection error: {str(e)}",
+                message=f"OpenAI API connection error: {e!s}",
             )
         except Exception as e:
             logger.error(f"OpenAI API health check failed: {e}", exc_info=True)
@@ -352,7 +353,7 @@ class HealthMonitor:
                 service="OpenAI (Cloud LLM)",
                 service_type=ServiceType.LLM_CLOUD,
                 status=HealthStatus.UNHEALTHY,
-                message=f"OpenAI API health check failed: {str(e)}",
+                message=f"OpenAI API health check failed: {e!s}",
             )
 
     async def check_vector_db(self) -> HealthCheckResult:
@@ -360,11 +361,11 @@ class HealthMonitor:
         start = time.time()
         try:
             import chromadb
-            
+
             client = chromadb.Client()
             collections = client.list_collections()
             response_time = (time.time() - start) * 1000
-            
+
             return HealthCheckResult(
                 service="ChromaDB (Vector DB)",
                 service_type=ServiceType.VECTOR_DB,
@@ -378,7 +379,7 @@ class HealthMonitor:
                 service="ChromaDB (Vector DB)",
                 service_type=ServiceType.VECTOR_DB,
                 status=HealthStatus.UNHEALTHY,
-                message=f"ChromaDB health check timeout: {str(e)}",
+                message=f"ChromaDB health check timeout: {e!s}",
             )
         except Exception as e:
             logger.error(f"ChromaDB health check failed: {e}", exc_info=True)
@@ -386,22 +387,22 @@ class HealthMonitor:
                 service="ChromaDB (Vector DB)",
                 service_type=ServiceType.VECTOR_DB,
                 status=HealthStatus.UNHEALTHY,
-                message=f"ChromaDB health check failed: {str(e)}",
+                message=f"ChromaDB health check failed: {e!s}",
             )
 
     async def check_scheduler(self) -> HealthCheckResult:
         """Check scheduler service health."""
         try:
             from ..agent_execution.scheduler import TaskScheduler
-            
+
             db = SessionLocal()
             try:
                 scheduler = TaskScheduler(db)
                 await scheduler.initialize()
-                
+
                 # Check if scheduler is running
                 schedules = await scheduler.list_schedules()
-                
+
                 return HealthCheckResult(
                     service="Task Scheduler",
                     service_type=ServiceType.SCHEDULER,
@@ -416,14 +417,14 @@ class HealthMonitor:
                 service="Task Scheduler",
                 service_type=ServiceType.SCHEDULER,
                 status=HealthStatus.UNHEALTHY,
-                message=f"Scheduler health check timeout: {str(e)}",
+                message=f"Scheduler health check timeout: {e!s}",
             )
         except (ConnectionError, ConnectionRefusedError) as e:
             return HealthCheckResult(
                 service="Task Scheduler",
                 service_type=ServiceType.SCHEDULER,
                 status=HealthStatus.UNHEALTHY,
-                message=f"Scheduler connection error: {str(e)}",
+                message=f"Scheduler connection error: {e!s}",
             )
         except Exception as e:
             logger.error(f"Scheduler health check failed: {e}", exc_info=True)
@@ -431,25 +432,24 @@ class HealthMonitor:
                 service="Task Scheduler",
                 service_type=ServiceType.SCHEDULER,
                 status=HealthStatus.UNHEALTHY,
-                message=f"Scheduler health check failed: {str(e)}",
+                message=f"Scheduler health check failed: {e!s}",
             )
 
     async def check_worker(self) -> HealthCheckResult:
         """Check background worker health."""
         try:
             # Check if worker process is running
-            import os
             worker_running = False
-            
-            for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
+
+            for proc in psutil.process_iter(["pid", "name", "cmdline"]):
                 try:
-                    cmdline = ' '.join(proc.info.get('cmdline', []) or [])
-                    if 'background_job_queue' in cmdline or 'worker' in cmdline:
+                    cmdline = " ".join(proc.info.get("cmdline", []) or [])
+                    if "background_job_queue" in cmdline or "worker" in cmdline:
                         worker_running = True
                         break
                 except (psutil.NoSuchProcess, psutil.AccessDenied):
                     continue
-            
+
             if worker_running:
                 return HealthCheckResult(
                     service="Background Worker",
@@ -457,13 +457,12 @@ class HealthMonitor:
                     status=HealthStatus.HEALTHY,
                     message="Worker process is running",
                 )
-            else:
-                return HealthCheckResult(
-                    service="Background Worker",
-                    service_type=ServiceType.WORKER,
-                    status=HealthStatus.DEGRADED,
-                    message="Worker process not detected",
-                )
+            return HealthCheckResult(
+                service="Background Worker",
+                service_type=ServiceType.WORKER,
+                status=HealthStatus.DEGRADED,
+                message="Worker process not detected",
+            )
         except (psutil.NoSuchProcess, psutil.AccessDenied) as e:
             logger.debug(f"Worker check process access error: {e}", exc_info=True)
             return HealthCheckResult(
@@ -478,15 +477,15 @@ class HealthMonitor:
                 service="Background Worker",
                 service_type=ServiceType.WORKER,
                 status=HealthStatus.UNHEALTHY,
-                message=f"Worker health check failed: {str(e)}",
+                message=f"Worker health check failed: {e!s}",
             )
 
-    def _get_system_metrics(self) -> Dict[str, Any]:
+    def _get_system_metrics(self) -> dict[str, Any]:
         """Get current system resource metrics."""
         try:
             cpu_percent = psutil.cpu_percent(interval=1)
             memory = psutil.virtual_memory()
-            disk = psutil.disk_usage('/')
+            disk = psutil.disk_usage("/")
 
             return {
                 "cpu_percent": cpu_percent,
@@ -504,7 +503,7 @@ class HealthMonitor:
 
     def _calculate_overall_status(
         self,
-        checks: List[HealthCheckResult],
+        checks: list[HealthCheckResult],
     ) -> HealthStatus:
         """
         Calculate overall system health status.
@@ -519,10 +518,10 @@ class HealthMonitor:
             ServiceType.REDIS,
             ServiceType.API,
         }
-        
+
         has_unhealthy_critical = False
         has_degraded = False
-        
+
         for check in checks:
             if check.status == HealthStatus.UNHEALTHY:
                 if check.service_type in critical_services:
@@ -531,13 +530,12 @@ class HealthMonitor:
                     has_degraded = True
             elif check.status == HealthStatus.DEGRADED:
                 has_degraded = True
-        
+
         if has_unhealthy_critical:
             return HealthStatus.UNHEALTHY
-        elif has_degraded:
+        if has_degraded:
             return HealthStatus.DEGRADED
-        else:
-            return HealthStatus.HEALTHY
+        return HealthStatus.HEALTHY
 
     async def get_status_page(self) -> str:
         """
@@ -547,14 +545,14 @@ class HealthMonitor:
             str: HTML status page
         """
         health = await self.check_all()
-        
+
         status_colors = {
             HealthStatus.HEALTHY: "#28a745",
             HealthStatus.DEGRADED: "#ffc107",
             HealthStatus.UNHEALTHY: "#dc3545",
             HealthStatus.UNKNOWN: "#6c757d",
         }
-        
+
         checks_html = ""
         for check in health.checks:
             color = status_colors.get(check.status, "#6c757d")
@@ -572,7 +570,7 @@ class HealthMonitor:
                 </div>
             </div>
             """
-        
+
         system_metrics_html = ""
         if health.system_metrics:
             metrics = health.system_metrics
@@ -584,9 +582,9 @@ class HealthMonitor:
                 <div class="metric">Disk: {metrics.get('disk_percent', 0)}%</div>
             </div>
             """
-        
+
         overall_color = status_colors.get(health.status, "#6c757d")
-        
+
         html = f"""
         <!DOCTYPE html>
         <html>
@@ -675,12 +673,12 @@ class HealthMonitor:
         </body>
         </html>
         """
-        
+
         return html
 
 
 # Global health monitor instance
-_health_monitor: Optional[HealthMonitor] = None
+_health_monitor: HealthMonitor | None = None
 
 
 def get_health_monitor() -> HealthMonitor:
@@ -688,7 +686,7 @@ def get_health_monitor() -> HealthMonitor:
     global _health_monitor
     if _health_monitor is None:
         import os
-        
+
         _health_monitor = HealthMonitor(
             database_url=os.getenv("DATABASE_URL"),
             redis_url=os.getenv("REDIS_URL"),

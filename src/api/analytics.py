@@ -13,26 +13,26 @@ Features:
 - Custom dashboard widgets and visualizations
 """
 
-import json
-from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Any, Tuple
 from dataclasses import dataclass
-import numpy as np
-from sklearn.linear_model import LinearRegression
-from sklearn.ensemble import IsolationForest
+from datetime import datetime, timedelta
+import json
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import func, desc, case
-from sqlalchemy.orm import Session
+import numpy as np
 from pydantic import BaseModel
+from sklearn.ensemble import IsolationForest
+from sklearn.linear_model import LinearRegression
+from sqlalchemy import case, desc, func
+from sqlalchemy.orm import Session
+
+# Import telemetry
+from traceloop.sdk.decorators import task
 
 from src.api.database import get_db
 from src.api.models import Task, TaskStatus
 from src.utils.logger import get_logger
 from src.utils.telemetry import get_tracer
-
-# Import telemetry
-from traceloop.sdk.decorators import task
 
 # Initialize logger and telemetry
 logger = get_logger(__name__)
@@ -75,7 +75,7 @@ class AnomalyAlert(BaseModel):
 
     metric: str
     value: float
-    expected_range: Tuple[float, float]
+    expected_range: tuple[float, float]
     severity: str  # "low", "medium", "high", "critical"
     timestamp: datetime
     description: str
@@ -88,7 +88,7 @@ class PerformanceMetric(BaseModel):
     value: float
     unit: str
     trend: float
-    target: Optional[float] = None
+    target: float | None = None
 
 
 class DashboardWidget(BaseModel):
@@ -98,17 +98,17 @@ class DashboardWidget(BaseModel):
     type: str  # "chart", "metric", "table", "heatmap"
     title: str
     data_source: str
-    configuration: Dict[str, Any]
+    configuration: dict[str, Any]
 
 
 class AnalyticsSummary(BaseModel):
     """Comprehensive analytics summary."""
 
     kpis: KPIResponse
-    predictive_insights: List[PredictiveInsight]
-    anomalies: List[AnomalyAlert]
-    performance_metrics: List[PerformanceMetric]
-    recommendations: List[str]
+    predictive_insights: list[PredictiveInsight]
+    anomalies: list[AnomalyAlert]
+    performance_metrics: list[PerformanceMetric]
+    recommendations: list[str]
     last_updated: datetime
 
 
@@ -116,9 +116,9 @@ class AnalyticsSummary(BaseModel):
 class TimeSeriesData:
     """Time series data for analytics."""
 
-    timestamps: List[datetime]
-    values: List[float]
-    labels: List[str]
+    timestamps: list[datetime]
+    values: list[float]
+    labels: list[str]
 
 
 @dataclass
@@ -147,7 +147,7 @@ class AnalyticsEngine:
         self.cache_ttl = 300  # 5 minutes
         self.prediction_models = {}
 
-    def _get_cache_key(self, query_type: str, params: Dict[str, Any]) -> str:
+    def _get_cache_key(self, query_type: str, params: dict[str, Any]) -> str:
         """Generate cache key for query results."""
         return f"{query_type}:{hash(json.dumps(params, sort_keys=True))}"
 
@@ -265,12 +265,11 @@ class KPIAnalytics(AnalyticsEngine):
         now = datetime.now()
         if time_range == "24h":
             return now - timedelta(hours=24)
-        elif time_range == "7d":
+        if time_range == "7d":
             return now - timedelta(days=7)
-        elif time_range == "30d":
+        if time_range == "30d":
             return now - timedelta(days=30)
-        else:
-            return now - timedelta(days=365)  # Default to 1 year
+        return now - timedelta(days=365)  # Default to 1 year
 
     def _calculate_revenue(self, time_filter: datetime) -> float:
         """Calculate total revenue."""
@@ -325,7 +324,7 @@ class PredictiveAnalytics(AnalyticsEngine):
 
     @task(name="generate_predictions")
     def generate_predictions(
-        self, metric: str, horizon_hours: int = 24
+        self, metric: str, horizon_hours: int = 24,
     ) -> PredictionResult:
         """
         Generate predictions for a specific metric.
@@ -338,7 +337,7 @@ class PredictiveAnalytics(AnalyticsEngine):
             Prediction result with confidence intervals
         """
         cache_key = self._get_cache_key(
-            "prediction", {"metric": metric, "horizon": horizon_hours}
+            "prediction", {"metric": metric, "horizon": horizon_hours},
         )
         cached_result = self._get_cached_result(cache_key)
         if cached_result:
@@ -346,7 +345,7 @@ class PredictiveAnalytics(AnalyticsEngine):
 
         # Get historical data
         historical_data = self._get_historical_data(
-            metric, horizon_hours * 7
+            metric, horizon_hours * 7,
         )  # Use 7x horizon for training
 
         if len(historical_data.values) < 10:  # Need minimum data points
@@ -366,7 +365,7 @@ class PredictiveAnalytics(AnalyticsEngine):
 
         # Calculate confidence intervals
         confidence_interval = self._calculate_confidence_interval(
-            model, historical_data, prediction
+            model, historical_data, prediction,
         )
 
         result = PredictionResult(
@@ -431,7 +430,7 @@ class PredictiveAnalytics(AnalyticsEngine):
                     func.date_trunc("hour", Task.created_at).label("hour"),
                     func.count(Task.id).label("total_tasks"),
                     func.sum(
-                        case([(Task.status == TaskStatus.COMPLETED, 1)], else_=0)
+                        case([(Task.status == TaskStatus.COMPLETED, 1)], else_=0),
                     ).label("completed_tasks"),
                 )
                 .filter(Task.created_at >= start_time, Task.created_at <= end_time)
@@ -453,8 +452,8 @@ class PredictiveAnalytics(AnalyticsEngine):
         return TimeSeriesData(timestamps=timestamps, values=values, labels=labels)
 
     def _train_prediction_model(
-        self, data: TimeSeriesData
-    ) -> Tuple[LinearRegression, float]:
+        self, data: TimeSeriesData,
+    ) -> tuple[LinearRegression, float]:
         """Train a prediction model using historical data."""
         if len(data.values) < 5:
             return LinearRegression(), 0.0
@@ -485,8 +484,8 @@ class PredictiveAnalytics(AnalyticsEngine):
         return float(prediction[0])
 
     def _calculate_confidence_interval(
-        self, model: LinearRegression, data: TimeSeriesData, prediction: float
-    ) -> Tuple[float, float]:
+        self, model: LinearRegression, data: TimeSeriesData, prediction: float,
+    ) -> tuple[float, float]:
         """Calculate confidence interval for prediction."""
         # Simple confidence interval based on historical variance
         if len(data.values) < 2:
@@ -503,8 +502,8 @@ class AnomalyDetection(AnalyticsEngine):
 
     @task(name="detect_anomalies")
     def detect_anomalies(
-        self, metric: str, time_range: str = "24h"
-    ) -> List[AnomalyAlert]:
+        self, metric: str, time_range: str = "24h",
+    ) -> list[AnomalyAlert]:
         """
         Detect anomalies in a specific metric.
 
@@ -516,7 +515,7 @@ class AnomalyDetection(AnalyticsEngine):
             List of anomaly alerts
         """
         cache_key = self._get_cache_key(
-            "anomalies", {"metric": metric, "time_range": time_range}
+            "anomalies", {"metric": metric, "time_range": time_range},
         )
         cached_result = self._get_cached_result(cache_key)
         if cached_result:
@@ -548,7 +547,7 @@ class AnomalyDetection(AnalyticsEngine):
         self._cache_result(cache_key, alerts)
         return alerts
 
-    def _get_recent_data(self, metric: str, time_filter: datetime) -> List[float]:
+    def _get_recent_data(self, metric: str, time_filter: datetime) -> list[float]:
         """Get recent data points for anomaly detection."""
         if metric == "revenue":
             query = (
@@ -575,11 +574,11 @@ class AnomalyDetection(AnalyticsEngine):
                 self.db.query(
                     (
                         func.sum(
-                            case([(Task.status == TaskStatus.COMPLETED, 1)], else_=0)
+                            case([(Task.status == TaskStatus.COMPLETED, 1)], else_=0),
                         )
                         * 100.0
                         / func.count(Task.id)
-                    ).label("success_rate")
+                    ).label("success_rate"),
                 )
                 .filter(Task.created_at >= time_filter)
                 .group_by(func.date_trunc("hour", Task.created_at))
@@ -590,8 +589,8 @@ class AnomalyDetection(AnalyticsEngine):
         return [float(row[0] or 0) for row in results]
 
     def _detect_isolation_forest_anomalies(
-        self, data: List[float]
-    ) -> List[Dict[str, Any]]:
+        self, data: list[float],
+    ) -> list[dict[str, Any]]:
         """Detect anomalies using Isolation Forest algorithm."""
         if len(data) < 20:
             return []
@@ -632,7 +631,7 @@ class AnomalyDetection(AnalyticsEngine):
                             "severity": severity,
                             "timestamp": datetime.now(),  # Would need actual timestamp from data
                             "description": f"Anomalous {value} outside expected range {expected_range}",
-                        }
+                        },
                     )
 
         return anomalies
@@ -642,7 +641,7 @@ class PerformanceAnalytics(AnalyticsEngine):
     """Performance analytics and optimization recommendations."""
 
     @task(name="analyze_performance")
-    def analyze_performance(self) -> List[PerformanceMetric]:
+    def analyze_performance(self) -> list[PerformanceMetric]:
         """
         Analyze system performance and generate metrics.
 
@@ -671,13 +670,13 @@ class PerformanceAnalytics(AnalyticsEngine):
         self._cache_result(cache_key, metrics)
         return metrics
 
-    def _analyze_task_performance(self) -> List[PerformanceMetric]:
+    def _analyze_task_performance(self) -> list[PerformanceMetric]:
         """Analyze task processing performance."""
         metrics = []
 
         # Average task completion time
         avg_completion_time = self._calculate_avg_completion_time(
-            datetime.now() - timedelta(days=7)
+            datetime.now() - timedelta(days=7),
         )
         metrics.append(
             PerformanceMetric(
@@ -686,7 +685,7 @@ class PerformanceAnalytics(AnalyticsEngine):
                 unit="hours",
                 trend=0.0,  # Would calculate trend over time
                 target=2.0,  # Target: complete tasks within 2 hours
-            )
+            ),
         )
 
         # Task success rate
@@ -698,7 +697,7 @@ class PerformanceAnalytics(AnalyticsEngine):
                 unit="%",
                 trend=0.0,
                 target=95.0,  # Target: 95% success rate
-            )
+            ),
         )
 
         # Task queue length
@@ -710,12 +709,12 @@ class PerformanceAnalytics(AnalyticsEngine):
                 unit="tasks",
                 trend=0.0,
                 target=10.0,  # Target: keep queue under 10 tasks
-            )
+            ),
         )
 
         return metrics
 
-    def _analyze_resource_utilization(self) -> List[PerformanceMetric]:
+    def _analyze_resource_utilization(self) -> list[PerformanceMetric]:
         """Analyze system resource utilization."""
         metrics = []
 
@@ -728,7 +727,7 @@ class PerformanceAnalytics(AnalyticsEngine):
                 unit="ms",
                 trend=0.0,
                 target=100.0,  # Target: queries under 100ms
-            )
+            ),
         )
 
         # API response time
@@ -740,12 +739,12 @@ class PerformanceAnalytics(AnalyticsEngine):
                 unit="ms",
                 trend=0.0,
                 target=500.0,  # Target: responses under 500ms
-            )
+            ),
         )
 
         return metrics
 
-    def _analyze_user_experience(self) -> List[PerformanceMetric]:
+    def _analyze_user_experience(self) -> list[PerformanceMetric]:
         """Analyze user experience metrics."""
         metrics = []
 
@@ -758,7 +757,7 @@ class PerformanceAnalytics(AnalyticsEngine):
                 unit="score",
                 trend=0.0,
                 target=8.0,  # Target: 8/10 satisfaction
-            )
+            ),
         )
 
         # Dashboard load time
@@ -770,7 +769,7 @@ class PerformanceAnalytics(AnalyticsEngine):
                 unit="ms",
                 trend=0.0,
                 target=2000.0,  # Target: dashboard loads in under 2 seconds
-            )
+            ),
         )
 
         return metrics
@@ -854,13 +853,13 @@ class AnalyticsAPI:
             last_updated=datetime.now(),
         )
 
-    def _generate_predictive_insights(self) -> List[PredictiveInsight]:
+    def _generate_predictive_insights(self) -> list[PredictiveInsight]:
         """Generate predictive insights for key metrics."""
         insights = []
 
         # Predict revenue for next 24 hours
         revenue_prediction = self.predictive_analytics.generate_predictions(
-            "revenue", 24
+            "revenue", 24,
         )
         insights.append(
             PredictiveInsight(
@@ -870,12 +869,12 @@ class AnalyticsAPI:
                 trend="up" if revenue_prediction.prediction > 0 else "down",
                 time_horizon="24h",
                 explanation="Based on historical revenue patterns and current trends",
-            )
+            ),
         )
 
         # Predict task volume for next 7 days
         tasks_prediction = self.predictive_analytics.generate_predictions(
-            "tasks", 168
+            "tasks", 168,
         )  # 7 days
         insights.append(
             PredictiveInsight(
@@ -885,12 +884,12 @@ class AnalyticsAPI:
                 trend="stable",
                 time_horizon="7d",
                 explanation="Based on historical task submission patterns",
-            )
+            ),
         )
 
         return insights
 
-    def _get_anomalies_summary(self) -> List[AnomalyAlert]:
+    def _get_anomalies_summary(self) -> list[AnomalyAlert]:
         """Get summary of recent anomalies."""
         anomalies = []
 
@@ -905,38 +904,38 @@ class AnalyticsAPI:
         return anomalies
 
     def _generate_recommendations(
-        self, kpis: KPIResponse, performance_metrics: List[PerformanceMetric]
-    ) -> List[str]:
+        self, kpis: KPIResponse, performance_metrics: list[PerformanceMetric],
+    ) -> list[str]:
         """Generate actionable recommendations based on analytics."""
         recommendations = []
 
         # Revenue recommendations
         if kpis.revenue_growth_rate < 0:
             recommendations.append(
-                "Revenue is declining. Consider reviewing pricing strategy and marketing efforts."
+                "Revenue is declining. Consider reviewing pricing strategy and marketing efforts.",
             )
 
         if kpis.success_rate < 90:
             recommendations.append(
-                "Task success rate is below target. Review task execution processes and quality control."
+                "Task success rate is below target. Review task execution processes and quality control.",
             )
 
         # Performance recommendations
         for metric in performance_metrics:
             if metric.name == "avg_completion_time" and metric.value > metric.target:
                 recommendations.append(
-                    f"Task completion time ({metric.value:.1f}h) exceeds target ({metric.target}h). Optimize task processing pipeline."
+                    f"Task completion time ({metric.value:.1f}h) exceeds target ({metric.target}h). Optimize task processing pipeline.",
                 )
 
             elif metric.name == "queue_length" and metric.value > metric.target:
                 recommendations.append(
-                    f"Task queue length ({metric.value}) is high. Consider scaling resources or optimizing task distribution."
+                    f"Task queue length ({metric.value}) is high. Consider scaling resources or optimizing task distribution.",
                 )
 
         # Default recommendations
         if not recommendations:
             recommendations.append(
-                "System performance is within acceptable ranges. Continue monitoring for optimization opportunities."
+                "System performance is within acceptable ranges. Continue monitoring for optimization opportunities.",
             )
 
         return recommendations
@@ -964,7 +963,7 @@ async def get_kpis(
         return kpi_analytics.calculate_kpis(time_range)
     except Exception as e:
         logger.error(f"Failed to calculate KPIs: {e}")
-        raise HTTPException(status_code=500, detail="Failed to calculate KPIs")
+        raise HTTPException(status_code=500, detail="Failed to calculate KPIs") from e
 
 
 @router.get("/predictions/{metric}", response_model=PredictionResult)
@@ -990,10 +989,10 @@ async def get_predictions(
         return predictive_analytics.generate_predictions(metric, horizon_hours)
     except Exception as e:
         logger.error(f"Failed to generate predictions: {e}")
-        raise HTTPException(status_code=500, detail="Failed to generate predictions")
+        raise HTTPException(status_code=500, detail="Failed to generate predictions") from e
 
 
-@router.get("/anomalies/{metric}", response_model=List[AnomalyAlert])
+@router.get("/anomalies/{metric}", response_model=list[AnomalyAlert])
 @task(name="get_anomalies_endpoint")
 async def get_anomalies(
     metric: str,
@@ -1016,10 +1015,10 @@ async def get_anomalies(
         return anomaly_detection.detect_anomalies(metric, time_range)
     except Exception as e:
         logger.error(f"Failed to detect anomalies: {e}")
-        raise HTTPException(status_code=500, detail="Failed to detect anomalies")
+        raise HTTPException(status_code=500, detail="Failed to detect anomalies") from e
 
 
-@router.get("/performance", response_model=List[PerformanceMetric])
+@router.get("/performance", response_model=list[PerformanceMetric])
 @task(name="get_performance_endpoint")
 async def get_performance(db: Session = Depends(get_db)):
     """
@@ -1036,7 +1035,7 @@ async def get_performance(db: Session = Depends(get_db)):
         return performance_analytics.analyze_performance()
     except Exception as e:
         logger.error(f"Failed to analyze performance: {e}")
-        raise HTTPException(status_code=500, detail="Failed to analyze performance")
+        raise HTTPException(status_code=500, detail="Failed to analyze performance") from e
 
 
 @router.get("/summary", response_model=AnalyticsSummary)
@@ -1060,10 +1059,10 @@ async def get_analytics_summary(
         return analytics_api.get_analytics_summary(time_range)
     except Exception as e:
         logger.error(f"Failed to get analytics summary: {e}")
-        raise HTTPException(status_code=500, detail="Failed to get analytics summary")
+        raise HTTPException(status_code=500, detail="Failed to get analytics summary") from e
 
 
-@router.get("/recommendations", response_model=List[str])
+@router.get("/recommendations", response_model=list[str])
 @task(name="get_recommendations_endpoint")
 async def get_recommendations(db: Session = Depends(get_db)):
     """
@@ -1081,10 +1080,10 @@ async def get_recommendations(db: Session = Depends(get_db)):
         return summary.recommendations
     except Exception as e:
         logger.error(f"Failed to get recommendations: {e}")
-        raise HTTPException(status_code=500, detail="Failed to get recommendations")
+        raise HTTPException(status_code=500, detail="Failed to get recommendations") from e
 
 
-@router.get("/widgets", response_model=List[DashboardWidget])
+@router.get("/widgets", response_model=list[DashboardWidget])
 @task(name="get_dashboard_widgets_endpoint")
 async def get_dashboard_widgets(db: Session = Depends(get_db)):
     """

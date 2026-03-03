@@ -5,27 +5,29 @@ Implements marketplace adapter for Fiverr platform.
 Handles gig searching, offer placement, and inbox management.
 """
 
-from typing import List, Optional, Dict, Any
 from datetime import datetime
+from typing import Any
+
 import httpx
 
+from src.agent_execution.exponential_backoff import ExponentialBackoff
+from src.utils.logger import get_logger
+
 from .base import (
-    MarketplaceAdapter,
-    SearchQuery,
-    SearchResult,
+    AuthenticationError,
     BidProposal,
     BidStatus,
     BidStatusUpdate,
+    InboxMessage,
+    MarketplaceAdapter,
+    MarketplaceError,
+    NotFoundError,
     PlacedBid,
     PricingModel,
-    InboxMessage,
-    MarketplaceError,
-    AuthenticationError,
     RateLimitError,
-    NotFoundError,
+    SearchQuery,
+    SearchResult,
 )
-from src.utils.logger import get_logger
-from src.agent_execution.exponential_backoff import ExponentialBackoff
 
 logger = get_logger(__name__)
 
@@ -48,9 +50,9 @@ class FiverrAdapter(MarketplaceAdapter):
 
     def __init__(
         self,
-        api_key: Optional[str] = None,
-        api_secret: Optional[str] = None,
-        user_token: Optional[str] = None,
+        api_key: str | None = None,
+        api_secret: str | None = None,
+        user_token: str | None = None,
     ):
         """
         Initialize Fiverr adapter.
@@ -62,8 +64,8 @@ class FiverrAdapter(MarketplaceAdapter):
         """
         super().__init__("fiverr", api_key, api_secret)
         self.user_token = user_token
-        self.client: Optional[httpx.AsyncClient] = None
-        self.user_id: Optional[str] = None
+        self.client: httpx.AsyncClient | None = None
+        self.user_id: str | None = None
 
     async def authenticate(self) -> bool:
         """
@@ -86,7 +88,7 @@ class FiverrAdapter(MarketplaceAdapter):
 
             # Verify authentication by getting user profile
             response = await self.client.get(
-                f"{self.API_BASE_URL}/{self.API_VERSION}/user/profile"
+                f"{self.API_BASE_URL}/{self.API_VERSION}/user/profile",
             )
 
             if response.status_code == 401:
@@ -100,9 +102,9 @@ class FiverrAdapter(MarketplaceAdapter):
             return True
 
         except httpx.HTTPError as e:
-            raise AuthenticationError(f"Fiverr authentication failed: {str(e)}")
+            raise AuthenticationError(f"Fiverr authentication failed: {e!s}") from e
 
-    async def search(self, query: SearchQuery) -> List[SearchResult]:
+    async def search(self, query: SearchQuery) -> list[SearchResult]:
         """
         Search for gigs on Fiverr.
 
@@ -160,14 +162,14 @@ class FiverrAdapter(MarketplaceAdapter):
                 results.append(result)
 
             logger.info(
-                f"Fiverr search returned {len(results)} results for '{query.keywords}'"
+                f"Fiverr search returned {len(results)} results for '{query.keywords}'",
             )
             return results
 
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 429:
-                raise RateLimitError("Fiverr rate limit exceeded")
-            raise MarketplaceError(f"Fiverr search failed: {str(e)}")
+                raise RateLimitError("Fiverr rate limit exceeded") from e
+            raise MarketplaceError(f"Fiverr search failed: {e!s}") from e
 
     async def get_job_details(self, job_id: str) -> SearchResult:
         """
@@ -188,7 +190,7 @@ class FiverrAdapter(MarketplaceAdapter):
 
         try:
             response = await self._request(
-                "GET", f"{self.API_BASE_URL}/{self.API_VERSION}/gigs/{job_id}"
+                "GET", f"{self.API_BASE_URL}/{self.API_VERSION}/gigs/{job_id}",
             )
 
             gig = response.get("gig", {})
@@ -209,8 +211,8 @@ class FiverrAdapter(MarketplaceAdapter):
 
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 404:
-                raise NotFoundError(f"Gig {job_id} not found")
-            raise MarketplaceError(f"Failed to get gig details: {str(e)}")
+                raise NotFoundError(f"Gig {job_id} not found") from e
+            raise MarketplaceError(f"Failed to get gig details: {e!s}") from e
 
     async def place_bid(self, proposal: BidProposal) -> PlacedBid:
         """
@@ -260,8 +262,8 @@ class FiverrAdapter(MarketplaceAdapter):
 
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 429:
-                raise RateLimitError("Fiverr rate limit exceeded")
-            raise MarketplaceError(f"Failed to place Fiverr offer: {str(e)}")
+                raise RateLimitError("Fiverr rate limit exceeded") from e
+            raise MarketplaceError(f"Failed to place Fiverr offer: {e!s}") from e
 
     async def get_bid_status(self, bid_id: str) -> BidStatusUpdate:
         """
@@ -282,7 +284,7 @@ class FiverrAdapter(MarketplaceAdapter):
 
         try:
             response = await self._request(
-                "GET", f"{self.API_BASE_URL}/{self.API_VERSION}/offers/{bid_id}"
+                "GET", f"{self.API_BASE_URL}/{self.API_VERSION}/offers/{bid_id}",
             )
 
             offer = response.get("offer", {})
@@ -298,7 +300,7 @@ class FiverrAdapter(MarketplaceAdapter):
                 bid_id=bid_id,
                 job_id=offer.get("gig_id", ""),
                 status=status_map.get(
-                    offer.get("status", "").lower(), BidStatus.PENDING
+                    offer.get("status", "").lower(), BidStatus.PENDING,
                 ),
                 last_updated=self._parse_datetime(offer.get("updated_at")),
                 metadata=offer,
@@ -306,8 +308,8 @@ class FiverrAdapter(MarketplaceAdapter):
 
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 404:
-                raise NotFoundError(f"Offer {bid_id} not found")
-            raise MarketplaceError(f"Failed to get offer status: {str(e)}")
+                raise NotFoundError(f"Offer {bid_id} not found") from e
+            raise MarketplaceError(f"Failed to get offer status: {e!s}") from e
 
     async def withdraw_bid(self, bid_id: str) -> BidStatusUpdate:
         """
@@ -344,10 +346,10 @@ class FiverrAdapter(MarketplaceAdapter):
 
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 404:
-                raise NotFoundError(f"Offer {bid_id} not found")
-            raise MarketplaceError(f"Failed to withdraw offer: {str(e)}")
+                raise NotFoundError(f"Offer {bid_id} not found") from e
+            raise MarketplaceError(f"Failed to withdraw offer: {e!s}") from e
 
-    async def check_inbox(self) -> List[InboxMessage]:
+    async def check_inbox(self) -> list[InboxMessage]:
         """
         Check for new messages in Fiverr inbox.
 
@@ -385,7 +387,7 @@ class FiverrAdapter(MarketplaceAdapter):
             return messages
 
         except httpx.HTTPStatusError as e:
-            raise MarketplaceError(f"Failed to check Fiverr inbox: {str(e)}")
+            raise MarketplaceError(f"Failed to check Fiverr inbox: {e!s}") from e
 
     async def mark_message_read(self, message_id: str) -> bool:
         """
@@ -413,10 +415,10 @@ class FiverrAdapter(MarketplaceAdapter):
 
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 404:
-                raise NotFoundError(f"Message {message_id} not found")
-            raise MarketplaceError(f"Failed to mark message as read: {str(e)}")
+                raise NotFoundError(f"Message {message_id} not found") from e
+            raise MarketplaceError(f"Failed to mark message as read: {e!s}") from e
 
-    async def sync_portfolio(self, portfolio_items: List[Dict[str, Any]]) -> bool:
+    async def sync_portfolio(self, portfolio_items: list[dict[str, Any]]) -> bool:
         """
         Sync portfolio with Fiverr.
 
@@ -443,7 +445,7 @@ class FiverrAdapter(MarketplaceAdapter):
             return True
 
         except httpx.HTTPStatusError as e:
-            raise MarketplaceError(f"Failed to sync Fiverr portfolio: {str(e)}")
+            raise MarketplaceError(f"Failed to sync Fiverr portfolio: {e!s}") from e
 
     async def close(self) -> None:
         """Clean up resources."""
@@ -460,7 +462,7 @@ class FiverrAdapter(MarketplaceAdapter):
         method: str,
         url: str,
         **kwargs,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Make HTTP request with automatic retry and error handling.
 
@@ -489,7 +491,7 @@ class FiverrAdapter(MarketplaceAdapter):
         return await backoff.with_retry(_do_request, max_retries=3)
 
     @staticmethod
-    def _parse_datetime(dt_str: Optional[str]) -> Optional[datetime]:
+    def _parse_datetime(dt_str: str | None) -> datetime | None:
         """Parse datetime string from Fiverr API."""
         if not dt_str:
             return None

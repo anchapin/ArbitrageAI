@@ -10,15 +10,15 @@ Provides admin panel functionality:
 - Manage pricing tiers
 """
 
+from datetime import datetime, timedelta, timezone
+
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy.orm import Session
-from sqlalchemy import desc
-from typing import List, Optional
-from datetime import datetime, timezone, timedelta
 from pydantic import BaseModel, Field
+from sqlalchemy import desc
+from sqlalchemy.orm import Session
 
 from .database import get_db
-from .models import UserQuota, QuotaUsage, RateLimitLog, PricingTier
+from .models import PricingTier, QuotaUsage, RateLimitLog, UserQuota
 from .rate_limiter import get_tier_limits
 
 router = APIRouter(prefix="/api/admin", tags=["admin"])
@@ -30,22 +30,22 @@ router = APIRouter(prefix="/api/admin", tags=["admin"])
 
 class UserQuotaUpdate(BaseModel):
     """Schema for updating user quotas."""
-    tier: Optional[str] = None
-    monthly_task_limit: Optional[int] = None
-    monthly_api_calls_limit: Optional[int] = None
-    monthly_compute_minutes_limit: Optional[int] = None
-    rate_limit_rps: Optional[int] = None
-    rate_limit_burst: Optional[int] = None
-    alert_threshold_percentage: Optional[int] = None
-    override_rate_limit: Optional[bool] = None
-    override_quota: Optional[bool] = None
+    tier: str | None = None
+    monthly_task_limit: int | None = None
+    monthly_api_calls_limit: int | None = None
+    monthly_compute_minutes_limit: int | None = None
+    rate_limit_rps: int | None = None
+    rate_limit_burst: int | None = None
+    alert_threshold_percentage: int | None = None
+    override_rate_limit: bool | None = None
+    override_quota: bool | None = None
 
 
 class QuotaOverride(BaseModel):
     """Schema for admin overrides."""
     override_type: str = Field(..., description="'rate_limit' or 'quota'")
     enabled: bool
-    reason: Optional[str] = None
+    reason: str | None = None
 
 
 class UserQuotaResponse(BaseModel):
@@ -96,7 +96,7 @@ class UsageAnalyticsResponse(BaseModel):
     total_users: int
     total_quotas_exceeded: int
     avg_rate_limit_violations: float
-    top_quota_consumers: List[dict]
+    top_quota_consumers: list[dict]
     rate_limit_violations_last_24h: int
     quota_exceeded_alerts_last_24h: int
 
@@ -127,7 +127,7 @@ def update_user_quota(
     quota = db.query(UserQuota).filter(UserQuota.user_id == user_id).first()
     if not quota:
         raise HTTPException(status_code=404, detail="User quota not found")
-    
+
     # Update tier if provided
     if update.tier:
         try:
@@ -140,8 +140,8 @@ def update_user_quota(
             quota.rate_limit_rps = tier_limits["rate_limit_rps"]
             quota.rate_limit_burst = tier_limits["rate_limit_burst"]
         except KeyError:
-            raise HTTPException(status_code=400, detail="Invalid tier")
-    
+            raise HTTPException(status_code=400, detail="Invalid tier") from None
+
     # Update individual limits if provided
     if update.monthly_task_limit is not None:
         quota.monthly_task_limit = update.monthly_task_limit
@@ -159,7 +159,7 @@ def update_user_quota(
         quota.override_rate_limit = update.override_rate_limit
     if update.override_quota is not None:
         quota.override_quota = update.override_quota
-    
+
     quota.updated_at = datetime.utcnow()
     db.commit()
     db.refresh(quota)
@@ -176,18 +176,18 @@ def set_quota_override(
     quota = db.query(UserQuota).filter(UserQuota.user_id == user_id).first()
     if not quota:
         raise HTTPException(status_code=404, detail="User quota not found")
-    
+
     if override.override_type == "rate_limit":
         quota.override_rate_limit = override.enabled
     elif override.override_type == "quota":
         quota.override_quota = override.enabled
     else:
         raise HTTPException(status_code=400, detail="Invalid override type")
-    
+
     quota.updated_at = datetime.utcnow()
     db.commit()
     db.refresh(quota)
-    
+
     return {
         "user_id": user_id,
         "override_type": override.override_type,
@@ -199,25 +199,25 @@ def set_quota_override(
 @router.get("/usage/{user_id}", response_model=QuotaUsageResponse)
 def get_user_usage(
     user_id: str,
-    billing_month: Optional[str] = Query(None, description="YYYY-MM format"),
+    billing_month: str | None = Query(None, description="YYYY-MM format"),
     db: Session = Depends(get_db),
 ):
     """Get quota usage for a user."""
     if not billing_month:
         billing_month = datetime.now(timezone.utc).strftime("%Y-%m")
-    
+
     usage = db.query(QuotaUsage).filter(
         QuotaUsage.user_id == user_id,
         QuotaUsage.billing_month == billing_month,
     ).first()
-    
+
     if not usage:
         raise HTTPException(status_code=404, detail="Usage record not found")
-    
+
     return usage.to_dict()
 
 
-@router.get("/usage/{user_id}/history", response_model=List[QuotaUsageResponse])
+@router.get("/usage/{user_id}/history", response_model=list[QuotaUsageResponse])
 def get_user_usage_history(
     user_id: str,
     limit: int = Query(12, ge=1, le=100, description="Number of months to retrieve"),
@@ -227,29 +227,29 @@ def get_user_usage_history(
     usages = db.query(QuotaUsage).filter(
         QuotaUsage.user_id == user_id,
     ).order_by(desc(QuotaUsage.billing_month)).limit(limit).all()
-    
+
     return [u.to_dict() for u in usages]
 
 
-@router.get("/rate-limits/logs", response_model=List[RateLimitLogResponse])
+@router.get("/rate-limits/logs", response_model=list[RateLimitLogResponse])
 def get_rate_limit_logs(
-    user_id: Optional[str] = Query(None),
+    user_id: str | None = Query(None),
     hours: int = Query(24, ge=1, le=720, description="Hours to retrieve"),
     limit: int = Query(100, ge=1, le=1000),
     db: Session = Depends(get_db),
 ):
     """Get rate limit logs."""
     cutoff_time = datetime.utcnow() - timedelta(hours=hours)
-    
+
     query = db.query(RateLimitLog).filter(
         RateLimitLog.timestamp >= cutoff_time,
     )
-    
+
     if user_id:
         query = query.filter(RateLimitLog.user_id == user_id)
-    
+
     logs = query.order_by(desc(RateLimitLog.timestamp)).limit(limit).all()
-    
+
     return [log.to_dict() for log in logs]
 
 
@@ -260,45 +260,45 @@ def get_usage_analytics(
     """Get overall usage analytics."""
     # Get current billing month
     current_month = datetime.now(timezone.utc).strftime("%Y-%m")
-    
+
     # Total users
     total_users = db.query(UserQuota).count()
-    
+
     # Total quotas exceeded
     total_quotas_exceeded = db.query(QuotaUsage).filter(
         QuotaUsage.quota_exceeded,
         QuotaUsage.billing_month == current_month,
     ).count()
-    
+
     # Rate limit violations last 24h
     cutoff_time = datetime.utcnow() - timedelta(hours=24)
     rate_limit_violations_24h = db.query(RateLimitLog).filter(
         RateLimitLog.exceeded,
         RateLimitLog.timestamp >= cutoff_time,
     ).count()
-    
+
     # Quota exceeded alerts last 24h
     quota_alerts_24h = db.query(RateLimitLog).filter(
         RateLimitLog.quota_exceeded,
         RateLimitLog.timestamp >= cutoff_time,
     ).count()
-    
+
     # Average rate limit violations per user
     avg_violations = (
         rate_limit_violations_24h / total_users
         if total_users > 0
         else 0
     )
-    
+
     # Top quota consumers (by API calls)
     top_consumers = []
     top_usages = db.query(QuotaUsage).filter(
         QuotaUsage.billing_month == current_month,
     ).order_by(desc(QuotaUsage.api_call_count)).limit(10).all()
-    
+
     for usage in top_usages:
         quota = db.query(UserQuota).filter(
-            UserQuota.user_id == usage.user_id
+            UserQuota.user_id == usage.user_id,
         ).first()
         if quota:
             top_consumers.append({
@@ -308,7 +308,7 @@ def get_usage_analytics(
                 "tasks": usage.task_count,
                 "compute_minutes": usage.compute_minutes_used,
             })
-    
+
     return {
         "total_users": total_users,
         "total_quotas_exceeded": total_quotas_exceeded,

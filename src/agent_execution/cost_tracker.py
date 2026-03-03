@@ -13,10 +13,9 @@ Features:
 - Store cost history in database
 """
 
-from typing import Optional, Dict, Any, List
 from datetime import datetime
 from enum import Enum as PyEnum
-
+from typing import Any
 
 from ..api.database import SessionLocal
 from ..api.models import CostEntry as CostEntryModel
@@ -48,18 +47,17 @@ class CostTracker:
 
     def __init__(self):
         """Initialize Cost Tracker."""
-        pass
 
     def track_cost(
         self,
         cost_type: str,
         cost_cents: int,
-        description: Optional[str] = None,
-        task_id: Optional[str] = None,
-        bid_id: Optional[str] = None,
-        marketplace: Optional[str] = None,
-        strategy_type: Optional[str] = None,
-        metadata: Optional[str] = None,
+        description: str | None = None,
+        task_id: str | None = None,
+        bid_id: str | None = None,
+        marketplace: str | None = None,
+        strategy_type: str | None = None,
+        metadata: str | None = None,
     ) -> CostEntry:
         """
         Track a cost entry.
@@ -101,7 +99,7 @@ class CostTracker:
 
             logger.info(
                 f"Tracked cost: ${cost_cents / 100:.2f} ({cost_type}) - "
-                f"Task: {task_id}, Bid: {bid_id}, Marketplace: {marketplace}"
+                f"Task: {task_id}, Bid: {bid_id}, Marketplace: {marketplace}",
             )
 
             return cost_entry
@@ -116,8 +114,8 @@ class CostTracker:
     def add_revenue(
         self,
         revenue_cents: int,
-        task_id: Optional[str] = None,
-        bid_id: Optional[str] = None,
+        task_id: str | None = None,
+        bid_id: str | None = None,
     ) -> bool:
         """
         Add revenue to a cost entry and calculate ROI.
@@ -147,7 +145,7 @@ class CostTracker:
 
             if not cost_entries:
                 logger.warning(
-                    f"No cost entries found for task_id={task_id}, bid_id={bid_id}"
+                    f"No cost entries found for task_id={task_id}, bid_id={bid_id}",
                 )
                 return False
 
@@ -166,7 +164,7 @@ class CostTracker:
             db.commit()
 
             logger.info(
-                f"Added revenue ${revenue_cents / 100:.2f} to {len(cost_entries)} cost entries"
+                f"Added revenue ${revenue_cents / 100:.2f} to {len(cost_entries)} cost entries",
             )
 
             return True
@@ -180,8 +178,8 @@ class CostTracker:
 
     def calculate_roi_by_marketplace(
         self,
-        marketplace: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        marketplace: str | None = None,
+    ) -> dict[str, Any]:
         """
         Calculate ROI by marketplace.
 
@@ -257,8 +255,8 @@ class CostTracker:
 
     def calculate_roi_by_strategy(
         self,
-        strategy_type: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        strategy_type: str | None = None,
+    ) -> dict[str, Any]:
         """
         Calculate ROI by bidding strategy.
 
@@ -335,7 +333,7 @@ class CostTracker:
     def get_profitable_strategies(
         self,
         min_entries: int = 10,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Get list of profitable strategies sorted by ROI.
 
@@ -358,7 +356,7 @@ class CostTracker:
                         "total_roi_dollars": stats["total_roi_dollars"],
                         "profit_rate": stats["profit_rate"],
                         "total_entries": stats["total_entries"],
-                    }
+                    },
                 )
 
         # Sort by ROI percentage descending
@@ -369,9 +367,9 @@ class CostTracker:
     def get_cost_history(
         self,
         limit: int = 100,
-        task_id: Optional[str] = None,
-        bid_id: Optional[str] = None,
-    ) -> List[CostEntry]:
+        task_id: str | None = None,
+        bid_id: str | None = None,
+    ) -> list[CostEntry]:
         """
         Get cost history.
 
@@ -401,7 +399,7 @@ class CostTracker:
 
 
 # Global singleton instance
-_cost_tracker_instance: Optional[CostTracker] = None
+_cost_tracker_instance: CostTracker | None = None
 
 
 def get_cost_tracker() -> CostTracker:

@@ -4,12 +4,13 @@ Cost Tracking and ROI Analysis
 Tracks costs of fine-tuning and inference to calculate ROI.
 """
 
-import json
-import os
 from dataclasses import dataclass
-from typing import Optional, Dict, Any
 from datetime import datetime, timezone
+import json
 import logging
+import os
+import pathlib
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +43,7 @@ class CostTracker:
     - Cost projections
     """
 
-    def __init__(self, tracker_path: Optional[str] = None):
+    def __init__(self, tracker_path: str | None = None):
         """
         Initialize cost tracker.
 
@@ -51,7 +52,7 @@ class CostTracker:
         """
         if tracker_path is None:
             data_dir = os.path.join(
-                os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
+                pathlib.Path(pathlib.Path(pathlib.Path(__file__).parent).parent).parent,
                 "data",
                 "fine_tuning",
             )
@@ -59,13 +60,13 @@ class CostTracker:
             tracker_path = os.path.join(data_dir, "cost_tracking.json")
 
         self.tracker_path = tracker_path
-        self.costs: Dict[str, Any] = self._load_costs()
+        self.costs: dict[str, Any] = self._load_costs()
 
-    def _load_costs(self) -> Dict[str, Any]:
+    def _load_costs(self) -> dict[str, Any]:
         """Load cost tracking data."""
-        if os.path.exists(self.tracker_path):
+        if pathlib.Path(self.tracker_path).exists():
             try:
-                with open(self.tracker_path, "r") as f:
+                with open(self.tracker_path) as f:
                     return json.load(f)
             except Exception as e:
                 logger.warning(f"Failed to load costs: {e}")
@@ -85,7 +86,7 @@ class CostTracker:
         dataset_size: int,
         training_tokens: int,
         total_cost: float,
-        metadata: Optional[Dict[str, Any]] = None,
+        metadata: dict[str, Any] | None = None,
     ) -> None:
         """
         Record a training job cost.
@@ -121,7 +122,7 @@ class CostTracker:
         tokens_used: int,
         cost: float,
         is_fine_tuned: bool,
-        metadata: Optional[Dict[str, Any]] = None,
+        metadata: dict[str, Any] | None = None,
     ) -> None:
         """
         Record an inference call cost.
@@ -145,7 +146,7 @@ class CostTracker:
         self.costs["inferences"].append(inference_record)
         self._save_costs()
 
-    def get_job_cost(self, job_id: str) -> Optional[Dict[str, Any]]:
+    def get_job_cost(self, job_id: str) -> dict[str, Any] | None:
         """
         Get cost of a specific training job.
 
@@ -174,8 +175,8 @@ class CostTracker:
         return total
 
     def get_inference_costs(
-        self, model_name: Optional[str] = None
-    ) -> Dict[str, float]:
+        self, model_name: str | None = None,
+    ) -> dict[str, float]:
         """
         Get inference costs by model.
 
@@ -277,7 +278,7 @@ class CostTracker:
             payback_days=payback_days,
         )
 
-    def get_cost_summary(self) -> Dict[str, Any]:
+    def get_cost_summary(self) -> dict[str, Any]:
         """
         Get overall cost summary.
 

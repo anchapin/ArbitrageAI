@@ -30,8 +30,8 @@ Usage:
 """
 
 from src.templates.base_document import BaseDocumentTemplate
-from src.templates.legal_contract import LegalContractTemplate
 from src.templates.financial_summary import FinancialSummaryTemplate
+from src.templates.legal_contract import LegalContractTemplate
 
 
 class TemplateRegistry:

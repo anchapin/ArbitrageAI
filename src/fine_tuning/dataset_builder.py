@@ -5,11 +5,12 @@ Prepares training data from task history and distillation data.
 Supports multiple formats and quality filtering.
 """
 
-import os
-import json
 from datetime import datetime, timezone
-from typing import Optional, Dict, Any, List
+import json
 import logging
+import os
+import pathlib
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +27,7 @@ class DatasetBuilder:
     - Data augmentation and splitting
     """
 
-    def __init__(self, output_dir: Optional[str] = None):
+    def __init__(self, output_dir: str | None = None):
         """
         Initialize the dataset builder.
 
@@ -34,7 +35,7 @@ class DatasetBuilder:
             output_dir: Directory to save datasets
         """
         self.output_dir = output_dir or os.path.join(
-            os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
+            pathlib.Path(pathlib.Path(pathlib.Path(__file__).parent).parent).parent,
             "data",
             "fine_tuning",
         )
@@ -43,10 +44,10 @@ class DatasetBuilder:
     def build_from_distillation(
         self,
         min_rating: int = 4,
-        domain: Optional[str] = None,
-        task_type: Optional[str] = None,
-        limit: Optional[int] = None,
-    ) -> List[Dict[str, Any]]:
+        domain: str | None = None,
+        task_type: str | None = None,
+        limit: int | None = None,
+    ) -> list[dict[str, Any]]:
         """
         Build dataset from distillation data collector.
 
@@ -64,7 +65,7 @@ class DatasetBuilder:
 
             collector = DistillationDataCollector()
             examples = collector.get_curated_examples(
-                domain=domain, min_rating=min_rating, limit=limit
+                domain=domain, min_rating=min_rating, limit=limit,
             )
 
             # Filter by task_type if specified
@@ -73,14 +74,14 @@ class DatasetBuilder:
 
             logger.info(
                 f"Loaded {len(examples)} distillation examples "
-                f"(rating>={min_rating}, domain={domain}, task_type={task_type})"
+                f"(rating>={min_rating}, domain={domain}, task_type={task_type})",
             )
             return examples
         except Exception as e:
             logger.error(f"Failed to load distillation data: {e}")
             return []
 
-    def validate_examples(self, examples: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def validate_examples(self, examples: list[dict[str, Any]]) -> dict[str, Any]:
         """
         Validate dataset examples for completeness and quality.
 
@@ -124,7 +125,7 @@ class DatasetBuilder:
             "validation_rate": len(valid_examples) / len(examples) if examples else 0,
         }
 
-    def to_openai_format(self, examples: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    def to_openai_format(self, examples: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """
         Convert examples to OpenAI fine-tuning format.
 
@@ -141,12 +142,12 @@ class DatasetBuilder:
                     "messages": [
                         {"role": "user", "content": ex.get("prompt", "")},
                         {"role": "assistant", "content": ex.get("response", "")},
-                    ]
-                }
+                    ],
+                },
             )
         return formatted
 
-    def to_alpaca_format(self, examples: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    def to_alpaca_format(self, examples: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """
         Convert examples to Alpaca fine-tuning format.
 
@@ -161,7 +162,7 @@ class DatasetBuilder:
             for ex in examples
         ]
 
-    def to_jsonl_format(self, examples: List[Dict[str, Any]]) -> str:
+    def to_jsonl_format(self, examples: list[dict[str, Any]]) -> str:
         """
         Convert examples to JSONL format.
 
@@ -175,7 +176,7 @@ class DatasetBuilder:
         return "\n".join(lines)
 
     def split_train_test(
-        self, examples: List[Dict[str, Any]], train_ratio: float = 0.8
+        self, examples: list[dict[str, Any]], train_ratio: float = 0.8,
     ) -> tuple:
         """
         Split examples into train and test sets.
@@ -192,7 +193,7 @@ class DatasetBuilder:
 
     def save_dataset(
         self,
-        examples: List[Dict[str, Any]],
+        examples: list[dict[str, Any]],
         filename: str,
         format: str = "openai",
     ) -> str:
@@ -232,7 +233,7 @@ class DatasetBuilder:
         logger.info(f"Saved {len(examples)} examples to {filepath}")
         return filepath
 
-    def get_dataset_stats(self, examples: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def get_dataset_stats(self, examples: list[dict[str, Any]]) -> dict[str, Any]:
         """
         Get statistics about the dataset.
 
@@ -279,10 +280,10 @@ class DatasetBuilder:
 
 
 def prepare_fine_tuning_dataset(
-    output_dir: Optional[str] = None,
+    output_dir: str | None = None,
     format: str = "openai",
     min_rating: int = 4,
-    domain: Optional[str] = None,
+    domain: str | None = None,
 ) -> str:
     """
     Convenience function to prepare a complete fine-tuning dataset.

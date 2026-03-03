@@ -26,8 +26,9 @@ logger = logging.getLogger(__name__)
 
 # Docker SDK
 try:
-    import docker
     from docker.errors import DockerException, NotFound
+
+    import docker
 
     DOCKER_AVAILABLE = True
 except ImportError:
@@ -144,7 +145,7 @@ class LocalDockerSandbox:
         """Get or create Docker client."""
         if not DOCKER_AVAILABLE:
             raise ImportError(
-                "Docker SDK not available. Install with: pip install docker"
+                "Docker SDK not available. Install with: pip install docker",
             )
 
         if self._client is None:
@@ -156,7 +157,7 @@ class LocalDockerSandbox:
             except DockerException as e:
                 raise RuntimeError(
                     f"Failed to connect to Docker daemon: {e}. "
-                    "Make sure Docker is running and accessible."
+                    "Make sure Docker is running and accessible.",
                 ) from e
 
         return self._client
@@ -233,8 +234,8 @@ class LocalDockerSandbox:
 
                         artifacts.append(
                             SandboxArtifact(
-                                name=filename, data=data, mime_type=mime_type
-                            )
+                                name=filename, data=data, mime_type=mime_type,
+                            ),
                         )
                     except OSError as e:
                         logger.debug(f"Failed to read artifact {filename}: {e}")
@@ -244,7 +245,7 @@ class LocalDockerSandbox:
         return artifacts
 
     def run_code(
-        self, code: str, timeout: int | None = None, output_format: str = "image"
+        self, code: str, timeout: int | None = None, output_format: str = "image",
     ) -> SandboxResult:
         """
         Execute Python code in the sandbox.
@@ -339,16 +340,16 @@ class LocalDockerSandbox:
                     error = f"Process exited with code {exit_code}"
 
                 return SandboxResult(
-                    logs=logs, artifacts=artifacts, error=error, timed_out=False
+                    logs=logs, artifacts=artifacts, error=error, timed_out=False,
                 )
 
             except DockerException as e:
                 return SandboxResult(
-                    logs=[], artifacts=[], error=f"Docker error: {e!s}"
+                    logs=[], artifacts=[], error=f"Docker error: {e!s}",
                 )
             except Exception as e:
                 return SandboxResult(
-                    logs=[], artifacts=[], error=f"Execution error: {e!s}"
+                    logs=[], artifacts=[], error=f"Execution error: {e!s}",
                 )
 
     # =========================================================================
@@ -400,7 +401,7 @@ class LocalDockerSandbox:
 
 
 def create_sandbox(
-    api_key: str | None = None, timeout: int = DEFAULT_TIMEOUT, **kwargs
+    api_key: str | None = None, timeout: int = DEFAULT_TIMEOUT, **kwargs,
 ) -> LocalDockerSandbox:
     """
     Create a LocalDockerSandbox instance (E2B-compatible interface).

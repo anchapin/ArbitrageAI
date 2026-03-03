@@ -14,15 +14,15 @@ Features:
 - Logging of all auto-increase attempts
 """
 
-from typing import Optional, Dict, Any
 from datetime import datetime
 from enum import Enum as PyEnum
+from typing import Any
 
 from sqlalchemy.orm import Session
 
+from ..agent_execution.confidence_tracker import ConfidenceEntry
 from ..api.database import SessionLocal
 from ..api.models import ThresholdPetition
-from ..agent_execution.confidence_tracker import ConfidenceEntry
 from ..config.config_manager import ConfigManager
 from ..utils.logger import get_logger
 
@@ -51,13 +51,13 @@ class AutoThresholdManager:
         """Initialize Auto-Threshold Manager."""
         self.enabled = ConfigManager.get("AUTO_THRESHOLD_INCREASE", True)
         self.win_rate_threshold = ConfigManager.get(
-            "AUTO_THRESHOLD_WIN_RATE_THRESHOLD", 70
+            "AUTO_THRESHOLD_WIN_RATE_THRESHOLD", 70,
         )
         self.profit_margin_threshold = ConfigManager.get(
-            "AUTO_THRESHOLD_PROFIT_MARGIN_THRESHOLD", 50
+            "AUTO_THRESHOLD_PROFIT_MARGIN_THRESHOLD", 50,
         )
         self.consecutive_periods = ConfigManager.get(
-            "AUTO_THRESHOLD_CONSECUTIVE_PERIODS", 4
+            "AUTO_THRESHOLD_CONSECUTIVE_PERIODS", 4,
         )
 
         logger.info(
@@ -65,10 +65,10 @@ class AutoThresholdManager:
             f"Enabled: {self.enabled}, "
             f"Win Rate Threshold: {self.win_rate_threshold}%, "
             f"Profit Margin: ${self.profit_margin_threshold / 100:.2f}, "
-            f"Consecutive Periods: {self.consecutive_periods}"
+            f"Consecutive Periods: {self.consecutive_periods}",
         )
 
-    def evaluate_and_petition(self) -> Dict[str, Any]:
+    def evaluate_and_petition(self) -> dict[str, Any]:
         """
         Evaluate performance and create petition if criteria met.
 
@@ -94,7 +94,7 @@ class AutoThresholdManager:
 
             if pending_petition:
                 logger.info(
-                    "Pending petition exists, skipping auto-threshold evaluation"
+                    "Pending petition exists, skipping auto-threshold evaluation",
                 )
                 return {
                     "status": AutoThresholdStatus.PENDING_PETITION.value,
@@ -131,7 +131,7 @@ class AutoThresholdManager:
         finally:
             db.close()
 
-    def _evaluate_performance(self, db: Session) -> Dict[str, Any]:
+    def _evaluate_performance(self, db: Session) -> dict[str, Any]:
         """
         Evaluate agent performance against auto-threshold criteria.
 
@@ -184,7 +184,7 @@ class AutoThresholdManager:
             }
 
         avg_profit = sum(e.profit_cents for e in profitable_entries) / len(
-            profitable_entries
+            profitable_entries,
         )
 
         # Check consecutive periods (simplified as recent wins)
@@ -232,7 +232,7 @@ class AutoThresholdManager:
         }
 
     def _create_petition(
-        self, db: Session, evaluation: Dict[str, Any]
+        self, db: Session, evaluation: dict[str, Any],
     ) -> ThresholdPetition:
         """
         Create a threshold petition based on evaluation.
@@ -300,7 +300,7 @@ class AutoThresholdManager:
         return petition
 
     def _log_auto_increase(
-        self, db: Session, evaluation: Dict[str, Any], petition: ThresholdPetition
+        self, db: Session, evaluation: dict[str, Any], petition: ThresholdPetition,
     ):
         """
         Log auto-threshold increase attempt for audit trail.
@@ -316,7 +316,7 @@ class AutoThresholdManager:
             f"  Win Rate: {evaluation.get('win_rate', 0):.1f}%\n"
             f"  Avg Profit: ${evaluation.get('avg_profit_cents', 0) / 100:.2f}\n"
             f"  Threshold Increase: {petition.current_threshold_cents} -> {petition.requested_threshold_cents} cents\n"
-            f"  Criteria Met: {evaluation.get('status') == AutoThresholdStatus.MET_CRITERIA.value}"
+            f"  Criteria Met: {evaluation.get('status') == AutoThresholdStatus.MET_CRITERIA.value}",
         )
 
     def rollback_auto_increase(self, petition_id: str, reasoning: str) -> bool:
@@ -353,7 +353,7 @@ class AutoThresholdManager:
             logger.info(
                 f"Auto-threshold increase rolled back:\n"
                 f"  Petition ID: {petition_id}\n"
-                f"  Reasoning: {reasoning}"
+                f"  Reasoning: {reasoning}",
             )
 
             # Send notification
@@ -365,7 +365,7 @@ class AutoThresholdManager:
                     f"🔄 AUTO-THRESHOLD ROLLED BACK\n\n"
                     f"Petition {petition_id}\n"
                     f"Threshold remains at ${petition.current_threshold_cents / 100:.2f}\n"
-                    f"Reason: {reasoning}"
+                    f"Reason: {reasoning}",
                 )
 
             except Exception as e:
@@ -382,7 +382,7 @@ class AutoThresholdManager:
 
 
 # Global singleton instance
-_auto_threshold_manager: Optional[AutoThresholdManager] = None
+_auto_threshold_manager: AutoThresholdManager | None = None
 
 
 def get_auto_threshold_manager() -> AutoThresholdManager:

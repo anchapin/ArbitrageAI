@@ -18,46 +18,48 @@ Research & Plan Workflow (Autonomy Core):
 - ResearchAndPlanOrchestrator: Coordinates all four steps
 """
 
+
 # Lazy imports to avoid circular dependencies
 def __getattr__(name):
     """Lazy load modules to avoid circular imports."""
     if name == "execute_task":
         from .executor import execute_task
         return execute_task
-    elif name == "execute_data_visualization":
+    if name == "execute_data_visualization":
         from .executor import execute_data_visualization
         return execute_data_visualization
-    elif name == "execute_data_visualization_simple":
+    if name == "execute_data_visualization_simple":
         from .executor import execute_data_visualization_simple
         return execute_data_visualization_simple
-    elif name == "TaskRouter":
+    if name == "TaskRouter":
         from .executor import TaskRouter
         return TaskRouter
-    elif name == "TaskType":
+    if name == "TaskType":
         from .executor import TaskType
         return TaskType
-    elif name == "OutputFormat":
+    if name == "OutputFormat":
         from .executor import OutputFormat
         return OutputFormat
-    elif name == "ResearchAndPlanOrchestrator":
+    if name == "ResearchAndPlanOrchestrator":
         from .planning import ResearchAndPlanOrchestrator
         return ResearchAndPlanOrchestrator
-    elif name == "create_research_plan_workflow":
+    if name == "create_research_plan_workflow":
         from .planning import create_research_plan_workflow
         return create_research_plan_workflow
-    elif name == "ContextExtractor":
+    if name == "ContextExtractor":
         from .planning import ContextExtractor
         return ContextExtractor
-    elif name == "WorkPlanGenerator":
+    if name == "WorkPlanGenerator":
         from .planning import WorkPlanGenerator
         return WorkPlanGenerator
-    elif name == "PlanExecutor":
+    if name == "PlanExecutor":
         from .planning import PlanExecutor
         return PlanExecutor
-    elif name == "PlanReviewer":
+    if name == "PlanReviewer":
         from .planning import PlanReviewer
         return PlanReviewer
     raise AttributeError(f"module '{__name__}' has no attribute '{name}'")
+
 
 __all__ = [
     # Executor exports
