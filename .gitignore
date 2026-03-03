@@ -179,6 +179,7 @@ src/client_portal/.env.*.local
 *.sqlite3
 data/*.db
 data/*.sqlite
+data/.secrets  # Secure secrets file - NEVER commit
 *.db-shm
 *.db-wal
 
