@@ -36,7 +36,7 @@ from .experience_logger import experience_logger
 from ..utils.logger import get_logger
 
 # Import Config Manager (Issue #26)
-from ..config.config_manager import ConfigManager
+from ..config.config_manager import ConfigManager, validate_production_configuration
 
 # Import file validation utility (Issue #34)
 from ..utils.file_validator import validate_file_upload
@@ -1244,6 +1244,9 @@ class CheckoutResponse(BaseModel):
 # Lifespan context manager for startup/shutdown
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Validate production configuration BEFORE anything else (Security - Issue #172)
+    validate_production_configuration()
+    
     # Startup: Initialize DB and Observability
     init_db()
     init_observability()
