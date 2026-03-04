@@ -229,7 +229,7 @@ def validate_critical_env_vars() -> None:
 
     # Warn about insecure defaults
     client_secret = os.getenv("CLIENT_AUTH_SECRET", "")
-    if client_secret == "CHANGE_ME_IN_PRODUCTION_use_a_random_32_byte_key":
+    if client_secret == "CHANGE_ME_IN_PRODUCTION_use_a_random_32_byte_key":  # noqa: S105 - This is a security check, not a hardcoded password
         if env_type == "production":
             errors.append(
                 "CLIENT_AUTH_SECRET using insecure default in production. "

@@ -289,7 +289,7 @@ class GracefulShutdownManager:
 
         try:
             # Check state file age
-            mtime = datetime.fromtimestamp(state_file.stat().st_mtime)
+            mtime = datetime.fromtimestamp(state_file.stat().st_mtime, tz=timezone.utc)
             age = datetime.now(timezone.utc) - mtime
 
             if age > timedelta(hours=self.max_state_age_hours):

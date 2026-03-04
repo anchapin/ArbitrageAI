@@ -55,7 +55,7 @@ class GitHubProjectsManager:
         self.dry_run = False
         self.verbose = False
 
-    def run_command(self, cmd: List[str], check: bool = True, 
+    def run_command(self, cmd: List[str], check: bool = True,
                     timeout: int = 60) -> subprocess.CompletedProcess:
         """Run a shell command."""
         try:
@@ -68,8 +68,8 @@ class GitHubProjectsManager:
                 timeout=timeout
             )
             return result
-        except subprocess.TimeoutExpired:
-            raise subprocess.TimeoutExpired(cmd, timeout)
+        except subprocess.TimeoutExpired as e:
+            raise subprocess.TimeoutExpired(cmd, timeout) from e
         except subprocess.CalledProcessError as e:
             if check:
                 raise

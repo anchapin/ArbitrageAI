@@ -5,20 +5,12 @@ This module contains experience vector database integration,
 arena learning logging, and closed-loop learning functionality.
 """
 
-import asyncio
-import json
-from datetime import datetime, timezone
-from typing import Any
-
-from sqlalchemy.orm import Session
 
 from src.utils.logger import get_logger
 
 # Import Experience Vector Database for few-shot learning (RAG)
 try:
-    from src.async_rag_service import get_async_rag_service
-    from src.background_job_queue import get_background_job_queue
-    from src.experience_vector_db import get_experience_db, store_successful_task
+    from src.experience_vector_db import store_successful_task
     EXPERIENCE_DB_AVAILABLE = True
 except ImportError:
     EXPERIENCE_DB_AVAILABLE = False
@@ -113,8 +105,8 @@ experience_logger = ExperienceLogger()
 
 __all__ = [
     "EXPERIENCE_DB_AVAILABLE",
-    "ExperienceLogger",
     "ArenaLearningLogger",
+    "ExperienceLogger",
     "_log_arena_learning",
     "experience_logger",
 ]

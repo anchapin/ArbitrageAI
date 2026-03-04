@@ -14,12 +14,10 @@ Issue #193: Fix N+1 Query Problems with Eager Loading
 """
 
 from datetime import datetime, timezone
-import logging
 import os
 import time as _time
 
 from fastapi import BackgroundTasks, Depends, HTTPException
-from fastapi.responses import JSONResponse
 from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload, selectinload
 
@@ -33,10 +31,6 @@ from .models import (
     EscalationLog,
     ReviewStatus,
     Task,
-    TaskExecution,
-    TaskPlanning,
-    TaskReview,
-    TaskOutput,
     TaskStatus,
 )
 
@@ -64,19 +58,61 @@ DELIVERY_LOCKOUT_SECONDS = ConfigManager.get("DELIVERY_LOCKOUT_SECONDS")
 DELIVERY_MAX_ATTEMPTS_PER_IP = ConfigManager.get("DELIVERY_MAX_ATTEMPTS_PER_IP")
 DELIVERY_IP_LOCKOUT_SECONDS = ConfigManager.get("DELIVERY_IP_LOCKOUT_SECONDS")
 
-# In-memory rate limiter: { task_id: (fail_count, first_fail_timestamp) }
+# In-memory rate limiter for backward compatibility with tests
+# In production, Redis is used instead (QAQC-009)
 _delivery_rate_limits: dict[str, tuple[int, float]] = {}
-
-# IP-level rate limiter: { ip: (attempt_count, first_attempt_timestamp) }
 _delivery_ip_rate_limits: dict[str, tuple[int, float]] = {}
+
+# Redis rate limiter instance (lazy-loaded)
+_redis_rate_limiter = None
+
+
+def _get_redis_rate_limiter():
+    """Get or create Redis rate limiter instance."""
+    global _redis_rate_limiter
+    if _redis_rate_limiter is None:
+        # Check if rate limiting should be disabled (for tests)
+        if os.getenv("DISABLE_RATE_LIMITING") == "true":
+            return None
+        
+        try:
+            from src.utils.redis_rate_limiter import RedisRateLimiter
+            redis_url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+            _redis_rate_limiter = RedisRateLimiter(redis_url=redis_url, key_prefix="delivery")
+            return _redis_rate_limiter
+        except ImportError:
+            logger.warning("Redis rate limiter module not available, using in-memory")
+            return None
+        except Exception as e:
+            logger.warning(f"Redis rate limiter initialization failed: {e}, using in-memory")
+            return None
+    return _redis_rate_limiter
 
 
 def _check_delivery_rate_limit(task_id: str) -> bool:
     """
     Check if a task_id is rate-limited for delivery attempts.
-
+    
+    Uses Redis for distributed rate limiting (QAQC-009).
+    Falls back to in-memory limiting when Redis unavailable.
+    
     Returns True if the request is allowed, False if rate-limited.
     """
+    # Try Redis first
+    limiter = _get_redis_rate_limiter()
+    if limiter:
+        try:
+            allowed, _ = limiter.check_rate_limit(
+                key=f"task:{task_id}",
+                max_requests=DELIVERY_MAX_FAILED_ATTEMPTS,
+                window_seconds=DELIVERY_LOCKOUT_SECONDS,
+                algorithm="sliding",
+            )
+            return allowed
+        except Exception as e:
+            logger.warning(f"Redis rate limit check failed: {e}, using in-memory fallback")
+    
+    # Fallback to in-memory (for tests or when Redis unavailable)
     entry = _delivery_rate_limits.get(task_id)
     if entry is None:
         return True
@@ -93,9 +129,21 @@ def _check_delivery_rate_limit(task_id: str) -> bool:
 def _record_delivery_failure(task_id: str, ip: str | None = None) -> None:
     """
     Record a failed delivery attempt for rate limiting.
-
-    Increments failure counts for the specific task_id.
+    
+    Uses Redis for distributed tracking (QAQC-009).
+    Also updates in-memory dict for backward compatibility.
     """
+    # Record in Redis
+    limiter = _get_redis_rate_limiter()
+    if limiter:
+        try:
+            limiter.record_event(f"task:{task_id}", "failure")
+            if ip:
+                limiter.record_event(f"ip:{ip}", "failure")
+        except Exception as e:
+            logger.warning(f"Failed to record delivery failure in Redis: {e}")
+    
+    # Also update in-memory for backward compatibility
     entry = _delivery_rate_limits.get(task_id)
     if entry is None:
         _delivery_rate_limits[task_id] = (1, _time.time())
@@ -107,9 +155,27 @@ def _record_delivery_failure(task_id: str, ip: str | None = None) -> None:
 def _check_delivery_ip_rate_limit(ip: str) -> bool:
     """
     Check if an IP is rate-limited for delivery attempts.
-
+    
+    Uses Redis for distributed rate limiting (QAQC-009).
+    Falls back to in-memory limiting when Redis unavailable.
+    
     Returns True if the request is allowed, False if rate-limited.
     """
+    # Try Redis first
+    limiter = _get_redis_rate_limiter()
+    if limiter:
+        try:
+            allowed, _ = limiter.check_rate_limit(
+                key=f"ip:{ip}",
+                max_requests=DELIVERY_MAX_ATTEMPTS_PER_IP,
+                window_seconds=DELIVERY_IP_LOCKOUT_SECONDS,
+                algorithm="sliding",
+            )
+            return allowed
+        except Exception as e:
+            logger.warning(f"Redis IP rate limit check failed: {e}, using in-memory fallback")
+    
+    # Fallback to in-memory
     entry = _delivery_ip_rate_limits.get(ip)
     if entry is None:
         return True
@@ -126,7 +192,19 @@ def _check_delivery_ip_rate_limit(ip: str) -> bool:
 def _record_ip_delivery_attempt(ip: str) -> None:
     """
     Record a delivery attempt for IP rate limiting.
+    
+    Uses Redis for distributed tracking (QAQC-009).
+    Also updates in-memory dict for backward compatibility.
     """
+    # Record in Redis
+    limiter = _get_redis_rate_limiter()
+    if limiter:
+        try:
+            limiter.record_event(f"ip:{ip}", "attempt")
+        except Exception as e:
+            logger.warning(f"Failed to record IP attempt in Redis: {e}")
+    
+    # Also update in-memory for backward compatibility
     entry = _delivery_ip_rate_limits.get(ip)
     if entry is None:
         _delivery_ip_rate_limits[ip] = (1, _time.time())
@@ -425,7 +503,7 @@ async def get_secure_delivery(
 
     # Validate request
     try:
-        request = DeliveryTokenRequest(task_id=task_id, token=token)
+        DeliveryTokenRequest(task_id=task_id, token=token)
     except ValidationError as e:
         raise HTTPException(status_code=422, detail=f"Invalid request: {e!s}") from e
 
@@ -553,9 +631,7 @@ async def run_arena_competition(
 
     # Run arena in background
     async def run_arena_bg():
-        from src.agent_execution.arena import CompetitionType, run_agent_arena
-
-        result = await run_agent_arena(
+        await run_agent_arena(
             user_request=task.description or task.title,
             domain=task.domain,
             csv_data=task.csv_data,
@@ -573,7 +649,6 @@ async def run_arena_competition(
                 "client_email": task.client_email,
             },
         )
-        return result
 
     background_tasks.add_task(run_arena_bg)
 
@@ -600,7 +675,6 @@ async def get_arena_history(
     Returns:
         List of arena competitions
     """
-    from .models import Task
     competitions = (
         db.query(ArenaCompetition)
         .filter(ArenaCompetition.status == ArenaCompetitionStatus.COMPLETED)
@@ -720,24 +794,24 @@ async def get_admin_metrics(db: Session = Depends(get_db)):  # noqa: B008
 # =============================================================================
 
 __all__ = [
-    "get_task",
-    "get_task_by_session",
-    "get_secure_delivery",
-    "run_arena_competition",
-    "get_arena_history",
-    "get_arena_stats",
-    "get_admin_metrics",
-    "_should_escalate_task",
-    "_escalate_task",
-    "_check_delivery_rate_limit",
-    "_record_delivery_failure",
-    "_check_delivery_ip_rate_limit",
-    "_record_ip_delivery_attempt",
-    "HIGH_VALUE_THRESHOLD",
-    "MAX_RETRY_ATTEMPTS",
-    "DELIVERY_TOKEN_TTL_HOURS",
-    "DELIVERY_MAX_FAILED_ATTEMPTS",
+    "DELIVERY_IP_LOCKOUT_SECONDS",
     "DELIVERY_LOCKOUT_SECONDS",
     "DELIVERY_MAX_ATTEMPTS_PER_IP",
-    "DELIVERY_IP_LOCKOUT_SECONDS",
+    "DELIVERY_MAX_FAILED_ATTEMPTS",
+    "DELIVERY_TOKEN_TTL_HOURS",
+    "HIGH_VALUE_THRESHOLD",
+    "MAX_RETRY_ATTEMPTS",
+    "_check_delivery_ip_rate_limit",
+    "_check_delivery_rate_limit",
+    "_escalate_task",
+    "_record_delivery_failure",
+    "_record_ip_delivery_attempt",
+    "_should_escalate_task",
+    "get_admin_metrics",
+    "get_arena_history",
+    "get_arena_stats",
+    "get_secure_delivery",
+    "get_task",
+    "get_task_by_session",
+    "run_arena_competition",
 ]

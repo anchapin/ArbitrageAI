@@ -23,19 +23,22 @@ logger = get_logger(__name__)
 SECRETS_FILE = Path("data/.secrets")
 
 # Insecure default patterns to detect and reject
+# These are specific patterns that indicate placeholder/test values
 INSECURE_DEFAULTS = {
-    "CHANGE_ME_IN_PRODUCTION_generate_a_secure_random_32_byte_key",
-    "CHANGE_ME_IN_PRODUCTION_use_a_random_32_byte_key",
+    "change_me_in_production",  # Case-insensitive matching applied
     "your-secret-key-here",
     "your-jwt-secret-here",
     "your-openai-api-key-here",
-    "sk_test_",  # Stripe test keys in production
-    "pk_test_",
-    "whsec_",  # Webhook secrets must be real
-    "secret",
+    "sk_test_",  # Stripe test keys (not sk_live_)
+    "pk_test_",  # Stripe test publishable keys
+    "whsec_test",  # Stripe test webhook secrets (whsec_ prefix alone is valid for prod)
     "password",
     "admin",
     "12345678",
+    "placeholder",
+    "test_secret",
+    "test_key",
+    "test_value",
 }
 
 
@@ -149,7 +152,7 @@ def is_insecure_default(value: str) -> bool:
 
     Checks:
         - Empty or None values
-        - Common insecure patterns
+        - Common insecure patterns (case-insensitive)
         - Values shorter than 32 characters
         - Known insecure default strings
     """
@@ -158,17 +161,17 @@ def is_insecure_default(value: str) -> bool:
 
     value_lower = value.lower()
 
-    # Check for known insecure patterns
+    # Check for known insecure patterns (all patterns are already lowercase)
     for pattern in INSECURE_DEFAULTS:
-        if pattern.lower() in value_lower:
+        if pattern in value_lower:
             return True
 
     # Check for obviously weak secrets (too short)
     if len(value) < 32:
         return True
 
-    # Check for common weak patterns
-    return value in {"secret", "password", "admin", "12345678"}
+    # Check for common weak patterns (single words)
+    return value_lower in {"secret", "password", "admin", "12345678"}
 
 
 def validate_secret_security(value: str, name: str) -> tuple[bool, str]:

@@ -11,10 +11,23 @@ from alembic import context
 # Add the project root to the path so we can import our models
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-# Import the Base metadata from your models
-# This is needed for autogenerate support
-from src.api.models import Base
+# Import all model bases for autogenerate support
+# Each model module has its own Base, so we need to import them all
+from src.api.task_models import Base as TaskBase
+from src.api.user_models import Base as UserBase
+from src.api.marketplace_models import Base as MarketBase
+from src.api.financial_models import Base as FinancialBase
 from src.api.database import DATABASE_URL
+
+# Combine all metadata from different model bases
+from sqlalchemy import MetaData
+target_metadata = MetaData()
+
+# Copy tables from each base's metadata
+for base in [TaskBase, UserBase, MarketBase, FinancialBase]:
+    for table in base.metadata.tables.values():
+        target_metadata._add_table(table.name, table.schema, table)
+target_metadata.create_all = lambda bind=None: None  # Prevent accidental use
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -32,7 +45,7 @@ if config.config_file_name is not None:
 
 # add your model's MetaData object here
 # for 'autogenerate' support
-target_metadata = Base.metadata
+# target_metadata is now combined from all model bases
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:

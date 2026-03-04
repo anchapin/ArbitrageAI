@@ -20,18 +20,30 @@ Test Coverage:
 
 import pytest
 import uuid
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, MetaData
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import IntegrityError
 
-from src.api.models import Base, Bid, BidStatus, EscalationLog
+from src.api.task_models import Base as TaskBase
+from src.api.marketplace_models import Base as MarketBase, Bid, BidStatus
+from src.api.financial_models import Base as FinancialBase, EscalationLog
 
 
 @pytest.fixture
-def test_db():
+def combined_metadata():
+    """Create combined metadata from all model bases."""
+    metadata = MetaData()
+    for base in [TaskBase, MarketBase, FinancialBase]:
+        for table in base.metadata.tables.values():
+            metadata._add_table(table.name, table.schema, table)
+    return metadata
+
+
+@pytest.fixture
+def test_db(combined_metadata):
     """Create an in-memory SQLite database for testing."""
     engine = create_engine("sqlite:///:memory:")
-    Base.metadata.create_all(engine)
+    combined_metadata.create_all(bind=engine)
     SessionLocal = sessionmaker(bind=engine)
     session = SessionLocal()
     yield session

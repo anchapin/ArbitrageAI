@@ -1,6 +1,5 @@
 """Secure file upload handler with size limits and type validation - Issue #34."""
 
-import os
 from pathlib import Path
 import tempfile
 

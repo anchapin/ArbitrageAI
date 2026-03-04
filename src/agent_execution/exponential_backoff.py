@@ -62,7 +62,7 @@ class ExponentialBackoff:
 
         # Add jitter (±25%)
         if self.jitter:
-            jitter_factor = 0.75 + random.random() * 0.5  # 0.75 to 1.25
+            jitter_factor = 0.75 + random.random() * 0.5  # noqa: S311 - Not cryptographic, just jitter
             delay *= jitter_factor
 
         logger.debug(f"Exponential backoff: waiting {delay:.2f}s (retry {retry_count})")

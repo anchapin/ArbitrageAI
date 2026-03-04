@@ -7,8 +7,18 @@ import logging
 import uuid
 
 from sqlalchemy import (
-    JSON, Boolean, Column, DateTime, Enum, Float, ForeignKey,
-    Index, Integer, String, Text, UniqueConstraint,
+    JSON,
+    Boolean,
+    Column,
+    DateTime,
+    Enum,
+    Float,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
 )
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import declarative_base, relationship
@@ -476,12 +486,18 @@ class TaskExecution(Base):
     """Task execution state and results."""
 
     __tablename__ = "task_executions"
+    __table_args__ = (
+        Index("idx_task_executions_task_id", "task_id"),
+        Index("idx_task_executions_status", "status"),
+        Index("idx_task_executions_started_at", "started_at"),
+        Index("idx_task_executions_completed_at", "completed_at"),
+    )
 
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
-    task_id = Column(String, ForeignKey("tasks.id"), unique=True, nullable=False)
+    task_id = Column(String, ForeignKey("tasks.id"), unique=True, nullable=False, index=True)
 
     status = Column(
-        Enum(ExecutionStatus), default=ExecutionStatus.PENDING, nullable=False,
+        Enum(ExecutionStatus), default=ExecutionStatus.PENDING, nullable=False, index=True,
     )
     retry_count = Column(Integer, default=0)
     error_message = Column(Text, nullable=True)
@@ -512,9 +528,12 @@ class TaskPlanning(Base):
     """Task planning and research results."""
 
     __tablename__ = "task_planning"
+    __table_args__ = (
+        Index("idx_task_planning_task_id", "task_id"),
+    )
 
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
-    task_id = Column(String, ForeignKey("tasks.id"), unique=True, nullable=False)
+    task_id = Column(String, ForeignKey("tasks.id"), unique=True, nullable=False, index=True)
 
     status = Column(
         Enum(PlanningStatus), default=PlanningStatus.PENDING, nullable=False,
@@ -550,11 +569,15 @@ class TaskReview(Base):
     """Task review and feedback."""
 
     __tablename__ = "task_reviews"
+    __table_args__ = (
+        Index("idx_task_reviews_task_id", "task_id"),
+        Index("idx_task_reviews_status", "status"),
+    )
 
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
-    task_id = Column(String, ForeignKey("tasks.id"), unique=True, nullable=False)
+    task_id = Column(String, ForeignKey("tasks.id"), unique=True, nullable=False, index=True)
 
-    status = Column(Enum(ReviewStatus), default=ReviewStatus.PENDING, nullable=False)
+    status = Column(Enum(ReviewStatus), default=ReviewStatus.PENDING, nullable=False, index=True)
     approved = Column(Boolean, default=False)
     review_feedback = Column(Text, nullable=True)
     review_attempts = Column(Integer, default=0)
@@ -616,11 +639,15 @@ class TaskOutput(Base):
     """Task output results."""
 
     __tablename__ = "task_outputs"
+    __table_args__ = (
+        Index("idx_task_outputs_task_id", "task_id"),
+        Index("idx_task_outputs_output_type", "output_type"),
+    )
 
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
-    task_id = Column(String, ForeignKey("tasks.id"), nullable=False)
+    task_id = Column(String, ForeignKey("tasks.id"), nullable=False, index=True)
 
-    output_type = Column(Enum(OutputType), nullable=False)
+    output_type = Column(Enum(OutputType), nullable=False, index=True)
     output_url = Column(String, nullable=True)
     output_data = Column(JSON, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
@@ -639,6 +666,10 @@ class TaskOutput(Base):
 class ScheduledTask(Base):
     """Database model for scheduled tasks."""
     __tablename__ = "scheduled_tasks"
+    __table_args__ = (
+        Index("idx_scheduled_tasks_status", "status"),
+        Index("idx_scheduled_tasks_next_run_at", "next_run_at"),
+    )
 
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     task_id = Column(String, nullable=True)
@@ -647,9 +678,9 @@ class ScheduledTask(Base):
     domain = Column(String, nullable=False)
     cron_expression = Column(String, nullable=False)
     schedule_type = Column(String, default="RECURRING", nullable=False)
-    status = Column(String, default="ACTIVE", nullable=False)
+    status = Column(String, default="ACTIVE", nullable=False, index=True)
     task_data = Column(Text, nullable=True)
-    next_run_at = Column(DateTime, nullable=True)
+    next_run_at = Column(DateTime, nullable=True, index=True)
     last_run_at = Column(DateTime, nullable=True)
     last_run_result = Column(String, nullable=True)
     last_run_error = Column(Text, nullable=True)
@@ -669,11 +700,15 @@ class ScheduledTask(Base):
 class ScheduleHistory(Base):
     """Database model for schedule execution history."""
     __tablename__ = "schedule_history"
+    __table_args__ = (
+        Index("idx_schedule_history_schedule_id", "schedule_id"),
+        Index("idx_schedule_history_execution_start", "execution_start"),
+    )
 
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     schedule_id = Column(String, nullable=False, index=True)
     task_id = Column(String, nullable=True)
-    execution_start = Column(DateTime, nullable=False)
+    execution_start = Column(DateTime, nullable=False, index=True)
     execution_end = Column(DateTime, nullable=True)
     status = Column(String, nullable=False)
     result = Column(Text, nullable=True)

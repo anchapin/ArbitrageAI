@@ -9,16 +9,15 @@ Handles:
 """
 
 from datetime import datetime, timedelta, timezone
-import logging
 import os
 import secrets
 import uuid
 
 from fastapi import Depends, HTTPException
 from fastapi.responses import JSONResponse
-import stripe
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
+import stripe
 
 from src.config.config_manager import ConfigManager
 from src.utils.file_validator import validate_file_upload
@@ -148,7 +147,7 @@ async def create_checkout_session(task_data, db: Session = Depends(get_db)):  # 
     Returns:
         CheckoutResponse with session ID and URL
     """
-    from .main import CheckoutResponse, TaskSubmission
+    from .main import CheckoutResponse
 
     # Calculate price using the Task Price Formula
     try:
@@ -461,16 +460,16 @@ async def get_price_estimate(
 # =============================================================================
 
 __all__ = [
-    "calculate_task_price",
-    "create_checkout_session",
-    "stripe_webhook",
-    "get_domains",
-    "get_price_estimate",
-    "DOMAIN_BASE_RATES",
+    "BASE_URL",
     "COMPLEXITY_MULTIPLIERS",
-    "URGENCY_MULTIPLIERS",
+    "DELIVERY_TOKEN_TTL_HOURS",
+    "DOMAIN_BASE_RATES",
     "DOMAIN_PRICES",
     "HIGH_VALUE_THRESHOLD",
-    "DELIVERY_TOKEN_TTL_HOURS",
-    "BASE_URL",
+    "URGENCY_MULTIPLIERS",
+    "calculate_task_price",
+    "create_checkout_session",
+    "get_domains",
+    "get_price_estimate",
+    "stripe_webhook",
 ]

@@ -91,8 +91,8 @@ def sanitize_filename(filename: str) -> str:
     # Limit length to 255 characters (filesystem limit)
     if len(filename) > 255:
         # Preserve extension
-        name, ext = os.path.splitext(filename)
-        filename = name[: 255 - len(ext)] + ext
+        ext = pathlib.Path(filename).suffix
+        filename = filename[: 255 - len(ext)] + ext
 
     logger.info(f"Sanitized filename: {filename}")
     return filename

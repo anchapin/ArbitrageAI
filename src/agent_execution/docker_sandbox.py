@@ -230,7 +230,7 @@ class LocalDockerSandbox:
                             data = f.read()
 
                         # Determine MIME type
-                        ext = os.path.splitext(filename)[1].lower()
+                        ext = Path(filename).suffix.lower()
                         mime_type = mime_types.get(ext, "application/octet-stream")
 
                         artifacts.append(

@@ -26,8 +26,8 @@ from .llm_health_check import CircuitBreakerError, get_health_checker
 logger = logging.getLogger(__name__)
 
 # Load environment variables from .env file
-# Create a .env file in your project root with the following variables:  # noqa: ERA001
-# BASE_URL=https://api.openai.com/v1  # noqa: ERA001
+# Create a .env file in your project root with the following variables:
+# BASE_URL=https://api.openai.com/v1
 # API_KEY=your-api-key-here  # noqa: ERA001
 load_dotenv()
 
@@ -373,7 +373,7 @@ class LLMService:
 
         # Stealth mode: add random delay to mimic human typing speed
         if stealth_mode:
-            delay = random.uniform(2.0, 5.0)
+            delay = random.uniform(2.0, 5.0)  # noqa: S311 - Not cryptographic, just human-like delay
             # WARNING: This uses time.sleep which blocks the event loop if called from async.
             # Use complete_async() from async contexts instead.
             try:
@@ -459,7 +459,7 @@ class LLMService:
         """
         # Stealth mode: add random delay to mimic human typing speed
         if stealth_mode:
-            delay = random.uniform(2.0, 5.0)
+            delay = random.uniform(2.0, 5.0)  # noqa: S311 - Not cryptographic, just human-like delay
             await asyncio.sleep(delay)
 
         # Use sync complete method (OpenAI client handles the I/O)
@@ -834,8 +834,8 @@ class LLMService:
 
 if __name__ == "__main__":
     # Example 1: Using cloud provider (OpenAI)
-    # Create a .env file with:  # noqa: ERA001
-    # BASE_URL=https://api.openai.com/v1  # noqa: ERA001
+    # Create a .env file with:
+    # BASE_URL=https://api.openai.com/v1
     # API_KEY=your-openai-api-key  # noqa: ERA001
 
     logger.info("=" * 60)
@@ -843,8 +843,8 @@ if __name__ == "__main__":
     logger.info("=" * 60)
 
     # Example 2: Using local Ollama
-    # For local Ollama, create a .env file with:  # noqa: ERA001
-    # BASE_URL=http://localhost:11434/v1  # noqa: ERA001
+    # For local Ollama, create a .env file with:
+    # BASE_URL=http://localhost:11434/v1
     # API_KEY=not-needed  # noqa: ERA001
 
     # Initialize with local Ollama

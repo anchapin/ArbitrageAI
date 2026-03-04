@@ -27,8 +27,8 @@ import numpy as np
 from pydantic import BaseModel
 from sklearn.ensemble import IsolationForest
 from sklearn.linear_model import LinearRegression
-from sqlalchemy import case, desc, func, select
-from sqlalchemy.orm import Session, joinedload, selectinload
+from sqlalchemy import case, desc, func
+from sqlalchemy.orm import Session, joinedload
 
 # Import telemetry
 from traceloop.sdk.decorators import task

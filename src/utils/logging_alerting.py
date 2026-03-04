@@ -387,17 +387,44 @@ class AlertManager:
 
     def _evaluate_condition(self, condition: str, metrics: dict[str, Any]) -> bool:
         """
-        Evaluate an alert condition.
+        Evaluate an alert condition using a safe AST-based expression parser.
 
         Example condition: "error_count > 10"
 
-        Uses ast.literal_eval for safe evaluation of simple expressions.
-        For more complex conditions, consider using a proper expression parser.
+        This implementation uses a custom AST visitor that only allows safe operations:
+        - Numeric literals (int, float)
+        - String literals
+        - Boolean literals (True, False)
+        - Variable references (from metrics dict only)
+        - Comparison operators: ==, !=, <, <=, >, >=
+        - Boolean operators: and, or, not
+        - Arithmetic operators: +, -, *, /, %, **
+
+        Security features:
+        - No function calls allowed
+        - No attribute access allowed
+        - No subscript access allowed
+        - No imports allowed
+        - No builtins access
+        - Whitelist-based operator approval
+
+        Args:
+            condition: Expression string to evaluate
+            metrics: Dictionary of metric variables available to the expression
+
+        Returns:
+            Boolean result of the condition evaluation
+
+        Raises:
+            ValueError: If the expression contains unsafe operations
+            SyntaxError: If the expression has invalid syntax
         """
         import operator
 
         # Define allowed operators for safe expression evaluation
-        operators = {
+        # Only whitelisted operators are permitted
+        allowed_operators = {
+            # Arithmetic operators
             ast.Add: operator.add,
             ast.Sub: operator.sub,
             ast.Mult: operator.mul,
@@ -406,49 +433,144 @@ class AlertManager:
             ast.Pow: operator.pow,
             ast.USub: operator.neg,
             ast.UAdd: operator.pos,
+            # Comparison operators
             ast.Eq: operator.eq,
             ast.NotEq: operator.ne,
             ast.Lt: operator.lt,
             ast.LtE: operator.le,
             ast.Gt: operator.gt,
             ast.GtE: operator.ge,
+            # Boolean operators
             ast.And: operator.and_,
             ast.Or: operator.or_,
             ast.Not: operator.not_,
         }
 
+        # Explicitly blocked AST node types for security
+        # These would allow code injection or access to sensitive data
+        # Note: ast.Exec doesn't exist in Python 3.x (exec is a function, not a statement)
+        blocked_nodes = {
+            ast.Call: "Function calls are not allowed",
+            ast.Attribute: "Attribute access is not allowed",
+            ast.Subscript: "Subscript access is not allowed",
+            ast.Import: "Imports are not allowed",
+            ast.ImportFrom: "Imports are not allowed",
+            ast.Lambda: "Lambda functions are not allowed",
+            ast.Dict: "Dict literals are not allowed in conditions",
+            ast.Set: "Set literals are not allowed in conditions",
+            ast.Tuple: "Tuple literals are not allowed in conditions",
+            ast.List: "List literals are not allowed in conditions",
+            ast.ListComp: "List comprehensions are not allowed",
+            ast.SetComp: "Set comprehensions are not allowed",
+            ast.DictComp: "Dict comprehensions are not allowed",
+            ast.GeneratorExp: "Generator expressions are not allowed",
+            ast.Yield: "Yield is not allowed",
+            ast.YieldFrom: "Yield from is not allowed",
+            ast.Await: "Await is not allowed",
+            ast.Assign: "Assignment is not allowed",
+            ast.AnnAssign: "Annotated assignment is not allowed",
+            ast.AugAssign: "Augmented assignment is not allowed",
+            ast.Delete: "Delete is not allowed",
+            ast.Raise: "Raise is not allowed",
+            ast.Assert: "Assert is not allowed",
+        }
+
+        def _check_blocked_nodes(node) -> None:
+            """Recursively check for blocked node types."""
+            if type(node) in blocked_nodes:
+                raise ValueError(blocked_nodes[type(node)])
+            # Recursively check child nodes
+            for child in ast.iter_child_nodes(node):
+                _check_blocked_nodes(child)
+
         def eval_node(node):
-            """Safely evaluate an AST node."""
-            if isinstance(node, ast.Num):  # Number
-                return node.n
-            if isinstance(node, ast.Str):  # String
-                return node.s
-            if isinstance(node, ast.Name):  # Variable
+            """
+            Safely evaluate an AST node.
+
+            This function only processes whitelisted node types and operators.
+            Any attempt to use blocked operations will raise ValueError.
+            """
+            # Check for blocked node types first
+            _check_blocked_nodes(node)
+
+            # Handle constants (Python 3.8+: combines Num, Str, NameConstant)
+            if isinstance(node, ast.Constant):
+                if isinstance(node.value, (int, float, str, bool)):
+                    return node.value
+                raise ValueError(f"Unsupported constant type: {type(node.value)}")
+
+            # Handle legacy Python 3.7 and earlier (for backwards compatibility)
+            # Suppress deprecation warnings for legacy AST nodes
+            import warnings
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore", DeprecationWarning)
+                if isinstance(node, ast.Num):  # Deprecated in Python 3.8
+                    return node.n
+                if isinstance(node, ast.Str):  # Deprecated in Python 3.8
+                    return node.s
+                if isinstance(node, ast.NameConstant):  # Deprecated in Python 3.8
+                    return node.value
+
+            # Handle variable references
+            if isinstance(node, ast.Name):
                 if node.id in metrics:
                     return metrics[node.id]
+                # Check for common injection attempts
+                if node.id in ("__builtins__", "globals", "locals", "eval", "exec",
+                               "__import__", "open", "input"):
+                    raise ValueError(f"Access to '{node.id}' is not allowed")
                 raise ValueError(f"Unknown variable: {node.id}")
-            if isinstance(node, ast.Compare):  # Comparison
+
+            # Handle comparison operations (e.g., x > 5, x == y)
+            if isinstance(node, ast.Compare):
                 left = eval_node(node.left)
                 for op, right in zip(node.ops, node.comparators, strict=False):
-                    if type(op) not in operators:
-                        raise ValueError(f"Unsupported operator: {type(op)}")
-                    left = operators[type(op)](left, eval_node(right))
+                    if type(op) not in allowed_operators:
+                        raise ValueError(f"Unsupported comparison operator: {type(op).__name__}")
+                    left = allowed_operators[type(op)](left, eval_node(right))
                 return left
-            if isinstance(node, ast.BoolOp):  # Boolean operation
+
+            # Handle boolean operations (and, or)
+            if isinstance(node, ast.BoolOp):
                 result = eval_node(node.values[0])
                 for value in node.values[1:]:
-                    result = operators[type(node.op)](result, eval_node(value))
+                    result = allowed_operators[type(node.op)](result, eval_node(value))
                 return result
-            if isinstance(node, ast.UnaryOp):  # Unary operation
-                return operators[type(node.op)](eval_node(node.operand))
-            if isinstance(node, ast.BinOp):  # Binary operation
-                return operators[type(node.op)](eval_node(node.left), eval_node(node.right))
-            raise ValueError(f"Unsupported expression: {type(node)}")
 
-        # Parse and evaluate the condition using safe AST-based evaluator
-        # No fallback to eval() - security is paramount
-        tree = ast.parse(condition, mode="eval")
-        return eval_node(tree.body)
+            # Handle unary operations (not, -, +)
+            if isinstance(node, ast.UnaryOp):
+                if type(node.op) not in allowed_operators:
+                    raise ValueError(f"Unsupported unary operator: {type(node.op).__name__}")
+                return allowed_operators[type(node.op)](eval_node(node.operand))
+
+            # Handle binary operations (+, -, *, /, etc.)
+            if isinstance(node, ast.BinOp):
+                if type(node.op) not in allowed_operators:
+                    raise ValueError(f"Unsupported binary operator: {type(node.op).__name__}")
+                return allowed_operators[type(node.op)](
+                    eval_node(node.left),
+                    eval_node(node.right),
+                )
+
+            # Any other node type is rejected
+            raise ValueError(f"Unsupported expression type: {type(node).__name__}")
+
+        # Validate input
+        if not isinstance(condition, str):
+            raise TypeError("Condition must be a string")
+        if not condition.strip():
+            raise ValueError("Condition cannot be empty")
+
+        # Parse the condition into an AST
+        # mode="eval" ensures we only parse expressions, not statements
+        try:
+            tree = ast.parse(condition.strip(), mode="eval")
+        except SyntaxError as e:
+            raise SyntaxError(f"Invalid syntax in condition: {e}") from e
+
+        # Evaluate the expression safely
+        # tree.body contains the expression node directly when mode="eval"
+        return bool(eval_node(tree.body))
 
     async def _trigger_rule(
         self,

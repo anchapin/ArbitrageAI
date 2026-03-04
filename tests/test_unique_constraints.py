@@ -12,18 +12,29 @@ These constraints prevent data duplication and maintain data integrity.
 
 import pytest
 import uuid
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, MetaData
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import IntegrityError
 
-from src.api.models import Base, ClientProfile, Task
+from src.api.task_models import Base as TaskBase, Task
+from src.api.user_models import Base as UserBase, ClientProfile
 
 
 @pytest.fixture
-def test_db():
+def combined_metadata():
+    """Create combined metadata from all model bases."""
+    metadata = MetaData()
+    for base in [TaskBase, UserBase]:
+        for table in base.metadata.tables.values():
+            metadata._add_table(table.name, table.schema, table)
+    return metadata
+
+
+@pytest.fixture
+def test_db(combined_metadata):
     """Create an in-memory SQLite database for testing."""
     engine = create_engine("sqlite:///:memory:")
-    Base.metadata.create_all(bind=engine)
+    combined_metadata.create_all(bind=engine)
     SessionLocal = sessionmaker(bind=engine)
     session = SessionLocal()
     yield session

@@ -28,7 +28,7 @@ class OAuthToken:
         access_token: str,
         refresh_token: str,
         expires_in: int,
-        token_type: str = "Bearer",
+        token_type: str = "Bearer",  # noqa: S107 - OAuth token type, not a password
         scope: str | None = None,
     ):
         """

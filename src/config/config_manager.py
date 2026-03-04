@@ -15,7 +15,6 @@ try:
     from src.utils.secrets import (
         is_insecure_default,
         load_or_create_secrets,
-        validate_secret_security,
     )
 
     logger = get_logger(__name__)
@@ -110,6 +109,18 @@ class ConfigManager:
         "AWS_REGION": "us-east-1",
         # Infrastructure
         "REDIS_URL": "redis://localhost:6379/0",
+        "REDIS_HOST": "localhost",
+        "REDIS_PORT": 6379,
+        "REDIS_DB": 0,
+        "REDIS_PASSWORD": None,
+        "REDIS_CONNECTION_TIMEOUT": 5,
+        "REDIS_SOCKET_TIMEOUT": 5,
+        # Rate Limiting Configuration (QAQC-009)
+        "RATE_LIMIT_ENABLED": True,
+        "RATE_LIMIT_ALGORITHM": "sliding",  # "sliding" or "fixed"
+        "RATE_LIMIT_KEY_PREFIX": "ratelimit",
+        "RATE_LIMIT_DEFAULT_TTL": 2,
+        "RATE_LIMIT_BURST_TTL": 3600,
         "DATABASE_URL": "sqlite:///./data/tasks.db",
         # Authentication - Auto-loaded from secure storage or environment
         # JWT_SECRET_KEY is loaded from secrets or environment (not hardcoded)

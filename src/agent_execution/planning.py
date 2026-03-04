@@ -30,7 +30,7 @@ from src.llm_service import LLMService
 logger = logging.getLogger(__name__)
 
 # Import Traceloop decorators for OpenTelemetry observability
-from traceloop.sdk.decorators import task, workflow
+from traceloop.sdk.decorators import task, workflow  # noqa: E402
 
 # =============================================================================
 # CLIENT PREFERENCE MEMORY (Pillar 2.5 Gap)
@@ -94,7 +94,7 @@ def get_client_preferences_from_tasks(
                 .filter(
                     Task.client_email == client_email,
                     Task.review_feedback.isnot(None),
-                    Task.review_feedback != "",
+                    Task.review_feedback,
                 )
                 .order_by(Task.created_at.desc())
                 .limit(20)
@@ -603,7 +603,7 @@ that would inform a work plan. Return JSON with keys: analysis, key_insights."""
                 json_end = content.rfind("}") + 1
                 json_str = content[json_start:json_end]
                 return json.loads(json_str)
-        except (json.JSONDecodeError, Exception):
+        except (json.JSONDecodeError, Exception):  # noqa: S110 - Intentional silent failure for JSON parsing
             pass
 
         return {}

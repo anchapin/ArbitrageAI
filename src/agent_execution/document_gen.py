@@ -12,6 +12,7 @@ import re
 
 from src.llm_service import LLMService
 from src.utils.logger import get_logger
+
 from .types import OutputFormat
 
 logger = get_logger(__name__)
@@ -111,7 +112,7 @@ Generate Python code to create a {self.output_format} document from the data."""
                                 "output_format": self.output_format,
                                 "message": f"{self.output_format.upper()} document generated",
                             }
-                    except (json.JSONDecodeError, Exception):
+                    except (json.JSONDecodeError, Exception):  # noqa: S110 - Intentional silent failure for JSON parsing
                         pass
 
         return {

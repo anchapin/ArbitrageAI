@@ -12,6 +12,35 @@ Backward compatibility is maintained by re-exporting all symbols.
 """
 
 # Import from new modular structure
+# Import other required modules
+import os
+
+from fastapi import HTTPException
+from pydantic import BaseModel, ValidationInfo, field_validator
+import stripe
+
+# Import Agent Arena modules
+# Import executor for backward compatibility
+# Import Market Scanner
+# Import Agent execution modules
+# Import API routes
+from src.api.analytics import register_analytics_routes
+from src.api.disaster_recovery import router as disaster_recovery_router
+
+# Import Config Manager
+from src.config.config_manager import ConfigManager
+
+# Import LLM Service
+# Import client authentication
+# Import file validation utility
+from src.utils.file_validator import validate_file_upload
+
+# Import logging module
+from src.utils.logger import get_logger
+
+# Import notifications
+# Import telemetry
+# Import database
 from .files import (
     AddressValidationModel,
     DeliveryAmountModel,
@@ -26,7 +55,6 @@ from .files import (
     _record_ip_delivery_attempt,
     _sanitize_string,
 )
-
 from .financial import (
     COMPLEXITY_MULTIPLIERS,
     DOMAIN_BASE_RATES,
@@ -38,14 +66,6 @@ from .financial import (
     get_client_discount,
     get_discount_tier,
 )
-
-from .threshold import (
-    HIGH_VALUE_THRESHOLD,
-    MAX_RETRY_ATTEMPTS,
-    _escalate_task,
-    _should_escalate_task,
-)
-
 from .learning import (
     EXPERIENCE_DB_AVAILABLE,
     ArenaLearningLogger,
@@ -54,19 +74,10 @@ from .learning import (
     experience_logger,
 )
 
-from .system import (
-    EXPERIENCE_DB_AVAILABLE as SYSTEM_EXPERIENCE_DB_AVAILABLE,
-    create_app,
-    get_system_mode,
-    lifespan,
-    set_system_mode,
-)
-
 # Import models for backward compatibility
 from .models import (
     ArenaCompetition,
     ArenaCompetitionStatus,
-    Base,
     Bid,
     BidStatus,
     ClientProfile,
@@ -85,11 +96,6 @@ from .models import (
     ReviewStatus,
     SimulationBid,
     Task,
-    TaskArena,
-    TaskExecution,
-    TaskOutput,
-    TaskPlanning,
-    TaskReview,
     TaskStatus,
     ThresholdPetition,
     UserQuota,
@@ -97,90 +103,26 @@ from .models import (
     WebhookSecret,
 )
 
-# Import database
-from .database import SessionLocal, get_db, init_db
-
-# Import other required modules
-from contextlib import asynccontextmanager
-from datetime import datetime, timedelta, timezone
-import json
-import logging
-import os
-import random
-import re
-import secrets
-import time as _time
-from typing import Any
-import uuid
-
-from fastapi import BackgroundTasks, Depends, FastAPI, Header, HTTPException, Request
-from fastapi.responses import JSONResponse
-import httpx
-from pydantic import BaseModel, Field, ValidationError, ValidationInfo, field_validator
-from sqlalchemy.exc import IntegrityError, OperationalError, SQLAlchemyError
-from sqlalchemy.orm import Session
-import stripe
-
-# Import Agent Arena modules
-from src.agent_execution.arena import (
-    ArenaLearningLogger as ArenaArenaLearningLogger,
-    ArenaRouter,
-    CompetitionType,
-    run_agent_arena,
-)
-
-# Import executor for backward compatibility
-from src.agent_execution.executor import OutputFormat, execute_task
-
-# Import Market Scanner
-from src.agent_execution.market_scanner import run_single_scan
-
-# Import Agent execution modules
-from src.agent_execution.planning import (
-    ContextExtractor,
-    ResearchAndPlanOrchestrator,
-    WorkPlanGenerator,
-    get_client_preferences_from_tasks,
-    save_client_preferences,
-)
-
-# Import Config Manager
-from src.config.config_manager import ConfigManager, validate_production_configuration
-
-# Import LLM Service
-from src.llm_service import LLMService
-
-# Import client authentication
-from src.utils.client_auth import generate_client_token, verify_client_token
-
-# Import file validation utility
-from src.utils.file_validator import validate_file_upload
-
-# Import logging module
-from src.utils.logger import get_logger
-
-# Import notifications
-from src.utils.notifications import TelegramNotifier
-
-# Import telemetry
-from src.utils.telemetry import init_observability
-
-# Import API routes
-from src.api.analytics import register_analytics_routes
-from src.api.disaster_recovery import router as disaster_recovery_router
-from src.api.experience_logger import experience_logger as exp_logger
-
 # Import Rate Limiting Middleware
-from .rate_limit_middleware import RateLimitMiddleware
-
 # Import Scheduler modules
 from .scheduler_endpoints import register_scheduler_routes
 
 # Import Security Headers Middleware
-from .security_headers import SecurityHeadersMiddleware
+from .system import (
+    EXPERIENCE_DB_AVAILABLE as SYSTEM_EXPERIENCE_DB_AVAILABLE,
+    create_app,
+    get_system_mode,
+    lifespan,
+    set_system_mode,
+)
+from .threshold import (
+    HIGH_VALUE_THRESHOLD,
+    MAX_RETRY_ATTEMPTS,
+    _escalate_task,
+    _should_escalate_task,
+)
 
 # Import API Versioning Middleware
-from .versioning import APIVersionMiddleware
 
 # Initialize logger
 logger = get_logger(__name__)
@@ -319,54 +261,50 @@ async def get_price_estimate(
 
 # Import remaining endpoints from original file for backward compatibility
 # These will be gradually migrated to specialized modules
-from .main_original import (
-    create_checkout_session,
-    get_task,
-    get_task_by_session,
-    get_client_task_history,
-    get_client_discount_info,
-    get_secure_delivery,
-    process_task_async,
-    run_autonomous_loop,
-    start_autonomous_loop as original_start_autonomous_loop,
-    generate_proposal,
-    # Arena endpoints
-    run_arena_competition,
-    get_arena_history,
-    get_arena_stats,
-    # System mode endpoints
-    get_system_mode as original_get_system_mode,
-    set_system_mode as original_set_system_mode,
-    # Financial endpoints
-    get_financial_status,
+from .main_original import (  # noqa: E402
     add_seed_money,
-    set_budget,
-    get_roi_by_marketplace,
-    get_roi_by_strategy,
-    get_profitable_strategies,
-    get_cost_history,
-    # Confidence endpoints
-    get_confidence_recommendation,
-    get_confidence_summary,
+    create_checkout_session,
     # Threshold endpoints
     create_threshold_petition,
-    get_current_threshold,
-    list_threshold_petitions,
     decide_threshold_petition,
     # Auto-threshold endpoints
     evaluate_auto_threshold,
-    rollback_auto_threshold,
+    generate_proposal,
+    get_arena_history,
+    get_arena_stats,
     get_auto_threshold_status,
+    get_client_discount_info,
+    get_client_task_history,
+    # Confidence endpoints
+    get_confidence_recommendation,
+    get_confidence_summary,
+    get_cost_history,
+    get_current_threshold,
+    # System mode endpoints
+    get_financial_status,
+    get_learning_insights,
+    get_oauth_status,
+    get_prediction_accuracy,
+    get_profitable_strategies,
+    get_roi_by_marketplace,
+    get_roi_by_strategy,
+    get_secure_delivery,
+    get_task,
+    get_task_by_session,
     # Marketplace OAuth endpoints
     initiate_oauth,
+    list_threshold_petitions,
     oauth_callback,
-    get_oauth_status,
-    refresh_oauth_token,
-    revoke_oauth_token,
+    process_task_async,
     # Learning endpoints
     record_job_completion,
-    get_prediction_accuracy,
-    get_learning_insights,
+    refresh_oauth_token,
+    revoke_oauth_token,
+    rollback_auto_threshold,
+    # Arena endpoints
+    run_arena_competition,
+    run_autonomous_loop,
+    set_budget,
 )
 
 # Export all symbols for backward compatibility

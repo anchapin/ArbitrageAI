@@ -3,27 +3,28 @@ File and delivery endpoints module.
 
 This module contains file upload validation, delivery endpoints,
 and rate limiting for secure file delivery.
+
+Rate Limiting:
+- Uses Redis-based distributed rate limiting (QAQC-009)
+- Falls back to in-memory limiting when Redis unavailable
+- Supports both task-based and IP-based rate limiting
 """
 
-import re
-import secrets
-import time as _time
 from datetime import datetime, timedelta, timezone
+import os
+import re
+import time as _time
 from typing import Any
 
-from fastapi import Header, HTTPException, Request
 from pydantic import BaseModel, Field, ValidationInfo, field_validator
-from sqlalchemy.orm import Session
 
-from .models import Task, TaskStatus
-from .database import get_db
-from src.utils.file_validator import validate_file_upload
 from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
 
 # Delivery token TTL in hours (configurable via env)
-from src.config.config_manager import ConfigManager
+from src.config.config_manager import ConfigManager  # noqa: E402
+
 DELIVERY_TOKEN_TTL_HOURS = ConfigManager.get("DELIVERY_TOKEN_TTL_HOURS")
 
 # Rate limiting: max failed delivery attempts per task before lockout
@@ -34,11 +35,35 @@ DELIVERY_LOCKOUT_SECONDS = ConfigManager.get("DELIVERY_LOCKOUT_SECONDS")
 DELIVERY_MAX_ATTEMPTS_PER_IP = ConfigManager.get("DELIVERY_MAX_ATTEMPTS_PER_IP")
 DELIVERY_IP_LOCKOUT_SECONDS = ConfigManager.get("DELIVERY_IP_LOCKOUT_SECONDS")
 
-# In-memory rate limiter: { task_id: (fail_count, first_fail_timestamp) }
+# In-memory rate limiter for backward compatibility with tests
+# In production, Redis is used instead (QAQC-009)
 _delivery_rate_limits: dict[str, tuple[int, float]] = {}
-
-# IP-level rate limiter: { ip: (attempt_count, first_attempt_timestamp) }
 _delivery_ip_rate_limits: dict[str, tuple[int, float]] = {}
+
+# Redis rate limiter instance (lazy-loaded)
+_redis_rate_limiter = None
+
+
+def _get_redis_rate_limiter():
+    """Get or create Redis rate limiter instance."""
+    global _redis_rate_limiter
+    if _redis_rate_limiter is None:
+        # Check if rate limiting should be disabled (for tests)
+        if os.getenv("DISABLE_RATE_LIMITING") == "true":
+            return None
+        
+        try:
+            from src.utils.redis_rate_limiter import RedisRateLimiter
+            redis_url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+            _redis_rate_limiter = RedisRateLimiter(redis_url=redis_url, key_prefix="delivery")
+            return _redis_rate_limiter
+        except ImportError:
+            logger.warning("Redis rate limiter module not available, using in-memory")
+            return None
+        except Exception as e:
+            logger.warning(f"Redis rate limiter initialization failed: {e}, using in-memory")
+            return None
+    return _redis_rate_limiter
 
 
 class DeliveryTokenRequest(BaseModel):
@@ -161,7 +186,29 @@ class DeliveryTimestampModel(BaseModel):
 
 
 def _check_delivery_rate_limit(task_id: str) -> bool:
-    """Check if a task_id is rate-limited for delivery attempts."""
+    """
+    Check if a task_id is rate-limited for delivery attempts.
+    
+    Uses Redis for distributed rate limiting (QAQC-009).
+    Falls back to in-memory limiting when Redis unavailable.
+    
+    Returns True if the request is allowed, False if rate-limited.
+    """
+    # Try Redis first
+    limiter = _get_redis_rate_limiter()
+    if limiter:
+        try:
+            allowed, _ = limiter.check_rate_limit(
+                key=f"task:{task_id}",
+                max_requests=DELIVERY_MAX_FAILED_ATTEMPTS,
+                window_seconds=DELIVERY_LOCKOUT_SECONDS,
+                algorithm="sliding",
+            )
+            return allowed
+        except Exception as e:
+            logger.warning(f"Redis rate limit check failed: {e}, using in-memory fallback")
+    
+    # Fallback to in-memory (for tests or when Redis unavailable)
     entry = _delivery_rate_limits.get(task_id)
     if entry is None:
         return True
@@ -173,7 +220,23 @@ def _check_delivery_rate_limit(task_id: str) -> bool:
 
 
 def _record_delivery_failure(task_id: str, ip: str | None = None) -> None:
-    """Record a failed delivery attempt for rate limiting."""
+    """
+    Record a failed delivery attempt for rate limiting.
+    
+    Uses Redis for distributed tracking (QAQC-009).
+    Also updates in-memory dict for backward compatibility.
+    """
+    # Record in Redis
+    limiter = _get_redis_rate_limiter()
+    if limiter:
+        try:
+            limiter.record_event(f"task:{task_id}", "failure")
+            if ip:
+                limiter.record_event(f"ip:{ip}", "failure")
+        except Exception as e:
+            logger.warning(f"Failed to record delivery failure in Redis: {e}")
+    
+    # Also update in-memory for backward compatibility
     entry = _delivery_rate_limits.get(task_id)
     if entry is None:
         _delivery_rate_limits[task_id] = (1, _time.time())
@@ -183,7 +246,29 @@ def _record_delivery_failure(task_id: str, ip: str | None = None) -> None:
 
 
 def _check_delivery_ip_rate_limit(ip: str) -> bool:
-    """Check if an IP is rate-limited for delivery attempts."""
+    """
+    Check if an IP is rate-limited for delivery attempts.
+    
+    Uses Redis for distributed rate limiting (QAQC-009).
+    Falls back to in-memory limiting when Redis unavailable.
+    
+    Returns True if the request is allowed, False if rate-limited.
+    """
+    # Try Redis first
+    limiter = _get_redis_rate_limiter()
+    if limiter:
+        try:
+            allowed, _ = limiter.check_rate_limit(
+                key=f"ip:{ip}",
+                max_requests=DELIVERY_MAX_ATTEMPTS_PER_IP,
+                window_seconds=DELIVERY_IP_LOCKOUT_SECONDS,
+                algorithm="sliding",
+            )
+            return allowed
+        except Exception as e:
+            logger.warning(f"Redis IP rate limit check failed: {e}, using in-memory fallback")
+    
+    # Fallback to in-memory
     entry = _delivery_ip_rate_limits.get(ip)
     if entry is None:
         return True
@@ -195,7 +280,21 @@ def _check_delivery_ip_rate_limit(ip: str) -> bool:
 
 
 def _record_ip_delivery_attempt(ip: str) -> None:
-    """Record a delivery attempt from an IP."""
+    """
+    Record a delivery attempt from an IP.
+    
+    Uses Redis for distributed tracking (QAQC-009).
+    Also updates in-memory dict for backward compatibility.
+    """
+    # Record in Redis
+    limiter = _get_redis_rate_limiter()
+    if limiter:
+        try:
+            limiter.record_event(f"ip:{ip}", "attempt")
+        except Exception as e:
+            logger.warning(f"Failed to record IP attempt in Redis: {e}")
+    
+    # Also update in-memory for backward compatibility
     entry = _delivery_ip_rate_limits.get(ip)
     if entry is None:
         _delivery_ip_rate_limits[ip] = (1, _time.time())
@@ -214,16 +313,16 @@ def _sanitize_string(value: str, max_length: int = 500) -> str:
 
 # Export rate limit dicts for testing
 __all__ = [
-    "DeliveryTokenRequest",
-    "DeliveryResponse",
     "AddressValidationModel",
     "DeliveryAmountModel",
+    "DeliveryResponse",
     "DeliveryTimestampModel",
-    "_delivery_rate_limits",
-    "_delivery_ip_rate_limits",
-    "_check_delivery_rate_limit",
-    "_record_delivery_failure",
+    "DeliveryTokenRequest",
     "_check_delivery_ip_rate_limit",
+    "_check_delivery_rate_limit",
+    "_delivery_ip_rate_limits",
+    "_delivery_rate_limits",
+    "_record_delivery_failure",
     "_record_ip_delivery_attempt",
     "_sanitize_string",
 ]

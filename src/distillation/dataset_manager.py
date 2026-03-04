@@ -14,14 +14,13 @@ from collections.abc import Callable
 from datetime import datetime, timezone
 import json
 import logging
-from pathlib import Path
 from typing import Any
 
 logger = logging.getLogger(__name__)
 
 
 # Import configuration from data_collector
-from .data_collector import (
+from .data_collector import (  # noqa: E402
     CURATED_DATASET_FILE,
     DISTILLATION_DIR,
     MIN_CURATION_RATING,

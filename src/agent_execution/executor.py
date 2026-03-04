@@ -130,7 +130,7 @@ def _execute_code_in_e2b(
             result = sandbox.run_code(code, timeout=sandbox_timeout)
             artifacts = result.artifacts if hasattr(result, "artifacts") else None
             return (True, result, None, artifacts)
-    except (TimeoutError, asyncio.TimeoutError) as e:
+    except (TimeoutError, asyncio.TimeoutError):
         error_msg = f"SANDBOX_TIMEOUT: Execution timed out after {sandbox_timeout}s"
         logger.error(f"E2B execution timeout: {error_msg}", exc_info=True)
         return (False, f"TimeoutError: {error_msg}", None, None)
@@ -146,15 +146,16 @@ def _execute_code_in_e2b(
 
 
 # Re-export from new modules for backward compatibility
-from .types import (
-    MAX_REVIEW_ATTEMPTS,
+from .data_viz import execute_data_visualization  # noqa: E402
+from .document_gen import DocumentGenerator, ReportGenerator  # noqa: E402
+from .task_router import TaskRouter  # noqa: E402
+from .types import (  # noqa: E402
     MAX_RETRY_ATTEMPTS,
+    MAX_REVIEW_ATTEMPTS,
     OutputFormat,
     TaskType,
 )
-from .task_router import TaskRouter
-from .data_viz import execute_data_visualization
-from .document_gen import DocumentGenerator, ReportGenerator
+
 
 # Legacy execute_task function for backward compatibility
 def execute_task(

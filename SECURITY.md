@@ -64,12 +64,13 @@ Never commit sensitive information to version control. Use environment variables
 
 ```bash
 # Required security configurations
-SECRET_KEY=your-secret-key-here
-JWT_SECRET=your-jwt-secret-here
+# IMPORTANT: Generate secure secrets using: python scripts/generate_secrets.py
+SECRET_KEY=[GENERATE_SECURE_SECRET]
+JWT_SECRET=[GENERATE_SECURE_SECRET]
 DATABASE_URL=postgresql://user:pass@localhost/db
 REDIS_URL=redis://localhost:6379/0
-OPENAI_API_KEY=your-api-key-here
-STRIPE_SECRET_KEY=your-stripe-key-here
+OPENAI_API_KEY=[YOUR_API_KEY]
+STRIPE_SECRET_KEY=[YOUR_STRIPE_KEY]
 ```
 
 #### Docker Security
@@ -105,6 +106,31 @@ When contributing to ArbitrageAI, follow these security guidelines:
 - **SQL Injection**: Use parameterized queries (SQLAlchemy ORM)
 - **Path Traversal**: Validate file paths and use safe joins
 - **Command Injection**: Never use shell=True with user input
+- **Code Injection**: Never use `eval()`, `exec()`, or `compile()` with user input. Use safe expression parsers instead
+
+#### Safe Expression Evaluation
+
+As of QAQC-001 (March 2026), ArbitrageAI uses a safe AST-based expression parser for alert conditions:
+
+- **No eval()**: The dangerous `eval()` function has been completely removed
+- **AST-based parsing**: Expressions are parsed into an Abstract Syntax Tree
+- **Whitelist approach**: Only explicitly allowed operations are permitted
+- **Blocked operations**: Function calls, attribute access, imports, and other dangerous operations are rejected
+- **Input validation**: All expressions are validated before evaluation
+
+Example of safe expression usage:
+
+```python
+from src.utils.logging_alerting import AlertManager
+
+alert_manager = AlertManager()
+
+# Safe: Only allows comparisons and arithmetic
+result = alert_manager._evaluate_condition("cpu_usage > 80", {"cpu_usage": 90})
+
+# Blocked: Function calls raise ValueError
+alert_manager._evaluate_condition("eval('malicious')", {})  # Raises ValueError
+```
 
 #### Dependencies
 
@@ -215,9 +241,17 @@ We perform regular:
 
 This section lists known vulnerabilities and their status:
 
+### Resolved Vulnerabilities
+
+| ID | Severity | Status | Fixed In | Notes |
+|--------|----------|--------|----------|-------|
+| QAQC-001 | CRITICAL | Fixed | v0.1.0 | Replaced dangerous `eval()` with safe AST-based expression parser in `logging_alerting.py` |
+
+### Current Status
+
 | CVE ID | Severity | Status | Fixed In | Notes |
 |--------|----------|--------|----------|-------|
-| - | - | - | - | No known vulnerabilities |
+| - | - | - | - | No known unresolved vulnerabilities |
 
 ## Security Updates
 

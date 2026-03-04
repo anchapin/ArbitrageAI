@@ -5,13 +5,12 @@ This module contains FastAPI app initialization, lifespan management,
 middleware setup, and system mode endpoints.
 """
 
-import os
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
-from src.utils.logger import get_logger
 from src.config.config_manager import ConfigManager, validate_production_configuration
+from src.utils.logger import get_logger
 from src.utils.telemetry import init_observability
 
 # Import background job queue
@@ -28,13 +27,14 @@ logger = get_logger(__name__)
 
 async def start_autonomous_loop():
     """Start the autonomous scanning loop if enabled."""
-    from .main import _autonomous_loop_task, AUTONOMOUS_SCAN_ENABLED
+    from .main import AUTONOMOUS_SCAN_ENABLED, _autonomous_loop_task
 
-    global _autonomous_loop_task  # noqa: PLW0603
+    global _autonomous_loop_task  # noqa: PLW0603,F811
 
     if AUTONOMOUS_SCAN_ENABLED:
         logger.info("[STARTUP] Autonomous scanning is ENABLED")
         import asyncio
+
         from .main import run_autonomous_loop
         _autonomous_loop_task = asyncio.create_task(run_autonomous_loop())
         logger.info("[STARTUP] Autonomous scanning loop started")
@@ -120,9 +120,9 @@ def set_system_mode(training_mode: bool) -> dict:
 
 
 __all__ = [
-    "lifespan",
+    "EXPERIENCE_DB_AVAILABLE",
     "create_app",
     "get_system_mode",
+    "lifespan",
     "set_system_mode",
-    "EXPERIENCE_DB_AVAILABLE",
 ]

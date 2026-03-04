@@ -36,14 +36,14 @@ from typing import Any
 
 from sqlalchemy.orm import Session
 
-from src.api.database import SessionLocal
-from src.api.models import Bid, BidStatus, Task, TaskStatus
-from src.utils.logger import get_logger
-from src.utils.telemetry import get_tracer
 from src.agent_execution.confidence_tracker import get_confidence_tracker
 from src.agent_execution.executor import TaskRouter
 from src.agent_execution.marketplace_discovery import MarketplaceDiscovery
 from src.agent_execution.self_adjusting_algorithm import get_self_adjusting_algorithm
+from src.api.database import SessionLocal
+from src.api.models import Bid, BidStatus, Task, TaskStatus
+from src.utils.logger import get_logger
+from src.utils.telemetry import get_tracer
 
 logger = get_logger(__name__)
 

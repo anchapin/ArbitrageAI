@@ -2,9 +2,18 @@
 Rate limiting middleware for FastAPI.
 
 Issue #45: API Rate Limiting, Quotas, and Usage Analytics
+Issue QAQC-009: Replace In-Memory Rate Limiting with Redis
 
 Automatically enforces rate limits and quotas on all endpoints.
+Uses Redis for distributed rate limiting across multiple workers.
 Returns 429 (Too Many Requests) or 402 (Payment Required) status codes.
+
+Features:
+- Distributed rate limiting using Redis (QAQC-009)
+- Sliding window algorithm for accurate limiting
+- Graceful fallback to in-memory when Redis unavailable
+- Monthly quota enforcement (tasks, API calls, compute)
+- Rate limit logging and analytics
 """
 
 from collections.abc import Callable
@@ -23,13 +32,18 @@ from .rate_limiter import QuotaManager, RateLimiter
 
 logger = logging.getLogger(__name__)
 
-# Global rate limiter instance
+# Global rate limiter instance (uses Redis when available - QAQC-009)
 _rate_limiter = None
 _quota_manager = None
 
 
 def get_rate_limiter():
-    """Get or create global rate limiter."""
+    """
+    Get or create global rate limiter.
+    
+    Uses Redis for distributed rate limiting (QAQC-009).
+    Falls back to in-memory when Redis unavailable.
+    """
     global _rate_limiter  # noqa: PLW0603
     if _rate_limiter is None:
         # Disable rate limiting for tests
@@ -39,19 +53,10 @@ def get_rate_limiter():
             return _rate_limiter
 
         try:
-            import redis
-
-            redis_client = redis.Redis(
-                host="localhost",
-                port=6379,
-                db=0,
-                decode_responses=True,
-            )
-            redis_client.ping()
-            _rate_limiter = RateLimiter(redis_client)
-        except (redis.ConnectionError, redis.TimeoutError):
-            logger.warning("Redis not available. Using in-memory rate limiter.")
-            _rate_limiter = RateLimiter(None)
+            # Use the existing RateLimiter which now uses Redis internally
+            redis_url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+            _rate_limiter = RateLimiter(redis_url=redis_url)
+            logger.info("Redis rate limiter initialized (QAQC-009)")
         except Exception as e:
             logger.warning(f"Redis connection failed: {e}. Using in-memory rate limiter.")
             _rate_limiter = RateLimiter(None)

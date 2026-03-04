@@ -8,6 +8,9 @@ Provides admin panel functionality:
 - Override quotas/rate limits
 - View usage analytics
 - Manage pricing tiers
+
+Issue #193: Fix N+1 Query Problems with Eager Loading
+- Optimized get_usage_analytics to batch quota queries
 """
 
 from datetime import datetime, timedelta, timezone
@@ -15,7 +18,7 @@ from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 from sqlalchemy import desc
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from .database import get_db
 from .models import PricingTier, QuotaUsage, RateLimitLog, UserQuota
@@ -257,7 +260,13 @@ def get_rate_limit_logs(
 def get_usage_analytics(
     db: Session = Depends(get_db),  # noqa: B008
 ):
-    """Get overall usage analytics."""
+    """
+    Get overall usage analytics.
+    
+    Uses batched queries to prevent N+1 query problems.
+    Instead of querying UserQuota for each usage record in a loop,
+    we collect all user_ids first and query them in a single batch.
+    """
     # Get current billing month
     current_month = datetime.now(timezone.utc).strftime("%Y-%m")
 
@@ -291,23 +300,35 @@ def get_usage_analytics(
     )
 
     # Top quota consumers (by API calls)
+    # OPTIMIZATION: Batch query all quotas at once instead of N+1 queries
     top_consumers = []
     top_usages = db.query(QuotaUsage).filter(
         QuotaUsage.billing_month == current_month,
     ).order_by(desc(QuotaUsage.api_call_count)).limit(10).all()
 
-    for usage in top_usages:
-        quota = db.query(UserQuota).filter(
-            UserQuota.user_id == usage.user_id,
-        ).first()
-        if quota:
-            top_consumers.append({
-                "user_id": usage.user_id,
-                "tier": quota.tier.value,
-                "api_calls": usage.api_call_count,
-                "tasks": usage.task_count,
-                "compute_minutes": usage.compute_minutes_used,
-            })
+    if top_usages:
+        # Collect all user_ids from top usages
+        user_ids = [usage.user_id for usage in top_usages]
+        
+        # Batch query all quotas in a single query using IN clause
+        quotas = db.query(UserQuota).filter(
+            UserQuota.user_id.in_(user_ids)
+        ).all()
+        
+        # Create a lookup dict for fast access
+        quota_by_user = {quota.user_id: quota for quota in quotas}
+        
+        # Build top_consumers list using the batched data
+        for usage in top_usages:
+            quota = quota_by_user.get(usage.user_id)
+            if quota:
+                top_consumers.append({
+                    "user_id": usage.user_id,
+                    "tier": quota.tier.value,
+                    "api_calls": usage.api_call_count,
+                    "tasks": usage.task_count,
+                    "compute_minutes": usage.compute_minutes_used,
+                })
 
     return {
         "total_users": total_users,

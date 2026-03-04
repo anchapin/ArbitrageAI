@@ -5,14 +5,14 @@ Handles:
 - OAuth integration (Upwork, Freelancer, Fiverr)
 - Client token generation and verification
 - Authentication state management
+
+Issue #193: Fix N+1 Query Problems with Eager Loading
+- Added joinedload/selectinload for Task relationships in client history endpoints
 """
 
-from datetime import datetime, timezone
-import logging
 
 from fastapi import Depends, HTTPException
-from fastapi.responses import RedirectResponse
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload, selectinload
 
 from src.utils.client_auth import generate_client_token, verify_client_token
 from src.utils.logger import get_logger
@@ -157,6 +157,8 @@ async def get_client_task_history(
 
     Requires a valid HMAC token proving ownership of the email address.
     The token is provided when a task is created.
+    
+    Uses eager loading to prevent N+1 queries on task relationships.
 
     Args:
         email: Client email address
@@ -166,15 +168,22 @@ async def get_client_task_history(
     Returns:
         Task history with statistics and discount information
     """
-    from .main import get_client_discount, get_discount_tier, TaskStatus
+    from .main import TaskStatus, get_client_discount, get_discount_tier
 
     if not verify_client_token(email, token):
         raise HTTPException(status_code=401, detail="Invalid authentication token")
 
-    # Get all tasks for this client
+    # Get all tasks for this client with eager loading to prevent N+1 queries
     tasks = (
         db.query(Task)
         .filter(Task.client_email == email)
+        .options(
+            joinedload(Task.execution),
+            joinedload(Task.planning),
+            joinedload(Task.review),
+            joinedload(Task.arena),
+            selectinload(Task.outputs),
+        )
         .order_by(Task.id.desc())  # Most recent first
         .all()
     )
@@ -202,7 +211,7 @@ async def get_client_task_history(
     else:
         next_tier_info = None  # Already at max discount
 
-    # Convert tasks to dictionaries
+    # Convert tasks to dictionaries (relationships already loaded, no additional queries)
     task_list = []
     for task in tasks:
         task_dict = task.to_dict()
@@ -236,7 +245,7 @@ async def get_client_discount_info(
     Returns:
         Discount tier information and progress to next tier
     """
-    from .main import get_client_discount, get_discount_tier, TaskStatus
+    from .main import TaskStatus, get_client_discount, get_discount_tier
 
     if not verify_client_token(email, token):
         raise HTTPException(status_code=401, detail="Invalid authentication token")
@@ -297,12 +306,12 @@ async def get_client_discount_info(
 # Re-export authentication utilities for backward compatibility
 __all__ = [
     "generate_client_token",
-    "verify_client_token",
+    "get_client_discount_info",
+    "get_client_task_history",
+    "get_oauth_status",
     "initiate_oauth",
     "oauth_callback",
-    "get_oauth_status",
     "refresh_oauth_token",
     "revoke_oauth_token",
-    "get_client_task_history",
-    "get_client_discount_info",
+    "verify_client_token",
 ]

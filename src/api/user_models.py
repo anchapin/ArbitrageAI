@@ -7,10 +7,18 @@ import logging
 import uuid
 
 from sqlalchemy import (
-    JSON, Boolean, Column, DateTime, Enum, Float, ForeignKey,
-    Index, Integer, String, Text, UniqueConstraint,
+    JSON,
+    Boolean,
+    Column,
+    DateTime,
+    Enum,
+    Float,
+    Index,
+    Integer,
+    String,
+    UniqueConstraint,
 )
-from sqlalchemy.orm import declarative_base, relationship
+from sqlalchemy.orm import declarative_base
 
 from .enums import PricingTier
 
@@ -21,7 +29,11 @@ Base = declarative_base()
 class ClientProfile(Base):
     """Client Preference Memory (Pillar 2.5 Gap)."""
     __tablename__ = "client_profiles"
-    __table_args__ = (UniqueConstraint("client_email", name="unique_client_email"),)
+    __table_args__ = (
+        UniqueConstraint("client_email", name="unique_client_email"),
+        Index("idx_client_profiles_client_email", "client_email"),
+        Index("idx_client_profiles_last_task_at", "last_task_at"),
+    )
 
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     client_email = Column(String, nullable=False, index=True)
@@ -38,7 +50,7 @@ class ClientProfile(Base):
     average_rating = Column(Integer, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    last_task_at = Column(DateTime, nullable=True)
+    last_task_at = Column(DateTime, nullable=True, index=True)
 
     def to_dict(self):
         return {

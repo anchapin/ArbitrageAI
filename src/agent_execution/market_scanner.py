@@ -24,8 +24,7 @@ from typing import Any
 # Load environment variables
 from dotenv import load_dotenv
 
-# Import logger
-from src.utils.logger import get_logger
+from src.agent_execution.bid_deduplication import create_bid_atomically, should_bid
 
 # Import database and models for bidding (Issue #19 Integration)
 from src.api.database import SessionLocal
@@ -33,7 +32,9 @@ from src.api.models import BidStatus
 
 # Import ConfigManager for centralized configuration
 from src.config.config_manager import ConfigManager
-from src.agent_execution.bid_deduplication import create_bid_atomically, should_bid
+
+# Import logger
+from src.utils.logger import get_logger
 
 # Import distributed locking and deduplication (Issue #19 Integration)
 from .bid_lock_manager_factory import get_bid_lock_manager

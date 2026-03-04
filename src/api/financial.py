@@ -5,11 +5,6 @@ This module contains pricing calculation, wallet management,
 and financial tracking endpoints.
 """
 
-from fastapi import Depends, HTTPException
-from sqlalchemy.orm import Session
-
-from .database import get_db
-from .models import Task, TaskStatus
 
 # Domain base rates (USD)
 DOMAIN_BASE_RATES = {
@@ -113,13 +108,13 @@ def get_discount_tier(completed_tasks_count: int) -> int:
 
 
 __all__ = [
-    "DOMAIN_BASE_RATES",
     "COMPLEXITY_MULTIPLIERS",
-    "URGENCY_MULTIPLIERS",
+    "DOMAIN_BASE_RATES",
     "DOMAIN_PRICES",
-    "calculate_task_price",
-    "REPEAT_CLIENT_DISCOUNTS",
     "MAX_DISCOUNT",
+    "REPEAT_CLIENT_DISCOUNTS",
+    "URGENCY_MULTIPLIERS",
+    "calculate_task_price",
     "get_client_discount",
     "get_discount_tier",
 ]

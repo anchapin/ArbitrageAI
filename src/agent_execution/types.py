@@ -5,8 +5,6 @@ This module contains type classifications and output format definitions
 for the agent execution system.
 """
 
-from typing import ClassVar
-
 
 class TaskType:
     """Task type classifications."""
@@ -36,11 +34,11 @@ DOCKER_SANDBOX_IMAGE = "ai-sandbox-base"
 DOCKER_SANDBOX_TIMEOUT = 120
 
 __all__ = [
-    "TaskType",
-    "OutputFormat",
+    "DOCKER_SANDBOX_IMAGE",
+    "DOCKER_SANDBOX_TIMEOUT",
     "MAX_RETRY_ATTEMPTS",
     "MAX_REVIEW_ATTEMPTS",
     "USE_DOCKER_SANDBOX",
-    "DOCKER_SANDBOX_IMAGE",
-    "DOCKER_SANDBOX_TIMEOUT",
+    "OutputFormat",
+    "TaskType",
 ]

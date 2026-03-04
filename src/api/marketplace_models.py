@@ -7,10 +7,19 @@ import logging
 import uuid
 
 from sqlalchemy import (
-    JSON, Boolean, Column, DateTime, Enum, Float, ForeignKey,
-    Index, Integer, String, Text, UniqueConstraint,
+    JSON,
+    Boolean,
+    Column,
+    DateTime,
+    Enum,
+    Float,
+    Index,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
 )
-from sqlalchemy.orm import declarative_base, relationship
+from sqlalchemy.orm import declarative_base
 
 from .enums import ArenaCompetitionStatus, BidStatus
 
@@ -72,11 +81,17 @@ class Bid(Base):
 class ArenaCompetition(Base):
     """Agent Arena Competition Model."""
     __tablename__ = "arena_competitions"
+    __table_args__ = (
+        Index("idx_arena_task_id", "task_id"),
+        Index("idx_arena_status", "status"),
+        Index("idx_arena_created_at", "created_at"),
+        Index("idx_arena_winner", "winner"),
+    )
 
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
-    task_id = Column(String, nullable=True)
+    task_id = Column(String, nullable=True, index=True)
     competition_type = Column(String, nullable=False)
-    status = Column(Enum(ArenaCompetitionStatus), default=ArenaCompetitionStatus.PENDING, nullable=False)
+    status = Column(Enum(ArenaCompetitionStatus), default=ArenaCompetitionStatus.PENDING, nullable=False, index=True)
     domain = Column(String, nullable=True)
     task_revenue = Column(Integer, nullable=True)
     user_request = Column(Text, nullable=True)

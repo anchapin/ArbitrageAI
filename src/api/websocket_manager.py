@@ -223,7 +223,7 @@ class WebSocketManager:
 
             # Validate token expiration
             exp = payload.get("exp")
-            if exp and datetime.fromtimestamp(exp) < datetime.now(timezone.utc):
+            if exp and datetime.fromtimestamp(exp, tz=timezone.utc) < datetime.now(timezone.utc):
                 raise WebSocketAuthError("Token expired")
 
             # Store session info

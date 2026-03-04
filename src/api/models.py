@@ -18,11 +18,31 @@ from .enums import (
     TaskStatus,
 )
 
+# Re-export financial models
+from .financial_models import (
+    ConfidenceAdjustment,
+    ConfidenceEntry,
+    CostEntry,
+    EscalationLog,
+    LearningEntry,
+    ThresholdPetition,
+    VirtualWallet,
+    WebhookSecret,
+)
+
+# Re-export marketplace models
+from .marketplace_models import (
+    ArenaCompetition,
+    Bid,
+    DistributedLock,
+    SimulationBid,
+)
+
 # Re-export task models
 from .task_models import (
     Base,
-    ScheduleHistory,
     ScheduledTask,
+    ScheduleHistory,
     Task,
     TaskArena,
     TaskExecution,
@@ -37,26 +57,6 @@ from .user_models import (
     QuotaUsage,
     RateLimitLog,
     UserQuota,
-)
-
-# Re-export marketplace models
-from .marketplace_models import (
-    ArenaCompetition,
-    Bid,
-    DistributedLock,
-    SimulationBid,
-)
-
-# Re-export financial models
-from .financial_models import (
-    ConfidenceAdjustment,
-    ConfidenceEntry,
-    CostEntry,
-    EscalationLog,
-    LearningEntry,
-    ThresholdPetition,
-    VirtualWallet,
-    WebhookSecret,
 )
 
 # Maintain Base for backward compatibility

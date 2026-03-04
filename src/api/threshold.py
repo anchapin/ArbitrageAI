@@ -10,12 +10,13 @@ from datetime import datetime, timezone
 from sqlalchemy.exc import IntegrityError, OperationalError, SQLAlchemyError
 from sqlalchemy.orm import Session
 
-from .models import EscalationLog, ReviewStatus, Task, TaskStatus
+# High-value threshold for profit protection (in dollars)
+from src.config.config_manager import ConfigManager
 from src.utils.logger import get_logger
 from src.utils.notifications import TelegramNotifier
 
-# High-value threshold for profit protection (in dollars)
-from src.config.config_manager import ConfigManager
+from .models import EscalationLog, ReviewStatus, TaskStatus
+
 HIGH_VALUE_THRESHOLD = ConfigManager.get("HIGH_VALUE_THRESHOLD")
 
 # Maximum number of retry attempts before escalation
@@ -180,6 +181,6 @@ async def _escalate_task(
 __all__ = [
     "HIGH_VALUE_THRESHOLD",
     "MAX_RETRY_ATTEMPTS",
-    "_should_escalate_task",
     "_escalate_task",
+    "_should_escalate_task",
 ]

@@ -71,7 +71,7 @@ class ExponentialBackoff:
         """Add random jitter to prevent thundering herd."""
         import random
 
-        jitter = random.uniform(-self.jitter_factor, self.jitter_factor)
+        jitter = random.uniform(-self.jitter_factor, self.jitter_factor)  # noqa: S311 - Not cryptographic, just jitter
         jittered = delay_ms * (1 + jitter)
         return max(1, int(jittered))
 

@@ -4,15 +4,12 @@ Data visualization module.
 This module contains the core data visualization execution logic.
 """
 
-import asyncio
-import json
 import os
 import re
 from typing import Any
 
 from src.llm_service import LLMService
 from src.utils.logger import get_logger
-from .types import MAX_RETRY_ATTEMPTS
 
 logger = get_logger(__name__)
 

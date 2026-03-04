@@ -3,11 +3,15 @@ Query Optimization Helpers for Issue #38.
 
 Provides optimized query builders with proper indexes and eager loading
 to prevent N+1 query problems and improve database performance.
+
+Issue #193: Fix N+1 Query Problems with Eager Loading
+- Added joinedload/selectinload for Task relationships
+- Optimized queries to use eager loading where appropriate
 """
 
 
 from sqlalchemy import and_
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload, selectinload
 
 from src.api.models import Bid, BidStatus, Task, TaskStatus
 
@@ -19,7 +23,7 @@ def get_client_tasks_optimized(
     Optimized query for client dashboard.
 
     Uses composite index (client_email, status) and orders by created_at.
-    No N+1 issues since Task doesn't have lazy-loaded relationships.
+    Includes eager loading for Task relationships to prevent N+1 queries.
 
     Args:
         db: Database session
@@ -30,10 +34,17 @@ def get_client_tasks_optimized(
         List of tasks for the client
     """
     try:
-        # Try real query path
+        # Try real query path with eager loading
         return (
             db.query(Task)
             .filter(Task.client_email == client_email)
+            .options(
+                joinedload(Task.execution),
+                joinedload(Task.planning),
+                joinedload(Task.review),
+                joinedload(Task.arena),
+                selectinload(Task.outputs),
+            )
             .order_by(Task.created_at.desc())
             .limit(limit)
             .all()
@@ -77,6 +88,7 @@ def get_pending_tasks_optimized(db: Session, limit: int | None = None) -> list[T
     Optimized query for pending task fetching.
 
     Uses status index for fast filtering.
+    Includes eager loading for Task relationships to prevent N+1 queries.
 
     Args:
         db: Database session
@@ -88,6 +100,13 @@ def get_pending_tasks_optimized(db: Session, limit: int | None = None) -> list[T
     query = (
         db.query(Task)
         .filter(Task.status == TaskStatus.PENDING)
+        .options(
+            joinedload(Task.execution),
+            joinedload(Task.planning),
+            joinedload(Task.review),
+            joinedload(Task.arena),
+            selectinload(Task.outputs),
+        )
         .order_by(Task.created_at.asc())
     )
 
@@ -178,6 +197,7 @@ def get_task_by_client_and_status_optimized(
 ) -> list[Task]:
     """
     Optimized query using composite index (client_email, status).
+    Includes eager loading for Task relationships to prevent N+1 queries.
 
     Args:
         db: Database session
@@ -194,6 +214,13 @@ def get_task_by_client_and_status_optimized(
                 Task.client_email == client_email,
                 Task.status == status,
             ),
+        )
+        .options(
+            joinedload(Task.execution),
+            joinedload(Task.planning),
+            joinedload(Task.review),
+            joinedload(Task.arena),
+            selectinload(Task.outputs),
         )
         .all()
     )

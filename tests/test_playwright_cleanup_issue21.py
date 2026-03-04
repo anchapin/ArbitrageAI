@@ -13,6 +13,7 @@ Tests cover:
 6. Timeout handling and cancellation cleanup
 """
 
+import asyncio
 import pytest
 import psutil
 from unittest.mock import AsyncMock, MagicMock, patch

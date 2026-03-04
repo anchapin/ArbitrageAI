@@ -23,9 +23,10 @@ Database indexes added:
 
 import uuid
 import pytest
-from sqlalchemy import inspect, create_engine
+from sqlalchemy import inspect, create_engine, MetaData
 from sqlalchemy.orm import sessionmaker
-from src.api.models import Base, Task, Bid, TaskStatus, BidStatus
+from src.api.task_models import Base as TaskBase, Task, TaskStatus
+from src.api.marketplace_models import Base as MarketBase, Bid, BidStatus
 from src.api.query_optimizations import (
     get_client_tasks_optimized,
     get_completed_tasks_by_domain_optimized,
@@ -39,10 +40,20 @@ from src.api.query_optimizations import (
 
 
 @pytest.fixture
-def test_db():
+def combined_metadata():
+    """Create combined metadata from all model bases."""
+    metadata = MetaData()
+    for base in [TaskBase, MarketBase]:
+        for table in base.metadata.tables.values():
+            metadata._add_table(table.name, table.schema, table)
+    return metadata
+
+
+@pytest.fixture
+def test_db(combined_metadata):
     """Create an in-memory SQLite database for testing."""
     engine = create_engine("sqlite:///:memory:")
-    Base.metadata.create_all(bind=engine)
+    combined_metadata.create_all(bind=engine)
     SessionLocal = sessionmaker(bind=engine)
     session = SessionLocal()
     yield session

@@ -2,15 +2,23 @@
 Financial database models.
 """
 
-from datetime import datetime, timezone
+from datetime import datetime
 import logging
 import uuid
 
 from sqlalchemy import (
-    JSON, Boolean, Column, DateTime, Enum, Float, ForeignKey,
-    Index, Integer, String, Text, UniqueConstraint,
+    JSON,
+    Boolean,
+    Column,
+    DateTime,
+    Float,
+    Index,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
 )
-from sqlalchemy.orm import declarative_base, relationship
+from sqlalchemy.orm import declarative_base
 
 logger = logging.getLogger(__name__)
 Base = declarative_base()
@@ -21,6 +29,9 @@ class EscalationLog(Base):
     __tablename__ = "escalation_logs"
     __table_args__ = (
         UniqueConstraint("task_id", "idempotency_key", name="unique_escalation_per_task"),
+        Index("idx_escalation_logs_task_id", "task_id"),
+        Index("idx_escalation_logs_idempotency_key", "idempotency_key"),
+        Index("idx_escalation_logs_created_at", "created_at"),
     )
 
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
@@ -35,7 +46,7 @@ class EscalationLog(Base):
     amount_paid = Column(Integer, nullable=True)
     domain = Column(String, nullable=True)
     client_email = Column(String, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.utcnow, index=True)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     resolved_at = Column(DateTime, nullable=True)
 
