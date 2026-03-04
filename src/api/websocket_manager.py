@@ -249,7 +249,7 @@ class WebSocketManager:
 
         # Check rate limits
         if not self._check_rate_limit(client_id):
-            await self._send_message(websocket, WebSocketMessageType.AUTH_RESPONSE, {
+            await WebSocketManager._send_message(websocket, WebSocketMessageType.AUTH_RESPONSE, {
                 "success": False,
                 "error": "Rate limit exceeded",
             })
@@ -273,7 +273,7 @@ class WebSocketManager:
             )
 
             # Send success response
-            await self._send_message(websocket, WebSocketMessageType.AUTH_RESPONSE, {
+            await WebSocketManager._send_message(websocket, WebSocketMessageType.AUTH_RESPONSE, {
                 "success": True,
                 "client_id": client_id,
                 "server_time": time.time(),
@@ -283,7 +283,7 @@ class WebSocketManager:
             await self._handle_client_messages(client_id)
 
         except WebSocketAuthError as e:
-            await self._send_message(websocket, WebSocketMessageType.AUTH_RESPONSE, {
+            await WebSocketManager._send_message(websocket, WebSocketMessageType.AUTH_RESPONSE, {
                 "success": False,
                 "error": str(e),
             })
@@ -657,7 +657,8 @@ class WebSocketManager:
         except Exception as e:
             logger.error(f"Error processing message from client {client_id}: {e}", exc_info=True)
 
-    async def _send_message(self, websocket: WebSocket, message_type: WebSocketMessageType, data: dict[str, Any]):
+    @staticmethod
+    async def _send_message(websocket: WebSocket, message_type: WebSocketMessageType, data: dict[str, Any]):
         """Send a message to a specific websocket."""
         if websocket.application_state == WebSocketState.CONNECTED:
             message = WebSocketMessage(
@@ -671,7 +672,7 @@ class WebSocketManager:
         """Send a message to a specific client."""
         if client_id in self.active_connections:
             websocket = self.active_connections[client_id]
-            await self._send_message(websocket, message_type, data)
+            await WebSocketManager._send_message(websocket, message_type, data)
 
     async def _broadcast_to_subscribers(self, client_ids: set[str], message_type: WebSocketMessageType, data: dict[str, Any]):
         """Broadcast a message to a set of subscribed clients."""
@@ -694,7 +695,7 @@ class WebSocketManager:
 
         while websocket.application_state == WebSocketState.CONNECTED:
             try:
-                await self._send_message(websocket, WebSocketMessageType.HEARTBEAT, {
+                await WebSocketManager._send_message(websocket, WebSocketMessageType.HEARTBEAT, {
                     "timestamp": time.time(),
                     "server_time": time.time(),
                 })

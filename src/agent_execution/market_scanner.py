@@ -410,7 +410,7 @@ class MarketScanner:
             if response and response.status >= 400:
                 logger.warning(f"Marketplace returned status {response.status}")
                 # Return mock data for testing when marketplace is unavailable
-                return self._get_mock_job_postings(max_posts)
+                return MarketScanner._get_mock_job_postings(max_posts)
 
             # Wait for job listings to load
             await page.wait_for_load_state("networkidle", timeout=self.timeout)
@@ -434,12 +434,12 @@ class MarketScanner:
                 logger.warning(
                     "No job postings found with common selectors, using fallback extraction",
                 )
-                return self._get_mock_job_postings(max_posts)
+                return MarketScanner._get_mock_job_postings(max_posts)
 
             # Extract data from each job element
             for i, element in enumerate(job_elements[:max_posts]):
                 try:
-                    posting = await self._extract_job_posting(element, i)
+                    posting = await MarketScanner._extract_job_posting(element, i)
                     if posting:
                         job_postings.append(posting)
                 except (TimeoutError, asyncio.TimeoutError) as e:
@@ -454,15 +454,15 @@ class MarketScanner:
         except (TimeoutError, asyncio.TimeoutError) as e:
             logger.error(f"Error fetching job postings (timeout): {e}", exc_info=True)
             # Return mock data for graceful degradation
-            return self._get_mock_job_postings(max_posts)
+            return MarketScanner._get_mock_job_postings(max_posts)
         except (ConnectionError, ConnectionRefusedError) as e:
             logger.error(f"Error fetching job postings (connection error): {e}", exc_info=True)
             # Return mock data for graceful degradation
-            return self._get_mock_job_postings(max_posts)
+            return MarketScanner._get_mock_job_postings(max_posts)
         except Exception as e:
             logger.error(f"Error fetching job postings: {e}", exc_info=True)
             # Return mock data for graceful degradation
-            return self._get_mock_job_postings(max_posts)
+            return MarketScanner._get_mock_job_postings(max_posts)
 
         finally:
             # Always close the page to prevent resource leaks
@@ -476,7 +476,8 @@ class MarketScanner:
 
         return job_postings
 
-    async def _extract_job_posting(self, element, index: int) -> JobPosting | None:
+    @staticmethod
+    async def _extract_job_posting(element, index: int) -> JobPosting | None:
         """
         Extract job posting data from a page element.
 
@@ -536,7 +537,8 @@ class MarketScanner:
             logger.warning(f"Failed to extract job posting: {e}", exc_info=True)
             return None
 
-    def _get_mock_job_postings(self, max_posts: int) -> list[JobPosting]:
+    @staticmethod
+    def _get_mock_job_postings(max_posts: int) -> list[JobPosting]:
         """
         Get mock job postings for testing or when marketplace is unavailable.
 
@@ -602,7 +604,7 @@ class MarketScanner:
             return await self._evaluate_with_llm(title, description, task_id)
 
         # Fallback to rule-based evaluation
-        return self._evaluate_fallback(title, description, task_id)
+        return MarketScanner._evaluate_fallback(title, description, task_id)
 
     async def _evaluate_with_llm(
         self, title: str, description: str, task_id: str,
@@ -682,23 +684,24 @@ Evaluate this job posting and return JSON."""
 
             # If JSON parsing fails, use fallback
             logger.warning("Failed to parse LLM response, using fallback evaluation")
-            return self._evaluate_fallback(title, description, task_id)
+            return MarketScanner._evaluate_fallback(title, description, task_id)
 
         except (ValueError, TypeError) as e:
             logger.error(f"LLM evaluation validation error: {e}", exc_info=True)
-            return self._evaluate_fallback(title, description, task_id)
+            return MarketScanner._evaluate_fallback(title, description, task_id)
         except (TimeoutError, asyncio.TimeoutError) as e:
             logger.error(f"LLM evaluation timeout: {e}", exc_info=True)
-            return self._evaluate_fallback(title, description, task_id)
+            return MarketScanner._evaluate_fallback(title, description, task_id)
         except (ConnectionError, ConnectionRefusedError) as e:
             logger.error(f"LLM evaluation connection error: {e}", exc_info=True)
-            return self._evaluate_fallback(title, description, task_id)
+            return MarketScanner._evaluate_fallback(title, description, task_id)
         except Exception as e:
             logger.error(f"LLM evaluation failed: {e}", exc_info=True)
-            return self._evaluate_fallback(title, description, task_id)
+            return MarketScanner._evaluate_fallback(title, description, task_id)
 
+    @staticmethod
     def _evaluate_fallback(
-        self, title: str, description: str, task_id: str,
+        title: str, description: str, task_id: str,
     ) -> EvaluationResult:
         """
         Fallback rule-based evaluation when LLM is unavailable.

@@ -129,7 +129,7 @@ class ConfigManager:
     def __init__(self):
         """Initialize ConfigManager and load all values into attributes."""
         # Load secure secrets first
-        self._load_secure_secrets()
+        ConfigManager._load_secure_secrets()
         # Then load all other configuration
         self._load_all()
 
@@ -157,7 +157,8 @@ class ConfigManager:
                 f"LLM_HEALTH_CHECK_INITIAL_DELAY_MS ({self.LLM_HEALTH_CHECK_INITIAL_DELAY_MS}) cannot exceed LLM_HEALTH_CHECK_MAX_DELAY_MS ({self.LLM_HEALTH_CHECK_MAX_DELAY_MS})",
             )
 
-    def _load_secure_secrets(self):
+    @staticmethod
+    def _load_secure_secrets():
         """
         Load secure secrets from secure storage or environment variables.
 

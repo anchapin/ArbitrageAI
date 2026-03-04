@@ -527,20 +527,21 @@ class QuotaManager:
     def __init__(self):
         self.logger = logging.getLogger(__name__)
 
-    def get_current_billing_month(self) -> str:
+    @staticmethod
+    def get_current_billing_month() -> str:
         """Get current billing month in YYYY-MM format."""
         now = datetime.now(timezone.utc)
         return now.strftime("%Y-%m")
 
+    @staticmethod
     def get_or_create_usage(
-        self,
         db: Session,
         user_id: str,
         billing_month: str | None = None,
     ) -> QuotaUsage:
         """Get or create QuotaUsage record for user and month."""
         if billing_month is None:
-            billing_month = self.get_current_billing_month()
+            billing_month = QuotaManager.get_current_billing_month()
 
         usage = db.query(QuotaUsage).filter(
             QuotaUsage.user_id == user_id,
@@ -680,8 +681,8 @@ class QuotaManager:
         db.refresh(usage)
         return usage
 
+    @staticmethod
     def check_threshold_and_alert(
-        self,
         db: Session,
         user_id: str,
         quota: UserQuota,
@@ -729,8 +730,8 @@ class QuotaManager:
 
         return alert
 
+    @staticmethod
     def log_rate_limit(
-        self,
         db: Session,
         user_id: str,
         endpoint: str,

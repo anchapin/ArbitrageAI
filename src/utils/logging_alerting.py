@@ -146,7 +146,8 @@ class StructuredLogger:
                 file_handler.setFormatter(self._json_formatter())
             self.logger.addHandler(file_handler)
 
-    def _json_formatter(self) -> logging.Formatter:
+    @staticmethod
+    def _json_formatter() -> logging.Formatter:
         """Create JSON log formatter."""
         class JSONFormatter(logging.Formatter):
             def format(self, record):
@@ -385,7 +386,8 @@ class AlertManager:
                 asyncio.create_task(self._trigger_rule(rule, metrics))
                 rule.last_triggered = datetime.now(timezone.utc)
 
-    def _evaluate_condition(self, condition: str, metrics: dict[str, Any]) -> bool:
+    @staticmethod
+    def _evaluate_condition(condition: str, metrics: dict[str, Any]) -> bool:
         """
         Evaluate an alert condition using a safe AST-based expression parser.
 
@@ -644,7 +646,8 @@ class LogAnalyzer:
 
         return logs
 
-    def extract_metrics(self, logs: list[dict[str, Any]]) -> dict[str, Any]:
+    @staticmethod
+    def extract_metrics(logs: list[dict[str, Any]]) -> dict[str, Any]:
         """Extract metrics from logs."""
         metrics = {
             "total_logs": len(logs),
@@ -674,8 +677,8 @@ class LogAnalyzer:
 
         return metrics
 
+    @staticmethod
     def detect_anomalies(
-        self,
         metrics: dict[str, Any],
         baseline: dict[str, Any],
         threshold: float = 2.0,

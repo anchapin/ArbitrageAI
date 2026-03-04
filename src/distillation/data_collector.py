@@ -127,11 +127,11 @@ class DistillationDataCollector:
         }
 
         # Write to teacher examples file
-        self._append_to_jsonl(self.teacher_file, example)
+        DataCollector._append_to_jsonl(self.teacher_file, example)
 
         # If rating is high enough, also add to curated dataset
         if rating >= MIN_CURATION_RATING:
-            self._append_to_jsonl(self.curated_file, example)
+            DataCollector._append_to_jsonl(self.curated_file, example)
 
         return example_id
 
@@ -204,7 +204,8 @@ class DistillationDataCollector:
             model_used=model_used,
         )
 
-    def _append_to_jsonl(self, filepath: str, record: dict[str, Any]) -> None:
+    @staticmethod
+    def _append_to_jsonl(filepath: str, record: dict[str, Any]) -> None:
         """
         Append a record to a JSONL file with atomic write semantics.
 
@@ -250,11 +251,11 @@ class DistillationDataCollector:
             Dictionary with dataset statistics
         """
         # Count examples in each file
-        teacher_count = self._count_jsonl_lines(self.teacher_file)
-        curated_count = self._count_jsonl_lines(self.curated_file)
+        teacher_count = DataCollector._count_jsonl_lines(self.teacher_file)
+        curated_count = DataCollector._count_jsonl_lines(self.curated_file)
 
         # Get domain distribution
-        domain_dist = self._get_domain_distribution(self.curated_file)
+        domain_dist = DataCollector._get_domain_distribution(self.curated_file)
 
         return {
             "teacher_examples": teacher_count,
@@ -265,7 +266,8 @@ class DistillationDataCollector:
             "min_curation_rating": MIN_CURATION_RATING,
         }
 
-    def _count_jsonl_lines(self, filepath: str) -> int:
+    @staticmethod
+    def _count_jsonl_lines(filepath: str) -> int:
         """Count lines in a JSONL file."""
         try:
             with open(filepath, encoding="utf-8") as f:
@@ -273,7 +275,8 @@ class DistillationDataCollector:
         except FileNotFoundError:
             return 0
 
-    def _get_domain_distribution(self, filepath: str) -> dict[str, int]:
+    @staticmethod
+    def _get_domain_distribution(filepath: str) -> dict[str, int]:
         """Get distribution of examples by domain."""
         domain_counts = {}
         try:

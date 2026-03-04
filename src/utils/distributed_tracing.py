@@ -230,7 +230,7 @@ class TraceContextFilter(logging.Filter):
         logger.addFilter(TraceContextFilter())
     """
 
-    def filter(self, record: logging.LogRecord) -> bool:
+    def filter(self, record: logging.LogRecord) -> bool:  # noqa: PLR6301
         """
         Add trace context to log record.
 

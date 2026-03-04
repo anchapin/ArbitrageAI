@@ -238,7 +238,8 @@ class BaseDocumentTemplate:
         """Add a page break."""
         self.document.add_page_break()
 
-    def _generate_result(self, filename: str, output_format: str) -> dict:
+    @staticmethod
+    def _generate_result(filename: str, output_format: str) -> dict:
         """Generate the result dictionary."""
         # Read the file and convert to base64
         try:

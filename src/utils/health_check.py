@@ -158,7 +158,8 @@ class HealthMonitor:
             uptime_seconds=time.time() - self.start_time,
         )
 
-    async def check_database(self) -> HealthCheckResult:
+    @staticmethod
+    async def check_database() -> HealthCheckResult:
         """Check database connectivity and performance."""
         start = time.time()
         try:
@@ -202,7 +203,7 @@ class HealthMonitor:
                 message=f"Database connection failed: {e!s}",
             )
 
-    async def check_redis(self) -> HealthCheckResult:
+    async def check_redis(self) -> HealthCheckResult:  # noqa: PLR6301
         """Check Redis connectivity and performance."""
         start = time.time()
         try:
@@ -303,7 +304,8 @@ class HealthMonitor:
                 message=f"Ollama health check failed: {e!s}",
             )
 
-    async def check_llm_cloud(self) -> HealthCheckResult:
+    @staticmethod
+    async def check_llm_cloud() -> HealthCheckResult:
         """Check cloud LLM (OpenAI) health."""
         start = time.time()
         try:
@@ -356,7 +358,8 @@ class HealthMonitor:
                 message=f"OpenAI API health check failed: {e!s}",
             )
 
-    async def check_vector_db(self) -> HealthCheckResult:
+    @staticmethod
+    async def check_vector_db() -> HealthCheckResult:
         """Check ChromaDB vector database health."""
         start = time.time()
         try:
@@ -390,7 +393,8 @@ class HealthMonitor:
                 message=f"ChromaDB health check failed: {e!s}",
             )
 
-    async def check_scheduler(self) -> HealthCheckResult:
+    @staticmethod
+    async def check_scheduler() -> HealthCheckResult:
         """Check scheduler service health."""
         try:
             from src.agent_execution.scheduler import TaskScheduler
@@ -435,7 +439,8 @@ class HealthMonitor:
                 message=f"Scheduler health check failed: {e!s}",
             )
 
-    async def check_worker(self) -> HealthCheckResult:
+    @staticmethod
+    async def check_worker() -> HealthCheckResult:
         """Check background worker health."""
         try:
             # Check if worker process is running
@@ -480,7 +485,8 @@ class HealthMonitor:
                 message=f"Worker health check failed: {e!s}",
             )
 
-    def _get_system_metrics(self) -> dict[str, Any]:
+    @staticmethod
+    def _get_system_metrics() -> dict[str, Any]:
         """Get current system resource metrics."""
         try:
             cpu_percent = psutil.cpu_percent(interval=1)
@@ -501,8 +507,8 @@ class HealthMonitor:
             logger.error(f"Failed to get system metrics: {e}", exc_info=True)
             return {}
 
+    @staticmethod
     def _calculate_overall_status(
-        self,
         checks: list[HealthCheckResult],
     ) -> HealthStatus:
         """

@@ -31,9 +31,10 @@ class DisasterRecoveryOrchestrator:
         self.config = config
         self.backup_manager = BackupManager(config)
         self.recovery_manager = RecoveryManager(config, self.backup_manager)
-        self._start_scheduler()
+        DisasterRecoveryOrchestrator._start_scheduler()
 
-    def _start_scheduler(self):
+    @staticmethod
+    def _start_scheduler():
         """Start the backup scheduler."""
         def run_scheduler():
             while True:
@@ -52,15 +53,15 @@ class DisasterRecoveryOrchestrator:
         try:
             logger.info(f"Starting disaster recovery for: {disaster_type}")
 
-            recovery_strategy = await self._assess_disaster(disaster_type)
+            recovery_strategy = await DisasterRecoveryOrchestrator._assess_disaster(disaster_type)
             backup_id = await self._select_backup_for_recovery(disaster_type, recovery_strategy)
 
             recovery_result = await self.recovery_manager.execute_recovery(
                 backup_id=backup_id, plan_id=plan_id,
             )
 
-            validation_result = await self._validate_disaster_recovery(recovery_result)
-            await self._notify_recovery_completion(recovery_result, validation_result)
+            validation_result = await DisasterRecoveryOrchestrator._validate_disaster_recovery(recovery_result)
+            await DisasterRecoveryOrchestrator._notify_recovery_completion(recovery_result, validation_result)
 
             return {
                 "success": True,
@@ -74,7 +75,7 @@ class DisasterRecoveryOrchestrator:
 
         except Exception as e:
             logger.error(f"Disaster recovery failed: {e}")
-            await self._notify_recovery_failure(disaster_type, str(e))
+            await DisasterRecoveryOrchestrator._notify_recovery_failure(disaster_type, str(e))
             return {
                 "success": False,
                 "disaster_type": disaster_type,
@@ -82,7 +83,8 @@ class DisasterRecoveryOrchestrator:
                 "failure_time": datetime.now().isoformat(),
             }
 
-    async def _assess_disaster(self, disaster_type: str) -> dict[str, Any]:
+    @staticmethod
+    async def _assess_disaster(disaster_type: str) -> dict[str, Any]:
         """Assess disaster and determine recovery strategy."""
         strategies = {
             "database_corruption": {
@@ -128,7 +130,8 @@ class DisasterRecoveryOrchestrator:
 
         raise ValueError("No backups available for recovery")
 
-    async def _validate_disaster_recovery(self, recovery_result: Any) -> dict[str, Any]:
+    @staticmethod
+    async def _validate_disaster_recovery(recovery_result: Any) -> dict[str, Any]:
         """Validate disaster recovery."""
         return {
             "database_accessible": True,
@@ -136,13 +139,15 @@ class DisasterRecoveryOrchestrator:
             "files_restored": True,
         }
 
+    @staticmethod
     async def _notify_recovery_completion(
-        self, recovery_result: Any, validation_result: dict[str, Any],
+        recovery_result: Any, validation_result: dict[str, Any],
     ):
         """Notify stakeholders of recovery completion."""
         logger.info("Disaster recovery completed successfully")
 
-    async def _notify_recovery_failure(self, disaster_type: str, error: str):
+    @staticmethod
+    async def _notify_recovery_failure(disaster_type: str, error: str):
         """Notify stakeholders of recovery failure."""
         logger.error(f"Disaster recovery failed for {disaster_type}: {error}")
 

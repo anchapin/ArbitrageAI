@@ -124,11 +124,11 @@ class IntelligentRouter:
             "classification": classification,
             "performance_recommendations": performance_recommendations,
             "execution_result": result,
-            "task_profile": self._profile_to_dict(task_profile),
+            "task_profile": IntelligentRouter._profile_to_dict(task_profile),
         }
 
+    @staticmethod
     def _create_task_profile(
-        self,
         domain: str,
         user_request: str,
         csv_data: str,
@@ -141,9 +141,9 @@ class IntelligentRouter:
         first_line = csv_data.strip().split("\n")[0]
         csv_headers = [h.strip() for h in first_line.split(",")]
 
-        complexity = self._calculate_complexity_score(user_request, csv_headers, domain)
-        estimated_time = self._estimate_execution_time(complexity, output_format)
-        success_rate = self._calculate_success_rate(domain, task_type, output_format)
+        complexity = IntelligentRouter._calculate_complexity_score(user_request, csv_headers, domain)
+        estimated_time = IntelligentRouter._estimate_execution_time(complexity, output_format)
+        success_rate = IntelligentRouter._calculate_success_rate(domain, task_type, output_format)
 
         task_router = TaskRouter()
 
@@ -164,8 +164,9 @@ class IntelligentRouter:
             created_at=datetime.now(),
         )
 
+    @staticmethod
     def _calculate_complexity_score(
-        self, user_request: str, csv_headers: list[str], domain: str,
+        user_request: str, csv_headers: list[str], domain: str,
     ) -> float:
         """Calculate task complexity score."""
         score = 0.0
@@ -196,7 +197,8 @@ class IntelligentRouter:
 
         return min(score, 1.0)
 
-    def _estimate_execution_time(self, complexity: float, output_format: str) -> float:
+    @staticmethod
+    def _estimate_execution_time(complexity: float, output_format: str) -> float:
         """Estimate execution time based on complexity and output format."""
         base_time = 60
         time_multiplier = 1 + (complexity * 2)
@@ -206,8 +208,9 @@ class IntelligentRouter:
 
         return base_time * time_multiplier * format_multiplier
 
+    @staticmethod
     def _calculate_success_rate(
-        self, domain: str, task_type: str, output_format: str,
+        domain: str, task_type: str, output_format: str,
     ) -> float:
         """Calculate expected success rate."""
         domain_rates = {"legal": 0.85, "accounting": 0.90, "data_analysis": 0.95}
@@ -385,7 +388,8 @@ class IntelligentRouter:
                 "model_used": "none",
             }
 
-    def _profile_to_dict(self, profile: TaskProfile) -> dict[str, Any]:
+    @staticmethod
+    def _profile_to_dict(profile: TaskProfile) -> dict[str, Any]:
         """Convert TaskProfile to dictionary."""
         from dataclasses import asdict
         return asdict(profile)

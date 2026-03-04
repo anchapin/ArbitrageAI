@@ -105,7 +105,8 @@ class DistillationDatasetManager:
 
         return examples
 
-    def validate_example(self, example: dict[str, Any]) -> tuple:
+    @staticmethod
+    def validate_example(example: dict[str, Any]) -> tuple:
         """
         Validate a single example for training quality.
 
@@ -157,7 +158,7 @@ class DistillationDatasetManager:
         invalid_examples = []
 
         for ex in examples:
-            is_valid, issues = self.validate_example(ex)
+            is_valid, issues = DatasetManager.validate_example(ex)
             if is_valid:
                 valid_examples.append(ex)
             else:
@@ -282,16 +283,17 @@ class DistillationDatasetManager:
             "teacher_count": len(teacher),
             "min_for_training": MIN_EXAMPLES_FOR_TRAINING,
             "ready_for_training": len(curated) >= MIN_EXAMPLES_FOR_TRAINING,
-            "curated_by_domain": self._count_by_field(curated, "domain"),
-            "curated_by_task_type": self._count_by_field(curated, "task_type"),
-            "curated_by_rating": self._count_by_field(curated, "rating"),
-            "avg_response_length": self._avg_field(
+            "curated_by_domain": DatasetManager._count_by_field(curated, "domain"),
+            "curated_by_task_type": DatasetManager._count_by_field(curated, "task_type"),
+            "curated_by_rating": DatasetManager._count_by_field(curated, "rating"),
+            "avg_response_length": DatasetManager._avg_field(
                 curated, "response", len,
             ),
-            "avg_prompt_length": self._avg_field(curated, "prompt", len),
+            "avg_prompt_length": DatasetManager._avg_field(curated, "prompt", len),
         }
 
-    def _count_by_field(self, examples: list[dict], field: str) -> dict:
+    @staticmethod
+    def _count_by_field(examples: list[dict], field: str) -> dict:
         """Count examples by a specific field."""
         counts = {}
         for ex in examples:
@@ -299,8 +301,9 @@ class DistillationDatasetManager:
             counts[value] = counts.get(value, 0) + 1
         return counts
 
+    @staticmethod
     def _avg_field(
-        self, examples: list[dict], field: str, transform: Callable = len,
+        examples: list[dict], field: str, transform: Callable = len,
     ) -> float:
         """Calculate average of a field."""
         if not examples:

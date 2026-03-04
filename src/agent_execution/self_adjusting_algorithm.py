@@ -155,7 +155,7 @@ class SelfAdjustingConfidenceAlgorithm:
                         break
 
             # Calculate variance
-            variance = self._calculate_profit_variance(profitable_wins)
+            variance = SelfAdjustingConfidenceAlgorithm._calculate_profit_variance(profitable_wins)
 
             # Compare with baseline if available
             improvement = None
@@ -209,7 +209,8 @@ class SelfAdjustingConfidenceAlgorithm:
         finally:
             db.close()
 
-    def _calculate_profit_variance(self, profitable_wins: list[ConfidenceEntry]) -> float:
+    @staticmethod
+    def _calculate_profit_variance(profitable_wins: list[ConfidenceEntry]) -> float:
         """Calculate variance in profit outcomes."""
         if len(profitable_wins) < 2:
             return 0

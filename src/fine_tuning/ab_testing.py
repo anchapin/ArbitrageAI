@@ -202,7 +202,7 @@ class ABTestFramework:
         cost_b = sum(s["cost"] for s in samples_b) / len(samples_b) if samples_b else 0.0
 
         # Chi-squared test for statistical significance
-        is_significant = self._chi_squared_test(
+        is_significant = ABTestRunner._chi_squared_test(
             accuracy_a, accuracy_b, len(samples_a), len(samples_b), alpha,
         )
 
@@ -239,8 +239,9 @@ class ABTestFramework:
 
         return result
 
+    @staticmethod
     def _chi_squared_test(
-        self, accuracy_a: float, accuracy_b: float, n_a: int, n_b: int, alpha: float = 0.05,
+        accuracy_a: float, accuracy_b: float, n_a: int, n_b: int, alpha: float = 0.05,
     ) -> bool:
         """
         Perform chi-squared test for statistical significance.
@@ -298,7 +299,8 @@ class ABTestFramework:
         """
         return list(self.tests.values())
 
-    def recommend_winner(self, test_result: ABTestResult) -> str:
+    @staticmethod
+    def recommend_winner(test_result: ABTestResult) -> str:
         """
         Recommend a winner based on test results.
 

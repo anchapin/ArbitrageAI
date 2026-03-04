@@ -182,7 +182,8 @@ class LocalDockerSandbox:
             logger.warning(f"Warning: Error checking for image: {e}")
             return False
 
-    def _extract_artifacts(self, host_dir: str) -> list[SandboxArtifact]:
+    @staticmethod
+    def _extract_artifacts(host_dir: str) -> list[SandboxArtifact]:
         """
         Extract artifacts from the host directory.
 
@@ -327,7 +328,7 @@ class LocalDockerSandbox:
                         logs.append(SandboxLog(text=line + "\n", stream=stream))
 
                 # Extract artifacts from mounted directory
-                artifacts = self._extract_artifacts(host_dir)
+                artifacts = DockerSandbox._extract_artifacts(host_dir)
 
                 # Cleanup container
                 try:

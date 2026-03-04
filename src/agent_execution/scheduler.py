@@ -134,7 +134,8 @@ class IntelligentScheduler:
         self.peak_hours = [(9, 17)]  # 9 AM to 5 PM business hours
         self.batch_window_size = 30  # minutes
 
-    def should_avoid_peak_hours(self, schedule: ScheduledTask) -> bool:
+    @staticmethod
+    def should_avoid_peak_hours(schedule: ScheduledTask) -> bool:
         """Check if schedule should avoid peak hours."""
         return schedule.avoid_peak_hours
 
@@ -142,7 +143,7 @@ class IntelligentScheduler:
         self, base_time: datetime, schedule: ScheduledTask,
     ) -> datetime:
         """Calculate optimal execution time avoiding peak hours."""
-        if not self.should_avoid_peak_hours(schedule):
+        if not IntelligentScheduler.should_avoid_peak_hours(schedule):
             return base_time
 
         # Check if it's a weekend (Saturday=5, Sunday=6 in Python's weekday)
@@ -168,7 +169,8 @@ class IntelligentScheduler:
 
         return base_time
 
-    def should_batch_tasks(self, schedule: ScheduledTask) -> bool:
+    @staticmethod
+    def should_batch_tasks(schedule: ScheduledTask) -> bool:
         """Check if tasks should be batched."""
         return schedule.batch_size > 1
 

@@ -78,11 +78,13 @@ class RedisBidLockManager:
 
         return self._redis_pool
 
-    def _make_lock_key(self, marketplace_id: str, posting_id: str) -> str:
+    @staticmethod
+    def _make_lock_key(marketplace_id: str, posting_id: str) -> str:
         """Create a lock key from marketplace and posting IDs."""
         return f"bid_lock:{marketplace_id}:{posting_id}"
 
-    def _make_holder_id(self) -> str:
+    @staticmethod
+    def _make_holder_id() -> str:
         """Generate a unique holder ID (server instance + UUID)."""
         import os
         import socket

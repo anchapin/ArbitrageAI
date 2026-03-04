@@ -188,7 +188,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         # 8. Cache-Control
         # Prevents caching of sensitive API responses
         # Only add to non-static, non-public endpoints
-        if not self._is_cacheable_endpoint(request.url.path):
+        if not SecurityHeadersMiddleware._is_cacheable_endpoint(request.url.path):
             response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, private"
             response.headers["Pragma"] = "no-cache"
             response.headers["Expires"] = "0"
@@ -263,7 +263,8 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 
         return "; ".join(policy)
 
-    def _is_cacheable_endpoint(self, path: str) -> bool:
+    @staticmethod
+    def _is_cacheable_endpoint(path: str) -> bool:
         """
         Check if endpoint should be cached.
 

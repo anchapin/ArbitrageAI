@@ -528,7 +528,7 @@ class ContextExtractor:
 
                 # Generate basic statistics for numeric columns
                 if not df.select_dtypes(include=["number"]).empty:
-                    context["key_insights"] = self._extract_basic_insights(df)
+                    context["key_insights"] = PlanBuilder._extract_basic_insights(df)
 
             except Exception as e:
                 context["error"] = str(e)
@@ -547,7 +547,8 @@ class ContextExtractor:
 
         return context
 
-    def _extract_basic_insights(self, df) -> list[str]:
+    @staticmethod
+    def _extract_basic_insights(df) -> list[str]:
         """Extract basic statistical insights from the data."""
         # Numeric column statistics
         numeric_cols = df.select_dtypes(include=["number"]).columns
@@ -659,7 +660,7 @@ class WorkPlanGenerator:
             Dictionary containing the work plan
         """
         # Build context summary for the prompt
-        context_summary = self._build_context_summary(extracted_context)
+        context_summary = PlanBuilder._build_context_summary(extracted_context)
 
         # Build client preferences section (Pillar 2.5 Gap)
         preferences_instruction = ""
@@ -724,7 +725,7 @@ Generate the work plan as JSON."""
 
             # Parse JSON response
             content = result.get("content", "")
-            plan = self._parse_plan_json(content)
+            plan = PlanBuilder._parse_plan_json(content)
 
             if plan:
                 plan["generated_at"] = datetime.now(timezone.utc).isoformat()
@@ -737,7 +738,8 @@ Generate the work plan as JSON."""
         except Exception as e:
             return {"success": False, "error": str(e)}
 
-    def _build_context_summary(self, context: dict[str, Any]) -> str:
+    @staticmethod
+    def _build_context_summary(context: dict[str, Any]) -> str:
         """Build a text summary of the extracted context."""
         parts = []
 
@@ -771,7 +773,8 @@ Generate the work plan as JSON."""
 
         return "\n".join(parts) if parts else "No context available"
 
-    def _parse_plan_json(self, content: str) -> dict[str, Any] | None:
+    @staticmethod
+    def _parse_plan_json(content: str) -> dict[str, Any] | None:
         """Parse JSON plan from LLM response."""
         # Try to find JSON in the response
         try:
@@ -833,7 +836,7 @@ class PlanExecutor:
         from src.agent_execution.executor import TaskRouter, execute_data_visualization
 
         user_request = work_plan.get("user_request", "")
-        task_type = self._infer_task_type(work_plan)
+        task_type = PlanBuilder._infer_task_type(work_plan)
         output_format = work_plan.get("output_format") or self._infer_output_format(
             work_plan,
         )
@@ -898,7 +901,8 @@ class PlanExecutor:
 
             return {"success": False, "error": str(e), "execution_log": execution_log}
 
-    def _infer_task_type(self, plan: dict[str, Any]) -> str:
+    @staticmethod
+    def _infer_task_type(plan: dict[str, Any]) -> str:
         """Infer task type from work plan."""
         recommended = plan.get("recommended_chart_type", "")
         if recommended in {"bar", "line", "pie", "scatter", "histogram"}:
@@ -909,7 +913,8 @@ class PlanExecutor:
             return "document"
         return "auto"
 
-    def _infer_output_format(self, plan: dict[str, Any]) -> str:
+    @staticmethod
+    def _infer_output_format(plan: dict[str, Any]) -> str:
         """Infer output format from work plan."""
         output_format = plan.get("output_format", "")
         if output_format in {"image", "docx", "xlsx", "pdf"}:

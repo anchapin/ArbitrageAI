@@ -171,7 +171,7 @@ class APIVersionMiddleware(BaseHTTPMiddleware):
         app.add_middleware(APIVersionMiddleware)
     """
 
-    async def dispatch(self, request: Request, call_next):
+    async def dispatch(self, request: Request, call_next):  # noqa: PLR6301
         """
         Process request and validate API version.
 
@@ -185,11 +185,11 @@ class APIVersionMiddleware(BaseHTTPMiddleware):
         path = request.url.path
 
         # Extract version from path (/api/v1/..., /api/v2/..., etc.)
-        version = self._extract_version_from_path(path)
+        version = APIVersionMiddleware._extract_version_from_path(path)
 
         if version:
             # Validate version is supported
-            if not self._is_version_supported(version):
+            if not APIVersionMiddleware._is_version_supported(version):
                 logger.warning(f"Unsupported API version requested: {version}")
                 return Response(
                     status_code=status.HTTP_400_BAD_REQUEST,
@@ -211,7 +211,7 @@ class APIVersionMiddleware(BaseHTTPMiddleware):
             response.headers["X-API-Version"] = version
 
             # Add deprecation warning for v1 (when v2 becomes current)
-            if version == APIVersion.V1.value and self._is_version_deprecated(version):
+            if version == APIVersion.V1.value and APIVersionMiddleware._is_version_deprecated(version):
                 response.headers[DEPRECATION_HEADER] = "true"
                 response.headers[WARNING_HEADER] = (
                     f'299 - "API version {version} is deprecated. '
@@ -220,7 +220,8 @@ class APIVersionMiddleware(BaseHTTPMiddleware):
 
         return response
 
-    def _extract_version_from_path(self, path: str) -> str | None:
+    @staticmethod
+    def _extract_version_from_path(path: str) -> str | None:
         """
         Extract API version from URL path.
 
@@ -238,7 +239,8 @@ class APIVersionMiddleware(BaseHTTPMiddleware):
             return match.group(1)
         return None
 
-    def _is_version_supported(self, version: str) -> bool:
+    @staticmethod
+    def _is_version_supported(version: str) -> bool:
         """
         Check if version is supported.
 
@@ -250,7 +252,8 @@ class APIVersionMiddleware(BaseHTTPMiddleware):
         """
         return version in [v.value for v in SUPPORTED_VERSIONS]
 
-    def _is_version_deprecated(self, version: str) -> bool:
+    @staticmethod
+    def _is_version_deprecated(version: str) -> bool:
         """
         Check if version is deprecated.
 

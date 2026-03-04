@@ -48,8 +48,8 @@ class CostTracker:
     def __init__(self):
         """Initialize Cost Tracker."""
 
+    @staticmethod
     def track_cost(
-        self,
         cost_type: str,
         cost_cents: int,
         description: str | None = None,
@@ -108,11 +108,10 @@ class CostTracker:
             logger.error(f"Failed to track cost: {e}")
             db.rollback()
             raise
-        finally:
-            db.close()
+        finally:            db.close()
 
+    @staticmethod
     def add_revenue(
-        self,
         revenue_cents: int,
         task_id: str | None = None,
         bid_id: str | None = None,
@@ -173,11 +172,10 @@ class CostTracker:
             logger.error(f"Failed to add revenue: {e}")
             db.rollback()
             return False
-        finally:
-            db.close()
+        finally:            db.close()
 
+    @staticmethod
     def calculate_roi_by_marketplace(
-        self,
         marketplace: str | None = None,
     ) -> dict[str, Any]:
         """
@@ -250,11 +248,10 @@ class CostTracker:
         except Exception as e:
             logger.error(f"Failed to calculate ROI by marketplace: {e}")
             raise
-        finally:
-            db.close()
+        finally:            db.close()
 
+    @staticmethod
     def calculate_roi_by_strategy(
-        self,
         strategy_type: str | None = None,
     ) -> dict[str, Any]:
         """
@@ -364,8 +361,8 @@ class CostTracker:
 
         return profitable
 
+    @staticmethod
     def get_cost_history(
-        self,
         limit: int = 100,
         task_id: str | None = None,
         bid_id: str | None = None,

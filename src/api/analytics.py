@@ -151,7 +151,8 @@ class AnalyticsEngine:
         self.cache_ttl = 300  # 5 minutes
         self.prediction_models = {}
 
-    def _get_cache_key(self, query_type: str, params: dict[str, Any]) -> str:
+    @staticmethod
+    def _get_cache_key(query_type: str, params: dict[str, Any]) -> str:
         """Generate cache key for query results."""
         return f"{query_type}:{hash(json.dumps(params, sort_keys=True))}"
 
@@ -235,13 +236,13 @@ class KPIAnalytics(AnalyticsEngine):
         Returns:
             KPI response with calculated metrics
         """
-        cache_key = self._get_cache_key("kpis", {"time_range": time_range})
+        cache_key = AnalyticsEngine._get_cache_key("kpis", {"time_range": time_range})
         cached_result = self._get_cached_result(cache_key)
         if cached_result:
             return cached_result
 
         # Calculate time filter
-        time_filter = self._get_time_filter(time_range)
+        time_filter = KPIAnalytics._get_time_filter(time_range)
 
         # Calculate metrics
         total_revenue = self._calculate_revenue(time_filter)
@@ -265,7 +266,8 @@ class KPIAnalytics(AnalyticsEngine):
         self._cache_result(cache_key, kpis)
         return kpis
 
-    def _get_time_filter(self, time_range: str) -> datetime:
+    @staticmethod
+    def _get_time_filter(time_range: str) -> datetime:
         """Get time filter for queries."""
         now = datetime.now()
         if time_range == "24h":
@@ -340,7 +342,7 @@ class PredictiveAnalytics(AnalyticsEngine):
         Returns:
             Prediction result with confidence intervals
         """
-        cache_key = self._get_cache_key(
+        cache_key = AnalyticsEngine._get_cache_key(
             "prediction", {"metric": metric, "horizon": horizon_hours},
         )
         cached_result = self._get_cached_result(cache_key)
@@ -362,13 +364,13 @@ class PredictiveAnalytics(AnalyticsEngine):
             )
 
         # Train prediction model
-        model, accuracy = self._train_prediction_model(historical_data)
+        model, accuracy = PredictiveAnalytics._train_prediction_model(historical_data)
 
         # Generate prediction
-        prediction = self._make_prediction(model, horizon_hours)
+        prediction = PredictiveAnalytics._make_prediction(model, horizon_hours)
 
         # Calculate confidence intervals
-        confidence_interval = self._calculate_confidence_interval(
+        confidence_interval = PredictiveAnalytics._calculate_confidence_interval(
             model, historical_data, prediction,
         )
 
@@ -455,8 +457,9 @@ class PredictiveAnalytics(AnalyticsEngine):
 
         return TimeSeriesData(timestamps=timestamps, values=values, labels=labels)
 
+    @staticmethod
     def _train_prediction_model(
-        self, data: TimeSeriesData,
+        data: TimeSeriesData,
     ) -> tuple[LinearRegression, float]:
         """Train a prediction model using historical data."""
         if len(data.values) < 5:
@@ -480,15 +483,17 @@ class PredictiveAnalytics(AnalyticsEngine):
 
         return model, accuracy
 
-    def _make_prediction(self, model: LinearRegression, horizon_hours: int) -> float:
+    @staticmethod
+    def _make_prediction(model: LinearRegression, horizon_hours: int) -> float:
         """Make prediction for future time point."""
         # Predict for the next time point
         future_time = np.array([[horizon_hours]])
         prediction = model.predict(future_time)
         return float(prediction[0])
 
+    @staticmethod
     def _calculate_confidence_interval(
-        self, model: LinearRegression, data: TimeSeriesData, prediction: float,
+        model: LinearRegression, data: TimeSeriesData, prediction: float,
     ) -> tuple[float, float]:
         """Calculate confidence interval for prediction."""
         # Simple confidence interval based on historical variance
@@ -518,7 +523,7 @@ class AnomalyDetection(AnalyticsEngine):
         Returns:
             List of anomaly alerts
         """
-        cache_key = self._get_cache_key(
+        cache_key = AnalyticsEngine._get_cache_key(
             "anomalies", {"metric": metric, "time_range": time_range},
         )
         cached_result = self._get_cached_result(cache_key)
@@ -526,14 +531,14 @@ class AnomalyDetection(AnalyticsEngine):
             return cached_result
 
         # Get recent data
-        time_filter = self._get_time_filter(time_range)
+        time_filter = KPIAnalytics._get_time_filter(time_range)
         recent_data = self._get_recent_data(metric, time_filter)
 
         if len(recent_data) < 20:  # Need sufficient data for anomaly detection
             return []
 
         # Detect anomalies using Isolation Forest
-        anomalies = self._detect_isolation_forest_anomalies(recent_data)
+        anomalies = AnomalyDetection._detect_isolation_forest_anomalies(recent_data)
 
         # Convert to alerts
         alerts = []
@@ -592,8 +597,9 @@ class AnomalyDetection(AnalyticsEngine):
         results = query.all()
         return [float(row[0] or 0) for row in results]
 
+    @staticmethod
     def _detect_isolation_forest_anomalies(
-        self, data: list[float],
+        data: list[float],
     ) -> list[dict[str, Any]]:
         """Detect anomalies using Isolation Forest algorithm."""
         if len(data) < 20:
@@ -652,7 +658,7 @@ class PerformanceAnalytics(AnalyticsEngine):
         Returns:
             List of performance metrics
         """
-        cache_key = self._get_cache_key("performance", {})
+        cache_key = AnalyticsEngine._get_cache_key("performance", {})
         cached_result = self._get_cached_result(cache_key)
         if cached_result:
             return cached_result
@@ -664,11 +670,11 @@ class PerformanceAnalytics(AnalyticsEngine):
         metrics.extend(task_metrics)
 
         # System resource utilization
-        resource_metrics = self._analyze_resource_utilization()
+        resource_metrics = PerformanceAnalytics._analyze_resource_utilization()
         metrics.extend(resource_metrics)
 
         # User experience metrics
-        ux_metrics = self._analyze_user_experience()
+        ux_metrics = PerformanceAnalytics._analyze_user_experience()
         metrics.extend(ux_metrics)
 
         self._cache_result(cache_key, metrics)
@@ -718,12 +724,13 @@ class PerformanceAnalytics(AnalyticsEngine):
 
         return metrics
 
-    def _analyze_resource_utilization(self) -> list[PerformanceMetric]:
+    @staticmethod
+    def _analyze_resource_utilization() -> list[PerformanceMetric]:
         """Analyze system resource utilization."""
         metrics = []
 
         # Database query performance
-        avg_query_time = self._calculate_avg_query_time()
+        avg_query_time = PerformanceAnalytics._calculate_avg_query_time()
         metrics.append(
             PerformanceMetric(
                 name="avg_query_time",
@@ -735,7 +742,7 @@ class PerformanceAnalytics(AnalyticsEngine):
         )
 
         # API response time
-        avg_response_time = self._calculate_avg_response_time()
+        avg_response_time = PerformanceAnalytics._calculate_avg_response_time()
         metrics.append(
             PerformanceMetric(
                 name="avg_response_time",
@@ -748,12 +755,13 @@ class PerformanceAnalytics(AnalyticsEngine):
 
         return metrics
 
-    def _analyze_user_experience(self) -> list[PerformanceMetric]:
+    @staticmethod
+    def _analyze_user_experience() -> list[PerformanceMetric]:
         """Analyze user experience metrics."""
         metrics = []
 
         # User satisfaction (based on task completion and time)
-        satisfaction_score = self._calculate_user_satisfaction()
+        satisfaction_score = PerformanceAnalytics._calculate_user_satisfaction()
         metrics.append(
             PerformanceMetric(
                 name="user_satisfaction",
@@ -765,7 +773,7 @@ class PerformanceAnalytics(AnalyticsEngine):
         )
 
         # Dashboard load time
-        dashboard_load_time = self._calculate_dashboard_load_time()
+        dashboard_load_time = PerformanceAnalytics._calculate_dashboard_load_time()
         metrics.append(
             PerformanceMetric(
                 name="dashboard_load_time",
@@ -786,22 +794,26 @@ class PerformanceAnalytics(AnalyticsEngine):
             .count()
         )
 
-    def _calculate_avg_query_time(self) -> float:
+    @staticmethod
+    def _calculate_avg_query_time() -> float:
         """Calculate average database query time (placeholder)."""
         # This would integrate with actual query performance monitoring
         return 50.0  # Placeholder value
 
-    def _calculate_avg_response_time(self) -> float:
+    @staticmethod
+    def _calculate_avg_response_time() -> float:
         """Calculate average API response time (placeholder)."""
         # This would integrate with actual response time monitoring
         return 200.0  # Placeholder value
 
-    def _calculate_user_satisfaction(self) -> float:
+    @staticmethod
+    def _calculate_user_satisfaction() -> float:
         """Calculate user satisfaction score (placeholder)."""
         # This would integrate with actual user feedback and metrics
         return 8.5  # Placeholder value
 
-    def _calculate_dashboard_load_time(self) -> float:
+    @staticmethod
+    def _calculate_dashboard_load_time() -> float:
         """Calculate dashboard load time (placeholder)."""
         # This would integrate with actual frontend performance monitoring
         return 1500.0  # Placeholder value
@@ -846,7 +858,7 @@ class AnalyticsAPI:
         performance_metrics = self.performance_analytics.analyze_performance()
 
         # Generate recommendations
-        recommendations = self._generate_recommendations(kpis, performance_metrics)
+        recommendations = AnalyticsAPI._generate_recommendations(kpis, performance_metrics)
 
         return AnalyticsSummary(
             kpis=kpis,
@@ -907,8 +919,9 @@ class AnalyticsAPI:
 
         return anomalies
 
+    @staticmethod
     def _generate_recommendations(
-        self, kpis: KPIResponse, performance_metrics: list[PerformanceMetric],
+        kpis: KPIResponse, performance_metrics: list[PerformanceMetric],
     ) -> list[str]:
         """Generate actionable recommendations based on analytics."""
         recommendations = []

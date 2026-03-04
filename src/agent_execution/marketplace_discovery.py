@@ -432,7 +432,8 @@ class MarketplaceDiscovery:
 
         return discovered
 
-    async def evaluate_marketplace(self, url: str, timeout: int = 30) -> dict[str, Any]:
+    @staticmethod
+    async def evaluate_marketplace(url: str, timeout: int = 30) -> dict[str, Any]:
         """
         Evaluate a marketplace by visiting it with Playwright.
 
