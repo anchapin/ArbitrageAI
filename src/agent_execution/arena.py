@@ -80,6 +80,16 @@ class AgentConfig:
         max_retries: int = 2,
         planning_time_multiplier: float = 1.0,
     ):
+        """
+        Initialize arena agent configuration.
+
+        Args:
+            name: Agent identifier name
+            llm_service: LLM service instance for model access
+            system_prompt_style: Style of system prompt to use (default: "standard")
+            max_retries: Maximum retry attempts (default: 2)
+            planning_time_multiplier: Time allocation multiplier (default: 1.0)
+        """
         self.name = name
         self.llm_service = llm_service
         self.system_prompt_style = system_prompt_style
@@ -106,6 +116,12 @@ class ProfitCalculator:
     """Calculates profit score for arena agents."""
 
     def __init__(self, cost_config: CostConfig = None):
+        """
+        Initialize profit calculator.
+
+        Args:
+            cost_config: Cost configuration object (uses default if not provided)
+        """
         self.cost_config = cost_config or CostConfig()
 
     def calculate_profit_score(
@@ -205,6 +221,14 @@ class ArenaAgent:
     """A single agent competitor in the arena."""
 
     def __init__(self, config: AgentConfig, domain: str, max_retries: int = 2):
+        """
+        Initialize arena agent.
+
+        Args:
+            config: Agent configuration with LLM service
+            domain: Task domain for specialization
+            max_retries: Maximum retry attempts (default: 2)
+        """
         self.config = config
         self.domain = domain
         self.max_retries = max_retries
@@ -301,6 +325,13 @@ class ArenaRouter:
         competition_type: CompetitionType = CompetitionType.MODEL,
         cost_config: CostConfig = None,
     ):
+        """
+        Initialize arena battle system.
+
+        Args:
+            competition_type: Type of competition (model/prompt/tooling)
+            cost_config: Cost configuration for profit calculations
+        """
         self.competition_type = competition_type
         self.cost_config = cost_config or CostConfig()
         self.profit_calculator = ProfitCalculator(self.cost_config)
@@ -552,6 +583,7 @@ class ArenaLearningLogger:
     """
 
     def __init__(self):
+        """Initialize arena logger with DPO dataset path."""
         self.dpo_dataset_path = "data/dpo_dataset.jsonl"
         self.logger = get_logger(__name__)
 

@@ -71,7 +71,7 @@ Return ONLY the Python code, no markdown."""
         e2b_api_key = kwargs.get("api_key") or os.environ.get("E2B_API_KEY")
         sandbox_timeout = kwargs.get("sandbox_timeout", 120)
 
-        success, sandbox_result, _, artifacts = _execute_code_in_sandbox(
+        success, _sandbox_result, _, artifacts = _execute_code_in_sandbox(
             code_with_csv, e2b_api_key, sandbox_timeout, "image",
         )
 

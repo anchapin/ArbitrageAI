@@ -157,7 +157,7 @@ async def get_client_task_history(
 
     Requires a valid HMAC token proving ownership of the email address.
     The token is provided when a task is created.
-    
+
     Uses eager loading to prevent N+1 queries on task relationships.
 
     Args:

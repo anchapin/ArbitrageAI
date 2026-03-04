@@ -569,7 +569,7 @@ _auto_execution_pipeline: AutoExecutionPipeline | None = None
 
 def get_auto_execution_pipeline() -> AutoExecutionPipeline:
     """Get or create the global auto-execution pipeline."""
-    global _auto_execution_pipeline  # noqa: PLW0603
+    global _auto_execution_pipeline
     if _auto_execution_pipeline is None:
         _auto_execution_pipeline = AutoExecutionPipeline()
     return _auto_execution_pipeline
@@ -577,5 +577,5 @@ def get_auto_execution_pipeline() -> AutoExecutionPipeline:
 
 def reset_auto_execution_pipeline() -> None:
     """Reset the global pipeline instance (for testing)."""
-    global _auto_execution_pipeline  # noqa: PLW0603
+    global _auto_execution_pipeline
     _auto_execution_pipeline = None

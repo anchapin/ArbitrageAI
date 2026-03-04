@@ -18,7 +18,7 @@ from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 from sqlalchemy import desc
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session
 
 from .database import get_db
 from .models import PricingTier, QuotaUsage, RateLimitLog, UserQuota
@@ -262,7 +262,7 @@ def get_usage_analytics(
 ):
     """
     Get overall usage analytics.
-    
+
     Uses batched queries to prevent N+1 query problems.
     Instead of querying UserQuota for each usage record in a loop,
     we collect all user_ids first and query them in a single batch.
@@ -309,15 +309,15 @@ def get_usage_analytics(
     if top_usages:
         # Collect all user_ids from top usages
         user_ids = [usage.user_id for usage in top_usages]
-        
+
         # Batch query all quotas in a single query using IN clause
         quotas = db.query(UserQuota).filter(
-            UserQuota.user_id.in_(user_ids)
+            UserQuota.user_id.in_(user_ids),
         ).all()
-        
+
         # Create a lookup dict for fast access
         quota_by_user = {quota.user_id: quota for quota in quotas}
-        
+
         # Build top_consumers list using the batched data
         for usage in top_usages:
             quota = quota_by_user.get(usage.user_id)

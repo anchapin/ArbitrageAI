@@ -40,7 +40,7 @@ _quota_manager = None
 def get_rate_limiter():
     """
     Get or create global rate limiter.
-    
+
     Uses Redis for distributed rate limiting (QAQC-009).
     Falls back to in-memory when Redis unavailable.
     """

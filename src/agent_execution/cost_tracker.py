@@ -404,7 +404,7 @@ _cost_tracker_instance: CostTracker | None = None
 
 def get_cost_tracker() -> CostTracker:
     """Get or create global Cost Tracker singleton."""
-    global _cost_tracker_instance  # noqa: PLW0603
+    global _cost_tracker_instance
 
     if _cost_tracker_instance is None:
         _cost_tracker_instance = CostTracker()
@@ -414,5 +414,5 @@ def get_cost_tracker() -> CostTracker:
 
 def reset_cost_tracker():
     """Reset cost tracker singleton (useful for testing)."""
-    global _cost_tracker_instance  # noqa: PLW0603
+    global _cost_tracker_instance
     _cost_tracker_instance = None

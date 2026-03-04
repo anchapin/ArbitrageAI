@@ -177,7 +177,7 @@ Generate Python code to create a {self.report_type} report document."""
         sandbox_timeout = kwargs.get("sandbox_timeout", 120)
 
         from .executor import _execute_code_in_sandbox
-        success, sandbox_result, _, artifacts = _execute_code_in_sandbox(
+        success, _sandbox_result, _, artifacts = _execute_code_in_sandbox(
             code_with_csv, e2b_api_key, sandbox_timeout, "docx",
         )
 
