@@ -187,8 +187,8 @@ class ClosedLoopLearningSystem:
         finally:
             db.close()
 
+    @staticmethod
     def calculate_prediction_accuracy(
-        self,
         marketplace: str | None = None,
         strategy_type: str | None = None,
         limit: int = 100,
@@ -569,8 +569,8 @@ class ClosedLoopLearningSystem:
             logger.info("Triggering weekly review")
             self.perform_weekly_review()
 
+    @staticmethod
     def get_learning_history(
-        self,
         limit: int = 100,
         event_type: LearningEventType | None = None,
         marketplace: str | None = None,

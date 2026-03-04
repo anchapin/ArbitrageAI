@@ -538,6 +538,7 @@ class UpworkAdapter(MarketplaceAdapter):
     def _get_bidding_tier_id(amount: float) -> str:
         """
         Get bidding tier ID based on amount.
+
         Upwork has different tier IDs for different price ranges.
         """
         if amount < 500:

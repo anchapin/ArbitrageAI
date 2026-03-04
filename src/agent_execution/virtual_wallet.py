@@ -343,7 +343,8 @@ class VirtualWalletManager:
         finally:
             db.close()
 
-    def _reset_budget_if_needed(self, db, wallet: VirtualWallet):
+    @staticmethod
+    def _reset_budget_if_needed(db, wallet: VirtualWallet):
         """Reset budget tracking if reset period has elapsed."""
         now = datetime.now(timezone.utc)
 
@@ -369,7 +370,8 @@ class VirtualWalletManager:
                 f"New cap: ${wallet.budget_cap_cents / 100:.2f}",
             )
 
-    def _check_budget_alerts(self, db, wallet: VirtualWallet):
+    @staticmethod
+    def _check_budget_alerts(db, wallet: VirtualWallet):
         """Check if budget alerts need to be sent."""
         budget_used_pct = (
             wallet.budget_spent_cents / wallet.budget_cap_cents * 100

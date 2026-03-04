@@ -171,6 +171,19 @@ class TaskSubmission(BaseModel):
     @field_validator("file_content")
     @classmethod
     def validate_file_upload_content(cls, v, info: ValidationInfo):
+        """
+        Validate file upload content against filename and type.
+
+        Args:
+            v: The file content value to validate
+            info: Validation info containing other field values
+
+        Returns:
+            The validated file content
+
+        Raises:
+            ValueError: If file validation fails
+        """
         values = info.data
         filename = values.get("filename")
         file_type = values.get("file_type")
@@ -184,6 +197,19 @@ class TaskSubmission(BaseModel):
     @field_validator("filename")
     @classmethod
     def validate_filename_present_with_content(cls, v, info: ValidationInfo):
+        """
+        Validate that filename is present when file_content is provided.
+
+        Args:
+            v: The filename value to validate
+            info: Validation info containing other field values
+
+        Returns:
+            The validated filename
+
+        Raises:
+            ValueError: If filename is missing when file_content is provided
+        """
         values = info.data
         if values.get("file_content") and not v:
             raise ValueError("filename is required when file_content is provided")

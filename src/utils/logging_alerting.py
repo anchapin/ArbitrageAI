@@ -109,6 +109,16 @@ class StructuredLogger:
         enable_json: bool = True,
         context: dict[str, Any] | None = None,
     ):
+        """
+        Initialize the structured logger.
+
+        Args:
+            name: Logger name
+            level: Logging level (default: INFO)
+            log_file: Optional log file path (default: None)
+            enable_json: Enable JSON structured logging (default: True)
+            context: Optional context dictionary (default: None)
+        """
         self.name = name
         self.context = context or {}
         self.enable_json = enable_json
@@ -146,7 +156,8 @@ class StructuredLogger:
                 file_handler.setFormatter(self._json_formatter())
             self.logger.addHandler(file_handler)
 
-    def _json_formatter(self) -> logging.Formatter:
+    @staticmethod
+    def _json_formatter() -> logging.Formatter:
         """Create JSON log formatter."""
         class JSONFormatter(logging.Formatter):
             def format(self, record):
@@ -239,6 +250,14 @@ class AlertManager:
         webhook_url: str | None = None,
         slack_webhook: str | None = None,
     ):
+        """
+        Initialize the alert manager.
+
+        Args:
+            log_dir: Directory for alert logs (default: "logs/alerts")
+            webhook_url: Optional webhook URL for notifications (default: None)
+            slack_webhook: Optional Slack webhook URL (default: None)
+        """
         self.log_dir = Path(log_dir)
         self.log_dir.mkdir(parents=True, exist_ok=True)
 
@@ -385,7 +404,8 @@ class AlertManager:
                 asyncio.create_task(self._trigger_rule(rule, metrics))
                 rule.last_triggered = datetime.now(timezone.utc)
 
-    def _evaluate_condition(self, condition: str, metrics: dict[str, Any]) -> bool:
+    @staticmethod
+    def _evaluate_condition(condition: str, metrics: dict[str, Any]) -> bool:
         """
         Evaluate an alert condition using a safe AST-based expression parser.
 
@@ -624,6 +644,12 @@ class LogAnalyzer:
     """
 
     def __init__(self, log_dir: str = "logs"):
+        """
+        Initialize the log analyzer.
+
+        Args:
+            log_dir: Directory containing log files (default: "logs")
+        """
         self.log_dir = Path(log_dir)
 
     def parse_logs(self, log_file: str) -> list[dict[str, Any]]:
@@ -644,7 +670,8 @@ class LogAnalyzer:
 
         return logs
 
-    def extract_metrics(self, logs: list[dict[str, Any]]) -> dict[str, Any]:
+    @staticmethod
+    def extract_metrics(logs: list[dict[str, Any]]) -> dict[str, Any]:
         """Extract metrics from logs."""
         metrics = {
             "total_logs": len(logs),
@@ -674,8 +701,8 @@ class LogAnalyzer:
 
         return metrics
 
+    @staticmethod
     def detect_anomalies(
-        self,
         metrics: dict[str, Any],
         baseline: dict[str, Any],
         threshold: float = 2.0,

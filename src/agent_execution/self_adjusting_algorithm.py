@@ -209,7 +209,8 @@ class SelfAdjustingConfidenceAlgorithm:
         finally:
             db.close()
 
-    def _calculate_profit_variance(self, profitable_wins: list[ConfidenceEntry]) -> float:
+    @staticmethod
+    def _calculate_profit_variance(profitable_wins: list[ConfidenceEntry]) -> float:
         """Calculate variance in profit outcomes."""
         if len(profitable_wins) < 2:
             return 0

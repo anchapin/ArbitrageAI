@@ -1,6 +1,4 @@
-"""
-Marketplace-related database models.
-"""
+"""Marketplace-related database models."""
 
 from datetime import datetime
 import logging
@@ -61,6 +59,12 @@ class Bid(Base):
     submitted_at = Column(DateTime, nullable=True)
 
     def to_dict(self):
+        """
+        Convert Bid to dictionary representation.
+
+        Returns:
+            Dictionary containing bid details, status, and timestamps.
+        """
         return {
             "id": self.id, "job_title": self.job_title, "job_description": self.job_description,
             "job_url": self.job_url, "job_id": self.job_id, "bid_amount": self.bid_amount,
@@ -123,6 +127,12 @@ class ArenaCompetition(Base):
     completed_at = Column(DateTime, nullable=True)
 
     def to_dict(self):
+        """
+        Convert ArenaCompetition to dictionary representation.
+
+        Returns:
+            Dictionary containing competition details, agent stats, and results.
+        """
         return {
             "id": self.id, "task_id": self.task_id,
             "competition_type": self.competition_type,
@@ -155,6 +165,12 @@ class DistributedLock(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     def to_dict(self):
+        """
+        Convert DistributedLock to dictionary representation.
+
+        Returns:
+            Dictionary containing lock key, holder, and timing information.
+        """
         return {
             "id": self.id, "lock_key": self.lock_key, "holder_id": self.holder_id,
             "acquired_at": self.acquired_at, "expires_at": self.expires_at,
@@ -188,6 +204,12 @@ class SimulationBid(Base):
     outcome_updated_at = Column(DateTime, nullable=True)
 
     def to_dict(self):
+        """
+        Convert SimulationBid to dictionary representation.
+
+        Returns:
+            Dictionary containing simulation bid details and outcome data.
+        """
         return {
             "id": self.id, "job_title": self.job_title, "job_description": self.job_description,
             "job_url": self.job_url, "bid_amount": self.bid_amount,

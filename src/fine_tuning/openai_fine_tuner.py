@@ -180,7 +180,8 @@ class OpenAIFineTuner:
             for job in jobs.data
         ]
 
-    def estimate_cost(self, training_tokens: int, model: str) -> dict[str, float]:
+    @staticmethod
+    def estimate_cost(training_tokens: int, model: str) -> dict[str, float]:
         """
         Estimate fine-tuning cost.
 

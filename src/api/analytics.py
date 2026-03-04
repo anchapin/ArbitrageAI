@@ -151,7 +151,8 @@ class AnalyticsEngine:
         self.cache_ttl = 300  # 5 minutes
         self.prediction_models = {}
 
-    def _get_cache_key(self, query_type: str, params: dict[str, Any]) -> str:
+    @staticmethod
+    def _get_cache_key(query_type: str, params: dict[str, Any]) -> str:
         """Generate cache key for query results."""
         return f"{query_type}:{hash(json.dumps(params, sort_keys=True))}"
 
@@ -265,7 +266,8 @@ class KPIAnalytics(AnalyticsEngine):
         self._cache_result(cache_key, kpis)
         return kpis
 
-    def _get_time_filter(self, time_range: str) -> datetime:
+    @staticmethod
+    def _get_time_filter(time_range: str) -> datetime:
         """Get time filter for queries."""
         now = datetime.now()
         if time_range == "24h":
@@ -455,8 +457,9 @@ class PredictiveAnalytics(AnalyticsEngine):
 
         return TimeSeriesData(timestamps=timestamps, values=values, labels=labels)
 
+    @staticmethod
     def _train_prediction_model(
-        self, data: TimeSeriesData,
+        data: TimeSeriesData,
     ) -> tuple[LinearRegression, float]:
         """Train a prediction model using historical data."""
         if len(data.values) < 5:
@@ -480,15 +483,17 @@ class PredictiveAnalytics(AnalyticsEngine):
 
         return model, accuracy
 
-    def _make_prediction(self, model: LinearRegression, horizon_hours: int) -> float:
+    @staticmethod
+    def _make_prediction(model: LinearRegression, horizon_hours: int) -> float:
         """Make prediction for future time point."""
         # Predict for the next time point
         future_time = np.array([[horizon_hours]])
         prediction = model.predict(future_time)
         return float(prediction[0])
 
+    @staticmethod
     def _calculate_confidence_interval(
-        self, model: LinearRegression, data: TimeSeriesData, prediction: float,
+        model: LinearRegression, data: TimeSeriesData, prediction: float,
     ) -> tuple[float, float]:
         """Calculate confidence interval for prediction."""
         # Simple confidence interval based on historical variance
@@ -592,8 +597,9 @@ class AnomalyDetection(AnalyticsEngine):
         results = query.all()
         return [float(row[0] or 0) for row in results]
 
+    @staticmethod
     def _detect_isolation_forest_anomalies(
-        self, data: list[float],
+        data: list[float],
     ) -> list[dict[str, Any]]:
         """Detect anomalies using Isolation Forest algorithm."""
         if len(data) < 20:
@@ -786,22 +792,26 @@ class PerformanceAnalytics(AnalyticsEngine):
             .count()
         )
 
-    def _calculate_avg_query_time(self) -> float:
+    @staticmethod
+    def _calculate_avg_query_time() -> float:
         """Calculate average database query time (placeholder)."""
         # This would integrate with actual query performance monitoring
         return 50.0  # Placeholder value
 
-    def _calculate_avg_response_time(self) -> float:
+    @staticmethod
+    def _calculate_avg_response_time() -> float:
         """Calculate average API response time (placeholder)."""
         # This would integrate with actual response time monitoring
         return 200.0  # Placeholder value
 
-    def _calculate_user_satisfaction(self) -> float:
+    @staticmethod
+    def _calculate_user_satisfaction() -> float:
         """Calculate user satisfaction score (placeholder)."""
         # This would integrate with actual user feedback and metrics
         return 8.5  # Placeholder value
 
-    def _calculate_dashboard_load_time(self) -> float:
+    @staticmethod
+    def _calculate_dashboard_load_time() -> float:
         """Calculate dashboard load time (placeholder)."""
         # This would integrate with actual frontend performance monitoring
         return 1500.0  # Placeholder value
@@ -907,8 +917,9 @@ class AnalyticsAPI:
 
         return anomalies
 
+    @staticmethod
     def _generate_recommendations(
-        self, kpis: KPIResponse, performance_metrics: list[PerformanceMetric],
+        kpis: KPIResponse, performance_metrics: list[PerformanceMetric],
     ) -> list[str]:
         """Generate actionable recommendations based on analytics."""
         recommendations = []

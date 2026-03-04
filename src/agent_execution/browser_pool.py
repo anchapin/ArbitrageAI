@@ -211,7 +211,8 @@ class BrowserPool:
                 except Exception as e:
                     logger.warning(f"Error cleaning up stale browser {browser_id}: {e}")
 
-    async def _is_browser_healthy(self, browser: Any) -> bool:
+    @staticmethod
+    async def _is_browser_healthy(browser: Any) -> bool:
         """
         Check if a browser is still responsive.
 

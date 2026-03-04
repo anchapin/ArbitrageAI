@@ -316,7 +316,8 @@ class FinancialSummaryTemplate:
 
         self.document.add_paragraph()
 
-    def _format_currency(self, value) -> str:
+    @staticmethod
+    def _format_currency(value) -> str:
         """Format a value as currency."""
         try:
             num_value = float(value)
@@ -324,7 +325,8 @@ class FinancialSummaryTemplate:
         except (ValueError, TypeError):
             return str(value)
 
-    def _is_currency(self, metric_name: str) -> bool:
+    @staticmethod
+    def _is_currency(metric_name: str) -> bool:
         """Check if a metric should be formatted as currency."""
         currency_keywords = [
             "revenue",
@@ -374,7 +376,8 @@ class FinancialSummaryTemplate:
 
         return para
 
-    def _generate_result(self, filename: str, output_format: str) -> dict:
+    @staticmethod
+    def _generate_result(filename: str, output_format: str) -> dict:
         """Generate the result dictionary."""
         try:
             with open(filename, "rb") as f:

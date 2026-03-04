@@ -97,6 +97,12 @@ class AgentConfig:
         self.planning_time_multiplier = planning_time_multiplier
 
     def to_dict(self) -> dict:
+        """
+        Convert AgentConfig to dictionary representation.
+
+        Returns:
+            Dictionary containing agent configuration parameters.
+        """
         return {
             "name": self.name,
             "model": self.llm_service.get_model(),
@@ -523,8 +529,8 @@ class ArenaRouter:
 
         return arena_result
 
+    @staticmethod
     def _determine_winner(
-        self,
         result_a: dict[str, Any],
         result_b: dict[str, Any],
         profit_a: dict[str, Any],
@@ -675,7 +681,8 @@ class ArenaLearningLogger:
         except Exception as e:
             self.logger.warning(f"Failed to log to DPO dataset: {e}")
 
-    def _extract_code(self, result: dict[str, Any]) -> str:
+    @staticmethod
+    def _extract_code(result: dict[str, Any]) -> str:
         """Extract generated code from agent result."""
         # Try various paths where code might be stored
         steps = result.get("steps", {})

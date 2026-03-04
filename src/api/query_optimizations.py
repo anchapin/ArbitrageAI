@@ -197,6 +197,7 @@ def get_task_by_client_and_status_optimized(
 ) -> list[Task]:
     """
     Optimized query using composite index (client_email, status).
+
     Includes eager loading for Task relationships to prevent N+1 queries.
 
     Args:
