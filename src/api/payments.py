@@ -13,7 +13,9 @@ import os
 import secrets
 import uuid
 
-from fastapi import Depends, HTTPException
+from fastapi import Depends, Header, HTTPException
+from fastapi.background import BackgroundTasks
+from fastapi.requests import Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
@@ -287,10 +289,10 @@ async def create_checkout_session(task_data, db: Session = Depends(get_db)):  # 
 
 
 async def stripe_webhook(
-    request,
-    background_tasks,
+    request: Request,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),  # noqa: B008
-    stripe_signature: str | None = None,
+    stripe_signature: str | None = Header(None, alias="stripe-signature"),
 ):
     """
     Stripe webhook endpoint to handle checkout events.
@@ -344,11 +346,11 @@ async def stripe_webhook(
 
             # Add background task to process the visualization asynchronously
             from src.api.main import process_task_async
-            from src.experience_vector_db import get_background_job_queue
+            from src.background_job_queue import get_background_job_queue
 
             EXPERIENCE_DB_AVAILABLE = True
             try:
-                from src.experience_vector_db import get_background_job_queue
+                from src.background_job_queue import get_background_job_queue
             except ImportError:
                 EXPERIENCE_DB_AVAILABLE = False
 
@@ -357,11 +359,11 @@ async def stripe_webhook(
                 await queue.queue_job(
                     job_type="task_processing",
                     task_func=process_task_async,
-                    task_args=(task.id,),
+                    task_args=(db, task.id),
                     max_retries=3,
                 )
             else:
-                background_tasks.add_task(process_task_async, task.id)
+                background_tasks.add_task(process_task_async, db, task.id)
 
             return {
                 "status": "success",

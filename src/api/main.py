@@ -15,9 +15,19 @@ Backward compatibility is maintained by re-exporting all symbols.
 # Import other required modules
 import os
 
-from fastapi import HTTPException
+from fastapi import Depends, HTTPException
 from pydantic import BaseModel, ValidationInfo, field_validator
+from sqlalchemy.orm import Session
+
 import stripe
+
+# Import payments module for webhook
+from .payments import stripe_webhook
+
+from .database import get_db
+
+# Import auth for endpoints
+from src.api.auth import verify_client_token
 
 # Import Agent Arena modules
 # Import executor for backward compatibility
@@ -54,6 +64,14 @@ from .files import (
     _record_delivery_failure,
     _record_ip_delivery_attempt,
     _sanitize_string,
+)
+from .tasks import (
+    get_arena_history,
+    get_arena_stats,
+    get_secure_delivery,
+    get_task,
+    get_task_by_session,
+    router as tasks_router,
 )
 from .financial import (
     COMPLEXITY_MULTIPLIERS,
@@ -207,11 +225,17 @@ app = create_app()
 # Register disaster recovery router
 app.include_router(disaster_recovery_router, prefix="/api", tags=["disaster-recovery"])
 
+# Register tasks router for task delivery and management endpoints
+app.include_router(tasks_router)
+
 # Register scheduler routes
 register_scheduler_routes(app)
 
 # Register analytics routes
 register_analytics_routes(app)
+
+# Register payments webhook
+app.add_api_route("/api/webhook", stripe_webhook, methods=["POST"], tags=["payments"])
 
 
 @app.get("/")
@@ -259,10 +283,58 @@ async def get_price_estimate(
         raise HTTPException(status_code=400, detail=str(e)) from e
 
 
+@app.post("/api/client/calculate-price-with-discount")
+async def calculate_price_with_discount(
+    domain: str,
+    complexity: str = "medium",
+    urgency: str = "standard",
+    email: str | None = None,
+    token: str | None = None,
+    db: Session = Depends(get_db),
+):
+    """Calculate price with repeat-client discount for authenticated users."""
+    # Verify the client token
+    if not email or not token:
+        raise HTTPException(status_code=401, detail="Authentication required")
+
+    if not verify_client_token(email, token):
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+    # Count completed tasks for this client
+    completed_count = (
+        db.query(Task)
+        .filter(Task.client_email == email, Task.status == TaskStatus.COMPLETED)
+        .count()
+    )
+
+    # Calculate base price
+    base_price = calculate_task_price(domain, complexity, urgency)
+
+    # Get discount
+    discount = get_client_discount(completed_count)
+    discount_amount = base_price * discount
+    final_price = base_price - discount_amount
+
+    return {
+        "domain": domain,
+        "complexity": complexity,
+        "urgency": urgency,
+        "base_price": base_price,
+        "completed_tasks": completed_count,
+        "is_repeat_client": completed_count >= 1,
+        "discount_percentage": discount,
+        "discount_amount": discount_amount,
+        "final_price": final_price,
+    }
+
+
 # Import remaining endpoints from original file for backward compatibility
 # These will be gradually migrated to specialized modules
 from .main_original import (  # noqa: E402
     add_seed_money,
+    # Import the router for registered endpoints
+    router as compatibility_router,
+    # Import remaining functions
     create_checkout_session,
     # Threshold endpoints
     create_threshold_petition,
@@ -270,8 +342,6 @@ from .main_original import (  # noqa: E402
     # Auto-threshold endpoints
     evaluate_auto_threshold,
     generate_proposal,
-    get_arena_history,
-    get_arena_stats,
     get_auto_threshold_status,
     get_client_discount_info,
     get_client_task_history,
@@ -288,9 +358,6 @@ from .main_original import (  # noqa: E402
     get_profitable_strategies,
     get_roi_by_marketplace,
     get_roi_by_strategy,
-    get_secure_delivery,
-    get_task,
-    get_task_by_session,
     # Marketplace OAuth endpoints
     initiate_oauth,
     list_threshold_petitions,
@@ -306,6 +373,9 @@ from .main_original import (  # noqa: E402
     run_autonomous_loop,
     set_budget,
 )
+
+# Register compatibility router for backward compatibility endpoints
+app.include_router(compatibility_router)
 
 # Export all symbols for backward compatibility
 __all__ = [

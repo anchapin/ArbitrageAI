@@ -17,14 +17,18 @@ from datetime import datetime, timezone
 import os
 import time as _time
 
-from fastapi import BackgroundTasks, Depends, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload, selectinload
+
+# Create router for task endpoints
+router = APIRouter(prefix="/api", tags=["tasks"])
 
 from src.config.config_manager import ConfigManager
 from src.utils.logger import get_logger
 
 from .database import get_db
+from .files import DeliveryResponse, DeliveryTokenRequest
 from .models import (
     ArenaCompetition,
     ArenaCompetitionStatus,
@@ -479,6 +483,7 @@ async def get_task_by_session(
     }
 
 
+@router.get("/delivery/{task_id}/{token}", response_model=DeliveryResponse)
 async def get_secure_delivery(
     task_id: str,
     token: str,
@@ -498,8 +503,6 @@ async def get_secure_delivery(
         Delivery response with artifact URLs
     """
     from pydantic import ValidationError
-
-    from .main import DeliveryResponse, DeliveryTokenRequest
 
     # Validate request
     try:
@@ -571,12 +574,22 @@ async def get_secure_delivery(
     task.delivery_token_used = True
     db.commit()
 
+    # Determine result URL based on result type
+    result_url = None
+    if task.result_type == "image" and task.result_image_url:
+        result_url = task.result_image_url
+    elif task.result_type == "document" and task.result_document_url:
+        result_url = task.result_document_url
+    elif task.result_type == "xlsx" and task.result_spreadsheet_url:
+        result_url = task.result_spreadsheet_url
+
     # Return delivery response
     return DeliveryResponse(
         task_id=task.id,
         title=task.title,
         domain=task.domain,
         result_type=task.result_type or "image",
+        result_url=result_url,
         result_image_url=task.result_image_url,
         result_document_url=task.result_document_url,
         result_spreadsheet_url=task.result_spreadsheet_url,
@@ -813,5 +826,6 @@ __all__ = [
     "get_secure_delivery",
     "get_task",
     "get_task_by_session",
+    "router",
     "run_arena_competition",
 ]

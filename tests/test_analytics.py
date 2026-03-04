@@ -168,7 +168,8 @@ class TestKPIAnalytics:
         mock_task2.completed_at = datetime.now() - timedelta(hours=1)
         
         mock_query = Mock()
-        mock_query.filter.return_value.all.return_value = [mock_task1, mock_task2]
+        # The code uses: .filter(...).options(...).all()
+        mock_query.filter.return_value.options.return_value.all.return_value = [mock_task1, mock_task2]
         kpi_analytics.db.query.return_value = mock_query
         
         time_filter = datetime.now() - timedelta(hours=24)
@@ -181,7 +182,8 @@ class TestKPIAnalytics:
     def test_calculate_avg_completion_time_no_tasks(self, mock_func, kpi_analytics):
         """Test average completion time with no completed tasks."""
         mock_query = Mock()
-        mock_query.filter.return_value.all.return_value = []
+        # The code uses: .filter(...).options(...).all()
+        mock_query.filter.return_value.options.return_value.all.return_value = []
         kpi_analytics.db.query.return_value = mock_query
         
         time_filter = datetime.now() - timedelta(hours=24)

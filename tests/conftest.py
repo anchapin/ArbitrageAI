@@ -223,9 +223,19 @@ def setup_database_tables():
     # Import all models to ensure they're registered with Base.metadata
     # This ensures all tables are created, including ScheduledTask, etc.
     from src.api import models  # noqa: F401
-
-    # Create all tables (idempotent - won't fail if already exist)
+    
+    # Also import other model modules that have separate Base instances
+    from src.api.task_models import Base as TaskBase
+    from src.api.marketplace_models import Base as MarketplaceBase
+    from src.api.financial_models import Base as FinancialBase
+    from src.api.user_models import Base as UserBase
+    
+    # Create all tables from all bases (idempotent - won't fail if already exist)
     Base.metadata.create_all(bind=engine)
+    TaskBase.metadata.create_all(bind=engine)
+    MarketplaceBase.metadata.create_all(bind=engine)
+    FinancialBase.metadata.create_all(bind=engine)
+    UserBase.metadata.create_all(bind=engine)
 
     yield
 

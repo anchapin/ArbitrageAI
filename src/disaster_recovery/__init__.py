@@ -9,6 +9,7 @@ from .models import (
     RecoveryPlan,
     RecoveryStatus,
 )
+from .orchestrator import DisasterRecoveryOrchestrator
 from .recovery_manager import RecoveryManager
 
 __all__ = [
@@ -16,6 +17,7 @@ __all__ = [
     "BackupMetadata",
     "BackupStatus",
     "BackupType",
+    "DisasterRecoveryOrchestrator",
     "RecoveryManager",
     "RecoveryOperation",
     "RecoveryPlan",

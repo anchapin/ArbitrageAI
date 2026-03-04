@@ -11,11 +11,10 @@ from typing import Any
 from traceloop.sdk.decorators import workflow
 
 from src.utils.logger import get_logger
-
-from .classifiers import TaskClassifier
-from .handlers import HandlerFactory
-from .models import RouteDecision, TaskProfile
-from .performance import PerformanceTracker
+from src.agent_execution.classifiers import TaskClassifier
+from src.agent_execution.handlers import HandlerFactory
+from src.agent_execution.models import RouteDecision, TaskProfile
+from src.agent_execution.performance import PerformanceTracker
 
 logger = get_logger(__name__)
 
@@ -424,3 +423,46 @@ class IntelligentRouter:
             "handler_performance": self.performance_tracker.metrics,
             "top_handlers": performance_recommendations[:5] if performance_recommendations else [],
         }
+
+
+# =============================================================================
+# Backward compatibility functions
+# =============================================================================
+
+
+def get_intelligent_router(db_session=None, model_path: str | None = None) -> IntelligentRouter:
+    """
+    Get or create an IntelligentRouter instance.
+
+    This function provides backward compatibility for the original API.
+
+    Args:
+        db_session: Database session for performance tracking
+        model_path: Optional path to load pre-trained models
+
+    Returns:
+        IntelligentRouter instance
+    """
+    return IntelligentRouter(db_session=db_session, model_path=model_path)
+
+
+async def route_task_intelligently(
+    task_data: dict[str, Any],
+    db_session=None,
+    model_path: str | None = None,
+) -> RouteDecision:
+    """
+    Route a task intelligently using ML classification.
+
+    This function provides backward compatibility for the original API.
+
+    Args:
+        task_data: Dictionary containing task information
+        db_session: Database session
+        model_path: Optional path to load pre-trained models
+
+    Returns:
+        RouteDecision with routing information
+    """
+    router = get_intelligent_router(db_session, model_path)
+    return await router.route_task(task_data)
