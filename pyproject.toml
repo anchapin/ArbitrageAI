@@ -199,6 +199,7 @@ ignore = [
     "PLR6301",  # no-self-use (143 violations - requires converting to static/class methods)
     "ARG001",   # unused-function-argument (20 violations)
     "ARG002",   # unused-method-argument (34 violations)
+    "ARG004",   # unused-static-method-argument (24 violations - from @staticmethod conversions)
     "PERF203",  # try-except-in-loop (23 violations - intentional retry patterns)
     "PLR1702",  # too-many-nested-blocks (13 violations)
     "N806",     # non-lowercase-variable-in-function (10 violations)
@@ -416,8 +417,7 @@ branch = true
 parallel = true
 # Include concurrency support
 concurrency = ["thread", "multiprocessing"]
-# Measure coverage in real-time
-dynamic_context = "thread"
+# Note: dynamic_context removed due to coverage.py compatibility issues
 
 [tool.coverage.report]
 exclude_lines = [
