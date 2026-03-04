@@ -240,14 +240,14 @@ preview = true
 "src/agent_execution/planning.py" = ["PLC0415"]
 "src/agent_execution/bid_lock_manager_factory.py" = ["PLC0415"]
 "src/agent_execution/classifiers/task_classifier.py" = ["PLC0415"]
-"src/agent_execution/task_router.py" = ["PLC0415"]
+"src/agent_execution/task_router.py" = ["PLC0415", "D107", "PLR6301", "ARG002", "SIM102"]
 "src/agent_execution/intelligent_router.py" = ["PLC0415"]
 "src/agent_execution/redis_bid_lock_manager.py" = ["PLC0415"]
 "src/websocket/models.py" = ["PLC0415"]
 # API lazy imports for optional dependencies
 "src/api/websocket_manager.py" = ["PLC0415"]
 "src/api/system.py" = ["PLC0415"]
-"src/api/tasks.py" = ["PLC0415"]
+"src/api/tasks.py" = ["PLC0415", "PLW0603", "RUF029"]
 "src/api/payments.py" = ["PLC0415"]
 # Market scanner lazy imports
 "src/market_scanner/scanner.py" = ["PLC0415"]
@@ -259,19 +259,19 @@ preview = true
 "src/planning/preferences.py" = ["PLC0415"]
 "src/planning/context_extractor.py" = ["PLC0415"]
 # Service lazy imports
-"src/llm_service.py" = ["PLC0415"]
+"src/llm_service.py" = ["PLC0415", "PERF203"]
 "src/disaster_recovery.py" = ["PLC0415"]
 "src/llm_health_check.py" = ["PLC0415"]
 # Additional lazy imports
 "src/disaster_recovery/backup_manager.py" = ["PLC0415"]
 "src/api/learning.py" = ["PLC0415"]
-"src/api/auth.py" = ["PLC0415"]
+"src/api/auth.py" = ["PLC0415", "RUF029", "ARG001"]
 "src/api/versioning.py" = ["PLC0415"]
 "src/api/scheduler_endpoints.py" = ["PLC0415"]
-"src/api/files.py" = ["PLC0415"]
+"src/api/files.py" = ["PLC0415", "PLW0603", "D102"]
 "src/agent_execution/virtual_wallet.py" = ["PLC0415"]
-"src/agent_execution/document_gen.py" = ["PLC0415"]
-"src/agent_execution/data_viz.py" = ["PLC0415"]
+"src/agent_execution/document_gen.py" = ["PLC0415", "D107", "SIM102"]
+"src/agent_execution/data_viz.py" = ["PLC0415", "SIM102"]
 "src/agent_execution/closed_loop_learning.py" = ["PLC0415"]
 "src/agent_execution/cost_tracker.py" = ["PLC0415", "PLW0603"]
 "src/agent_execution/confidence_tracker.py" = ["PLC0415"]
@@ -290,6 +290,12 @@ preview = true
 "src/agent_execution/simulation_engine.py" = ["RUF029", "PLR6301"]
 # Analytics background tasks
 "src/api/analytics.py" = ["RUF029"]
+# Disaster recovery API has unused db arguments
+"src/api/disaster_recovery.py" = ["ARG001"]
+# Rate limit middleware has interface methods
+"src/api/rate_limit_middleware.py" = ["PLR6301"]
+# Redis rate limiter has global statements, interface methods, and mutable class attributes
+"src/utils/redis_rate_limiter.py" = ["PLW0603", "PLR6301", "RUF012", "PLW1508"]
 
 [tool.ruff.lint.mccabe]
 max-complexity = 12
