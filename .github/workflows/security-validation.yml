@@ -34,8 +34,8 @@ jobs:
           FOUND_ISSUES=0
           
           for pattern in "${PATTERNS[@]}"; do
-            # Search in .env files, config files, and YAML files
-            if grep -r --include="*.env*" --include="*.yml" --include="*.yaml" --include="*.toml" "$pattern" . 2>/dev/null; then
+            # Search in config files and YAML files (exclude .env files - they're gitignored)
+            if grep -r --include="*.yml" --include="*.yaml" --include="*.toml" --include="*.py" --include="*.js" --include="*.ts" "$pattern" . 2>/dev/null; then
               echo "❌ Found insecure default pattern: $pattern"
               FOUND_ISSUES=1
             fi
