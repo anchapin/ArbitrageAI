@@ -74,7 +74,7 @@ def _get_redis_rate_limiter():
         # Check if rate limiting should be disabled (for tests)
         if os.getenv("DISABLE_RATE_LIMITING") == "true":
             return None
-        
+
         try:
             from src.utils.redis_rate_limiter import RedisRateLimiter
             redis_url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
@@ -92,10 +92,10 @@ def _get_redis_rate_limiter():
 def _check_delivery_rate_limit(task_id: str) -> bool:
     """
     Check if a task_id is rate-limited for delivery attempts.
-    
+
     Uses Redis for distributed rate limiting (QAQC-009).
     Falls back to in-memory limiting when Redis unavailable.
-    
+
     Returns True if the request is allowed, False if rate-limited.
     """
     # Try Redis first
@@ -111,7 +111,7 @@ def _check_delivery_rate_limit(task_id: str) -> bool:
             return allowed
         except Exception as e:
             logger.warning(f"Redis rate limit check failed: {e}, using in-memory fallback")
-    
+
     # Fallback to in-memory (for tests or when Redis unavailable)
     entry = _delivery_rate_limits.get(task_id)
     if entry is None:
@@ -129,7 +129,7 @@ def _check_delivery_rate_limit(task_id: str) -> bool:
 def _record_delivery_failure(task_id: str, ip: str | None = None) -> None:
     """
     Record a failed delivery attempt for rate limiting.
-    
+
     Uses Redis for distributed tracking (QAQC-009).
     Also updates in-memory dict for backward compatibility.
     """
@@ -142,7 +142,7 @@ def _record_delivery_failure(task_id: str, ip: str | None = None) -> None:
                 limiter.record_event(f"ip:{ip}", "failure")
         except Exception as e:
             logger.warning(f"Failed to record delivery failure in Redis: {e}")
-    
+
     # Also update in-memory for backward compatibility
     entry = _delivery_rate_limits.get(task_id)
     if entry is None:
@@ -155,10 +155,10 @@ def _record_delivery_failure(task_id: str, ip: str | None = None) -> None:
 def _check_delivery_ip_rate_limit(ip: str) -> bool:
     """
     Check if an IP is rate-limited for delivery attempts.
-    
+
     Uses Redis for distributed rate limiting (QAQC-009).
     Falls back to in-memory limiting when Redis unavailable.
-    
+
     Returns True if the request is allowed, False if rate-limited.
     """
     # Try Redis first
@@ -174,7 +174,7 @@ def _check_delivery_ip_rate_limit(ip: str) -> bool:
             return allowed
         except Exception as e:
             logger.warning(f"Redis IP rate limit check failed: {e}, using in-memory fallback")
-    
+
     # Fallback to in-memory
     entry = _delivery_ip_rate_limits.get(ip)
     if entry is None:
@@ -192,7 +192,7 @@ def _check_delivery_ip_rate_limit(ip: str) -> bool:
 def _record_ip_delivery_attempt(ip: str) -> None:
     """
     Record a delivery attempt for IP rate limiting.
-    
+
     Uses Redis for distributed tracking (QAQC-009).
     Also updates in-memory dict for backward compatibility.
     """
@@ -203,7 +203,7 @@ def _record_ip_delivery_attempt(ip: str) -> None:
             limiter.record_event(f"ip:{ip}", "attempt")
         except Exception as e:
             logger.warning(f"Failed to record IP attempt in Redis: {e}")
-    
+
     # Also update in-memory for backward compatibility
     entry = _delivery_ip_rate_limits.get(ip)
     if entry is None:

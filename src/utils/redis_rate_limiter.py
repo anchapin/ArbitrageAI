@@ -21,7 +21,7 @@ Features:
 
 Usage:
     from src.utils.redis_rate_limiter import RedisRateLimiter
-    
+
     limiter = RedisRateLimiter()
     allowed, info = limiter.check_rate_limit(
         key="delivery:task:123",
@@ -33,7 +33,7 @@ Usage:
 import logging
 import os
 import time
-from typing import Any, Optional, Tuple
+from typing import Any
 
 import redis
 from redis.exceptions import RedisError
@@ -111,11 +111,11 @@ class RedisRateLimiter:
 
     def __init__(
         self,
-        redis_url: Optional[str] = None,
-        redis_host: Optional[str] = None,
-        redis_port: Optional[int] = None,
-        redis_db: Optional[int] = None,
-        redis_password: Optional[str] = None,
+        redis_url: str | None = None,
+        redis_host: str | None = None,
+        redis_port: int | None = None,
+        redis_db: int | None = None,
+        redis_password: str | None = None,
         default_ttl: int = 2,
         key_prefix: str = "ratelimit",
     ):
@@ -133,13 +133,13 @@ class RedisRateLimiter:
         """
         self.default_ttl = default_ttl
         self.key_prefix = key_prefix
-        self._redis: Optional[redis.Redis] = None
-        self._script_sha_sliding: Optional[str] = None
-        self._script_sha_fixed: Optional[str] = None
+        self._redis: redis.Redis | None = None
+        self._script_sha_sliding: str | None = None
+        self._script_sha_fixed: str | None = None
 
         # Build Redis URL from parameters
         self._redis_url = redis_url or self._build_redis_url(
-            redis_host, redis_port, redis_db, redis_password
+            redis_host, redis_port, redis_db, redis_password,
         )
 
         # Try to connect to Redis
@@ -147,10 +147,10 @@ class RedisRateLimiter:
 
     def _build_redis_url(
         self,
-        host: Optional[str],
-        port: Optional[int],
-        db: Optional[int],
-        password: Optional[str],
+        host: str | None,
+        port: int | None,
+        db: int | None,
+        password: str | None,
     ) -> str:
         """Build Redis URL from individual parameters."""
         host = host or os.getenv("REDIS_HOST", "localhost")
@@ -216,7 +216,7 @@ class RedisRateLimiter:
         max_requests: int,
         window_seconds: int,
         algorithm: str = "sliding",
-    ) -> Tuple[bool, dict[str, Any]]:
+    ) -> tuple[bool, dict[str, Any]]:
         """
         Check if request is within rate limit.
 
@@ -233,17 +233,15 @@ class RedisRateLimiter:
         if self._redis and self.is_redis_available:
             if algorithm == "fixed":
                 return self._check_fixed_window(key, max_requests, window_seconds)
-            else:
-                return self._check_sliding_window(key, max_requests, window_seconds)
-        else:
-            return self._check_memory(key, max_requests, window_seconds)
+            return self._check_sliding_window(key, max_requests, window_seconds)
+        return self._check_memory(key, max_requests, window_seconds)
 
     def _check_sliding_window(
         self,
         key: str,
         max_requests: int,
         window_seconds: int,
-    ) -> Tuple[bool, dict[str, Any]]:
+    ) -> tuple[bool, dict[str, Any]]:
         """
         Check rate limit using sliding window algorithm with sorted sets.
 
@@ -332,7 +330,7 @@ class RedisRateLimiter:
         key: str,
         max_requests: int,
         window_seconds: int,
-    ) -> Tuple[bool, dict[str, Any]]:
+    ) -> tuple[bool, dict[str, Any]]:
         """
         Check rate limit using fixed window algorithm with INCR.
 
@@ -400,7 +398,7 @@ class RedisRateLimiter:
         key: str,
         max_requests: int,
         window_seconds: int,
-    ) -> Tuple[bool, dict[str, Any]]:
+    ) -> tuple[bool, dict[str, Any]]:
         """
         Check rate limit using in-memory window (fallback).
 
@@ -532,11 +530,11 @@ class RedisRateLimiter:
 
 
 # Global instance for singleton pattern
-_rate_limiter: Optional[RedisRateLimiter] = None
+_rate_limiter: RedisRateLimiter | None = None
 
 
 def get_rate_limiter(
-    redis_url: Optional[str] = None,
+    redis_url: str | None = None,
     key_prefix: str = "ratelimit",
 ) -> RedisRateLimiter:
     """
@@ -568,7 +566,7 @@ def check_delivery_rate_limit(
     task_id: str,
     max_attempts: int = 5,
     window_seconds: int = 3600,
-) -> Tuple[bool, dict[str, Any]]:
+) -> tuple[bool, dict[str, Any]]:
     """
     Check delivery rate limit for a task.
 
@@ -589,7 +587,7 @@ def check_ip_rate_limit(
     ip: str,
     max_attempts: int = 20,
     window_seconds: int = 3600,
-) -> Tuple[bool, dict[str, Any]]:
+) -> tuple[bool, dict[str, Any]]:
     """
     Check delivery rate limit for an IP address.
 
@@ -608,7 +606,7 @@ def check_ip_rate_limit(
 
 def record_delivery_failure(
     task_id: str,
-    ip: Optional[str] = None,
+    ip: str | None = None,
 ) -> None:
     """
     Record a delivery failure for rate limiting.

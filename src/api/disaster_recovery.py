@@ -7,7 +7,7 @@ including backup management, recovery operations, and disaster recovery workflow
 
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 from botocore.exceptions import ClientError
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -719,7 +719,7 @@ async def execute_recovery_endpoint(
     )
 
 
-@router.get("/recoveries/{operation_id}", response_model=Optional[RecoveryResponse])
+@router.get("/recoveries/{operation_id}", response_model=RecoveryResponse | None)
 @task(name="get_recovery_status_api")
 async def get_recovery_status_endpoint(
     operation_id: str, db: Session = Depends(get_db),  # noqa: B008

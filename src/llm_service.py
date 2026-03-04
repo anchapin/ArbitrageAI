@@ -364,12 +364,13 @@ class LLMService:
             CircuitBreakerError: If circuit breaker is OPEN for this endpoint
         """
         # Check circuit breaker before making request
-        if self._health_checker:
-            if not self._health_checker.should_allow_request(self.base_url):
-                raise CircuitBreakerError(
-                    f"Circuit breaker is OPEN for {self.base_url}. "
-                    f"Service appears to be unavailable.",
-                )
+        if self._health_checker and not self._health_checker.should_allow_request(
+            self.base_url
+        ):
+            raise CircuitBreakerError(
+                f"Circuit breaker is OPEN for {self.base_url}. "
+                f"Service appears to be unavailable.",
+            )
 
         # Stealth mode: add random delay to mimic human typing speed
         if stealth_mode:
