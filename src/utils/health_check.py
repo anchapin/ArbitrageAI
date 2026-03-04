@@ -101,6 +101,15 @@ class HealthMonitor:
         openai_url: str = "https://api.openai.com/v1",
         timeout_seconds: float = 5.0,
     ):
+        """Initialize the health checker.
+
+        Args:
+            database_url: Database connection URL.
+            redis_url: Redis connection URL.
+            ollama_url: URL for local LLM service.
+            openai_url: URL for OpenAI API.
+            timeout_seconds: Timeout for health check requests.
+        """
         self.database_url = database_url
         self.redis_url = redis_url
         self.ollama_url = ollama_url

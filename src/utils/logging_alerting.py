@@ -109,6 +109,15 @@ class StructuredLogger:
         enable_json: bool = True,
         context: dict[str, Any] | None = None,
     ):
+        """Initialize the structured logger.
+
+        Args:
+            name: Logger name.
+            level: Logging level.
+            log_file: Optional file path for log output.
+            enable_json: Whether to use JSON formatting.
+            context: Additional context to include in logs.
+        """
         self.name = name
         self.context = context or {}
         self.enable_json = enable_json
@@ -239,6 +248,13 @@ class AlertManager:
         webhook_url: str | None = None,
         slack_webhook: str | None = None,
     ):
+        """Initialize the alert manager.
+
+        Args:
+            log_dir: Directory to store alert logs.
+            webhook_url: Optional webhook URL for alerts.
+            slack_webhook: Optional Slack webhook URL.
+        """
         self.log_dir = Path(log_dir)
         self.log_dir.mkdir(parents=True, exist_ok=True)
 
@@ -624,6 +640,11 @@ class LogAnalyzer:
     """
 
     def __init__(self, log_dir: str = "logs"):
+        """Initialize the log analyzer.
+
+        Args:
+            log_dir: Directory containing log files.
+        """
         self.log_dir = Path(log_dir)
 
     def parse_logs(self, log_file: str) -> list[dict[str, Any]]:

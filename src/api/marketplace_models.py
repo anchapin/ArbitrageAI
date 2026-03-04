@@ -61,6 +61,11 @@ class Bid(Base):
     submitted_at = Column(DateTime, nullable=True)
 
     def to_dict(self):
+        """Convert the Bid model to a dictionary.
+
+        Returns:
+            dict: A dictionary representation of the Bid model.
+        """
         return {
             "id": self.id, "job_title": self.job_title, "job_description": self.job_description,
             "job_url": self.job_url, "job_id": self.job_id, "bid_amount": self.bid_amount,
@@ -123,6 +128,11 @@ class ArenaCompetition(Base):
     completed_at = Column(DateTime, nullable=True)
 
     def to_dict(self):
+        """Convert the ArenaCompetition model to a dictionary.
+
+        Returns:
+            dict: A dictionary representation of the ArenaCompetition model.
+        """
         return {
             "id": self.id, "task_id": self.task_id,
             "competition_type": self.competition_type,
@@ -155,6 +165,11 @@ class DistributedLock(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     def to_dict(self):
+        """Convert the DistributedLock model to a dictionary.
+
+        Returns:
+            dict: A dictionary representation of the DistributedLock model.
+        """
         return {
             "id": self.id, "lock_key": self.lock_key, "holder_id": self.holder_id,
             "acquired_at": self.acquired_at, "expires_at": self.expires_at,
@@ -188,6 +203,11 @@ class SimulationBid(Base):
     outcome_updated_at = Column(DateTime, nullable=True)
 
     def to_dict(self):
+        """Convert the SimulationBid model to a dictionary.
+
+        Returns:
+            dict: A dictionary representation of the SimulationBid model.
+        """
         return {
             "id": self.id, "job_title": self.job_title, "job_description": self.job_description,
             "job_url": self.job_url, "bid_amount": self.bid_amount,

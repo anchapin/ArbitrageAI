@@ -116,6 +116,11 @@ class Task(Base):
     # Hybrid properties for backward compatibility (Issue #5)
     @hybrid_property
     def work_plan(self):
+        """Get the work plan from planning phase.
+
+        Returns:
+            The plan content from the planning phase, or None if not available.
+        """
         return self.planning.plan_content if self.planning else None
 
     @work_plan.setter
@@ -126,6 +131,11 @@ class Task(Base):
 
     @hybrid_property
     def plan_status(self):
+        """Get the planning status.
+
+        Returns:
+            The planning status, or None if not available.
+        """
         return self.planning.status if self.planning else None
 
     @plan_status.setter
@@ -143,6 +153,11 @@ class Task(Base):
 
     @hybrid_property
     def file_content(self):
+        """Get the uploaded file content from planning phase.
+
+        Returns:
+            The file content from the planning phase, or None if not available.
+        """
         return self.planning.file_content if self.planning else None
 
     @file_content.setter
@@ -153,6 +168,11 @@ class Task(Base):
 
     @hybrid_property
     def filename(self):
+        """Get the uploaded filename from planning phase.
+
+        Returns:
+            The filename from the planning phase, or None if not available.
+        """
         return self.planning.filename if self.planning else None
 
     @filename.setter
@@ -163,6 +183,11 @@ class Task(Base):
 
     @hybrid_property
     def file_type(self):
+        """Get the uploaded file type from planning phase.
+
+        Returns:
+            The file type from the planning phase, or None if not available.
+        """
         return self.planning.file_type if self.planning else None
 
     @file_type.setter
@@ -173,6 +198,11 @@ class Task(Base):
 
     @hybrid_property
     def csv_data(self):
+        """Get CSV data from planning phase file content.
+
+        Returns:
+            The CSV file content if file_type is 'csv', otherwise None.
+        """
         return (
             self.planning.file_content
             if self.planning and self.planning.file_type == "csv"
@@ -188,6 +218,11 @@ class Task(Base):
 
     @hybrid_property
     def retry_count(self):
+        """Get the retry count from execution phase.
+
+        Returns:
+            The retry count from the execution phase, or 0 if not available.
+        """
         return self.execution.retry_count if self.execution else 0
 
     @retry_count.setter
@@ -198,6 +233,11 @@ class Task(Base):
 
     @hybrid_property
     def execution_log(self):
+        """Get the execution logs from execution phase.
+
+        Returns:
+            The execution logs from the execution phase, or None if not available.
+        """
         return self.execution.execution_logs if self.execution else None
 
     @execution_log.setter
@@ -208,6 +248,11 @@ class Task(Base):
 
     @hybrid_property
     def review_feedback(self):
+        """Get the review feedback from review phase.
+
+        Returns:
+            The review feedback from the review phase, or None if not available.
+        """
         return self.review.review_feedback if self.review else None
 
     @review_feedback.setter
@@ -218,6 +263,11 @@ class Task(Base):
 
     @hybrid_property
     def review_approved(self):
+        """Get the approval status from review phase.
+
+        Returns:
+            The approval status from the review phase, or False if not available.
+        """
         return self.review.approved if self.review else False
 
     @review_approved.setter
@@ -228,6 +278,11 @@ class Task(Base):
 
     @hybrid_property
     def review_attempts(self):
+        """Get the review attempts from review phase.
+
+        Returns:
+            The review attempts from the review phase, or 0 if not available.
+        """
         return self.review.review_attempts if self.review else 0
 
     @review_attempts.setter
@@ -238,6 +293,11 @@ class Task(Base):
 
     @hybrid_property
     def escalation_reason(self):
+        """Get the escalation reason from review phase.
+
+        Returns:
+            The escalation reason from the review phase, or None if not available.
+        """
         return self.review.escalation_reason if self.review else None
 
     @escalation_reason.setter
@@ -248,6 +308,11 @@ class Task(Base):
 
     @hybrid_property
     def escalated_at(self):
+        """Get the escalation timestamp from review phase.
+
+        Returns:
+            The escalation timestamp from the review phase, or None if not available.
+        """
         return self.review.escalated_at if self.review else None
 
     @escalated_at.setter
@@ -258,6 +323,11 @@ class Task(Base):
 
     @hybrid_property
     def last_error(self):
+        """Get the last error from review or execution phase.
+
+        Returns:
+            The last error from the review phase, or None if not available.
+        """
         return (
             self.review.last_error if self.review else None
         )  # Actually could be in execution or review
@@ -270,6 +340,11 @@ class Task(Base):
 
     @hybrid_property
     def review_status(self):
+        """Get the review status from review phase.
+
+        Returns:
+            The review status from the review phase, or None if not available.
+        """
         return self.review.status if self.review else None
 
     @review_status.setter
@@ -286,6 +361,11 @@ class Task(Base):
 
     @hybrid_property
     def extracted_context(self):
+        """Get the extracted context from planning phase.
+
+        Returns:
+            The extracted context from the planning phase, or None if not available.
+        """
         return self.planning.extracted_context if self.planning else None
 
     @extracted_context.setter
@@ -296,6 +376,11 @@ class Task(Base):
 
     @hybrid_property
     def result_image_url(self):
+        """Get the image output URL from outputs.
+
+        Returns:
+            The image output URL, or None if not available.
+        """
         if not hasattr(self, "outputs") or not self.outputs:
             return None
         try:
@@ -325,6 +410,11 @@ class Task(Base):
 
     @hybrid_property
     def result_document_url(self):
+        """Get the document output URL from outputs.
+
+        Returns:
+            The document output URL, or None if not available.
+        """
         if not hasattr(self, "outputs") or not self.outputs:
             return None
         try:
@@ -362,6 +452,11 @@ class Task(Base):
 
     @hybrid_property
     def result_spreadsheet_url(self):
+        """Get the spreadsheet output URL from outputs.
+
+        Returns:
+            The spreadsheet output URL, or None if not available.
+        """
         if not hasattr(self, "outputs") or not self.outputs:
             return None
         try:
@@ -390,6 +485,11 @@ class Task(Base):
             )
 
     def __init__(self, **kwargs):
+        """Initialize the Task with hybrid property support.
+
+        Args:
+            **kwargs: Keyword arguments including hybrid properties.
+        """
         # List of hybrid properties that should be handled manually
         hybrid_fields = [
             "work_plan",
@@ -418,6 +518,11 @@ class Task(Base):
             setattr(self, k, v)
 
     def to_dict(self):
+        """Convert the Task model to a dictionary.
+
+        Returns:
+            dict: A dictionary representation of the Task model.
+        """
         data = {
             "id": self.id,
             "title": self.title,
@@ -511,6 +616,11 @@ class TaskExecution(Base):
     task = relationship("Task", back_populates="execution")
 
     def to_dict(self):
+        """Convert the TaskExecution model to a dictionary.
+
+        Returns:
+            dict: A dictionary representation of the TaskExecution model.
+        """
         return {
             "status": self.status.value
             if isinstance(self.status, ExecutionStatus)
@@ -553,6 +663,11 @@ class TaskPlanning(Base):
     task = relationship("Task", back_populates="planning")
 
     def to_dict(self):
+        """Convert the TaskPlanning model to a dictionary.
+
+        Returns:
+            dict: A dictionary representation of the TaskPlanning model.
+        """
         return {
             "status": self.status.value
             if isinstance(self.status, PlanningStatus)
@@ -596,6 +711,11 @@ class TaskReview(Base):
     task = relationship("Task", back_populates="review")
 
     def to_dict(self):
+        """Convert the TaskReview model to a dictionary.
+
+        Returns:
+            dict: A dictionary representation of the TaskReview model.
+        """
         return {
             "status": self.status.value
             if isinstance(self.status, ReviewStatus)
@@ -627,6 +747,11 @@ class TaskArena(Base):
     task = relationship("Task", back_populates="arena")
 
     def to_dict(self):
+        """Convert the TaskArena model to a dictionary.
+
+        Returns:
+            dict: A dictionary representation of the TaskArena model.
+        """
         return {
             "winning_model": self.winning_model,
             "local_score": self.local_score,
@@ -655,6 +780,11 @@ class TaskOutput(Base):
     task = relationship("Task", back_populates="outputs")
 
     def to_dict(self):
+        """Convert the TaskOutput model to a dictionary.
+
+        Returns:
+            dict: A dictionary representation of the TaskOutput model.
+        """
         return {
             "output_type": self.output_type.value
             if isinstance(self.output_type, OutputType)

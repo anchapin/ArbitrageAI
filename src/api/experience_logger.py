@@ -16,6 +16,11 @@ class ExperienceLogger:
     """
 
     def __init__(self, dataset_path: str = "data/experience_dataset.jsonl"):
+        """Initialize the experience logger.
+
+        Args:
+            dataset_path: Path to the JSONL file for storing experience data.
+        """
         self.dataset_path = dataset_path
 
         # Ensure the data directory exists

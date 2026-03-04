@@ -94,6 +94,13 @@ class GracefulShutdownManager:
         shutdown_timeout: float = 30.0,
         max_state_age_hours: int = 24,
     ):
+        """Initialize the graceful shutdown manager.
+
+        Args:
+            state_dir: Directory to store shutdown state files.
+            shutdown_timeout: Maximum time to wait for graceful shutdown in seconds.
+            max_state_age_hours: Maximum age of state files to recover from.
+        """
         self.state_dir = Path(state_dir)
         self.shutdown_timeout = shutdown_timeout
         self.max_state_age_hours = max_state_age_hours

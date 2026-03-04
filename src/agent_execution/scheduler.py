@@ -131,6 +131,7 @@ class IntelligentScheduler:
     """Handles intelligent scheduling logic."""
 
     def __init__(self):
+        """Initialize the intelligent scheduler with default settings."""
         self.peak_hours = [(9, 17)]  # 9 AM to 5 PM business hours
         self.batch_window_size = 30  # minutes
 
@@ -183,6 +184,11 @@ class TaskScheduler:
     """Main task scheduler with cron expression support."""
 
     def __init__(self, db_session: AsyncSession | None = None):
+        """Initialize the task scheduler.
+
+        Args:
+            db_session: Optional database session for persistence.
+        """
         self.db_session = db_session
         self.validator = CronExpressionValidator()
         self.intelligent_scheduler = IntelligentScheduler()

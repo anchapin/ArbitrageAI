@@ -97,6 +97,11 @@ class AgentConfig:
         self.planning_time_multiplier = planning_time_multiplier
 
     def to_dict(self) -> dict:
+        """Convert the arena configuration to a dictionary.
+
+        Returns:
+            dict: A dictionary containing the arena configuration.
+        """
         return {
             "name": self.name,
             "model": self.llm_service.get_model(),

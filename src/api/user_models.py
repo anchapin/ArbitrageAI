@@ -53,6 +53,11 @@ class ClientProfile(Base):
     last_task_at = Column(DateTime, nullable=True, index=True)
 
     def to_dict(self):
+        """Convert the UserPreferences model to a dictionary.
+
+        Returns:
+            dict: A dictionary representation of the UserPreferences model.
+        """
         return {
             "id": self.id, "client_email": self.client_email,
             "preferred_colors": self.preferred_colors,
@@ -72,6 +77,11 @@ class ClientProfile(Base):
         }
 
     def get_preferences_summary(self) -> str:
+        """Get a summary of user preferences.
+
+        Returns:
+            str: A human-readable summary of preferences.
+        """
         parts = []
         if self.preferred_colors:
             parts.append(f"Preferred colors: {', '.join(self.preferred_colors)}")
@@ -113,6 +123,11 @@ class UserQuota(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     def to_dict(self):
+        """Convert the UserQuota model to a dictionary.
+
+        Returns:
+            dict: A dictionary representation of the UserQuota model.
+        """
         return {
             "id": self.id, "user_id": self.user_id,
             "tier": self.tier.value if self.tier else None,
@@ -152,6 +167,11 @@ class QuotaUsage(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     def to_dict(self):
+        """Convert the QuotaUsage model to a dictionary.
+
+        Returns:
+            dict: A dictionary representation of the QuotaUsage model.
+        """
         return {
             "id": self.id, "user_id": self.user_id, "billing_month": self.billing_month,
             "task_count": self.task_count, "api_call_count": self.api_call_count,
@@ -185,6 +205,11 @@ class RateLimitLog(Base):
     timestamp = Column(DateTime, default=datetime.utcnow)
 
     def to_dict(self):
+        """Convert the RateLimitLog model to a dictionary.
+
+        Returns:
+            dict: A dictionary representation of the RateLimitLog model.
+        """
         return {
             "id": self.id, "user_id": self.user_id, "endpoint": self.endpoint,
             "method": self.method, "requests_in_window": self.requests_in_window,

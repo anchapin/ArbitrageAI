@@ -61,6 +61,12 @@ class BackgroundJobQueue:
     """
 
     def __init__(self, max_workers: int = 3, max_queue_size: int = 100):
+        """Initialize the background job queue.
+
+        Args:
+            max_workers: Maximum number of concurrent worker tasks.
+            max_queue_size: Maximum size of the pending job queue.
+        """
         self.max_workers = max_workers
         self.max_queue_size = max_queue_size
 

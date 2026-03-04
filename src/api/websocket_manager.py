@@ -156,6 +156,11 @@ class WebSocketManager:
     """WebSocket connection manager with authentication and real-time updates."""
 
     def __init__(self, config: Config | None = None):
+        """Initialize the WebSocket manager.
+
+        Args:
+            config: Optional configuration for the WebSocket manager.
+        """
         self.config = config or Config()
 
         # Connection management

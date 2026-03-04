@@ -87,6 +87,12 @@ class AuthenticatedClient:
     """Dependency model for authenticated client (email + token)."""
 
     def __init__(self, email: str, token: str):
+        """Initialize the authenticated client.
+
+        Args:
+            email: Client email address.
+            token: Authentication token.
+        """
         self.email = email.strip().lower() if email else ""
         self.token = token.strip() if token else ""
 

@@ -115,6 +115,11 @@ class TaskLogger:
     """
 
     def __init__(self, task_id: str | None = None):
+        """Initialize the task logger.
+
+        Args:
+            task_id: Optional task ID for context.
+        """
         self.logger = get_logger("task_processor")
         self.task_id = task_id
 
@@ -195,6 +200,7 @@ class ArenaLogger:
     """Specialized logger for arena operations."""
 
     def __init__(self):
+        """Initialize the arena logger."""
         self.logger = get_logger("arena")
 
     def competition_start(self, competition_type: str, agent_a: str, agent_b: str):

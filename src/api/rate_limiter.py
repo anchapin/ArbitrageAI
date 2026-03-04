@@ -525,6 +525,7 @@ class QuotaManager:
     """
 
     def __init__(self):
+        """Initialize the QuotaManager."""
         self.logger = logging.getLogger(__name__)
 
     def get_current_billing_month(self) -> str:

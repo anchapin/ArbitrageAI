@@ -99,6 +99,15 @@ class ExecutionStateMachine:
     def is_valid_transition(
         current_status: ExecutionStatus, new_status: ExecutionStatus,
     ) -> bool:
+        """Check if a transition from current_status to new_status is valid.
+
+        Args:
+            current_status: The current execution status.
+            new_status: The new execution status to transition to.
+
+        Returns:
+            bool: True if the transition is valid, False otherwise.
+        """
         if current_status not in ExecutionStateMachine.VALID_TRANSITIONS:
             return False
         return new_status in ExecutionStateMachine.VALID_TRANSITIONS[current_status]
@@ -118,6 +127,15 @@ class PlanningStateMachine:
     def is_valid_transition(
         current_status: PlanningStatus, new_status: PlanningStatus,
     ) -> bool:
+        """Check if a transition from current_status to new_status is valid.
+
+        Args:
+            current_status: The current planning status.
+            new_status: The new planning status to transition to.
+
+        Returns:
+            bool: True if the transition is valid, False otherwise.
+        """
         if current_status not in PlanningStateMachine.VALID_TRANSITIONS:
             return False
         return new_status in PlanningStateMachine.VALID_TRANSITIONS[current_status]
@@ -137,6 +155,15 @@ class ReviewStateMachine:
     def is_valid_transition(
         current_status: ReviewStatus, new_status: ReviewStatus,
     ) -> bool:
+        """Check if a transition from current_status to new_status is valid.
+
+        Args:
+            current_status: The current review status.
+            new_status: The new review status to transition to.
+
+        Returns:
+            bool: True if the transition is valid, False otherwise.
+        """
         if current_status not in ReviewStateMachine.VALID_TRANSITIONS:
             return False
         return new_status in ReviewStateMachine.VALID_TRANSITIONS[current_status]

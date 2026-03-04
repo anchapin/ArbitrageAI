@@ -48,6 +48,11 @@ class AsyncRAGCircuitBreaker:
     """
 
     def __init__(self, config: CircuitBreakerConfig = None):
+        """Initialize the circuit breaker.
+
+        Args:
+            config: Optional configuration for the circuit breaker.
+        """
         self.config = config or CircuitBreakerConfig()
         self.state = CircuitBreakerState.CLOSED
         self.failure_count = 0
@@ -152,6 +157,13 @@ class AsyncRAGService:
         cache_ttl_minutes: int = 60,
         circuit_breaker_config: CircuitBreakerConfig = None,
     ):
+        """Initialize the AsyncRAG service.
+
+        Args:
+            vector_db: The vector database for experience storage.
+            cache_ttl_minutes: Time to live for cached queries in minutes.
+            circuit_breaker_config: Optional configuration for the circuit breaker.
+        """
         self.vector_db = vector_db
         self.cache_ttl_minutes = cache_ttl_minutes
         self.circuit_breaker = AsyncRAGCircuitBreaker(circuit_breaker_config)

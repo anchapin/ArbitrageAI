@@ -104,6 +104,11 @@ class APMManager:
     _initialized: bool = False
 
     def __new__(cls) -> "APMManager":
+        """Get the singleton APMManager instance.
+
+        Returns:
+            APMManager: The singleton instance.
+        """
         if cls._instance is None:
             cls._instance = super().__new__(cls)
         return cls._instance

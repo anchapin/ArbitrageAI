@@ -137,6 +137,11 @@ class Task(Base):
     outputs = relationship("TaskOutput", cascade="all, delete-orphan")
 
     def to_dict(self):
+        """Convert the Task model to a dictionary.
+
+        Returns:
+            dict: A dictionary representation of the Task model.
+        """
         return {
             "id": self.id,
             "title": self.title,
@@ -192,6 +197,11 @@ class TaskExecution(Base):
     completed_at = Column(DateTime, nullable=True)
 
     def to_dict(self):
+        """Convert the TaskExecution model to a dictionary.
+
+        Returns:
+            dict: A dictionary representation of the TaskExecution model.
+        """
         return {
             "id": self.id,
             "task_id": self.task_id,
@@ -246,6 +256,11 @@ class TaskPlanning(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     def to_dict(self):
+        """Convert the TaskPlanning model to a dictionary.
+
+        Returns:
+            dict: A dictionary representation of the TaskPlanning model.
+        """
         return {
             "id": self.id,
             "task_id": self.task_id,
@@ -294,6 +309,11 @@ class TaskReview(Base):
     reviewed_at = Column(DateTime, nullable=True)
 
     def to_dict(self):
+        """Convert the TaskReview model to a dictionary.
+
+        Returns:
+            dict: A dictionary representation of the TaskReview model.
+        """
         return {
             "id": self.id,
             "task_id": self.task_id,
@@ -344,6 +364,11 @@ class TaskArena(Base):
     completed_at = Column(DateTime, nullable=True)
 
     def to_dict(self):
+        """Convert the TaskArena model to a dictionary.
+
+        Returns:
+            dict: A dictionary representation of the TaskArena model.
+        """
         return {
             "id": self.id,
             "task_id": self.task_id,
@@ -385,6 +410,11 @@ class TaskOutput(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     def to_dict(self):
+        """Convert the TaskOutput model to a dictionary.
+
+        Returns:
+            dict: A dictionary representation of the TaskOutput model.
+        """
         return {
             "id": self.id,
             "task_id": self.task_id,
