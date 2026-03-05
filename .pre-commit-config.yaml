@@ -98,6 +98,42 @@ repos:
         exclude: .secrets.baseline|requirements.*|pyproject.toml
 
   # ---------------------------------------------------------------------------
+  # Dead Code Detection
+  # ---------------------------------------------------------------------------
+
+  # Vulture - Dead code detection
+  - repo: https://github.com/PyCQA/vulture
+    rev: v2.13.0
+    hooks:
+      - id: vulture
+        name: vulture - Dead code detection
+        description: Find dead code in Python projects
+        entry: vulture
+        language: system
+        types: [python]
+        args: [
+          --min-confidence, 80,
+          --sort-by-size,
+        ]
+        exclude: ^tests/|scripts/|alembic/
+
+  # ---------------------------------------------------------------------------
+  # Duplicate Code Detection
+  # ---------------------------------------------------------------------------
+
+  # jscpd - Copy/paste detector
+  - repo: local
+    hooks:
+      - id: jscpd
+        name: jscpd - Duplicate code detection
+        description: Detect copy/paste code in Python projects
+        entry: npx jscpd --config .jscpd.json
+        language: system
+        types: [python]
+        pass_filenames: false
+        stages: [pre-commit]
+
+  # ---------------------------------------------------------------------------
   # Code Formatting
   # ---------------------------------------------------------------------------
 

@@ -96,7 +96,8 @@ class SchedulingError(PermanentError):
 
 
 # Mapping of exception types to error categories
-ERROR_CLASSIFICATION: dict[type[Exception], type[AgentError]] = {
+# Note: KeyboardInterrupt and SystemExit are BaseException, not Exception
+ERROR_CLASSIFICATION: dict[type[BaseException], type[AgentError]] = {
     # Network/Transient
     ConnectionError: NetworkError,
     ConnectionRefusedError: NetworkError,

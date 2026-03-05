@@ -1,0 +1,98 @@
+{
+  "name": "ArbitrageAI Development",
+  "image": "mcr.microsoft.com/devcontainers/python:3.10",
+  "features": {
+    "ghcr.io/devcontainers/features/github-cli:1": {}
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "ms-python.black-formatter",
+        "ms-python.isort",
+        "ms-python.pytest",
+        "charliermarsh.ruff",
+        "ms-python.mypy-type-checker",
+        "ms-azuretools.vscode-docker",
+        "eamodio.gitlens",
+        "streetsidesoftware.code-spell-checker",
+        "humao.rest-client",
+        "redhat.vscode-yaml",
+        "tamasfe.even-better-toml",
+        "ms-vsliveshare.vsliveshare"
+      ],
+      "settings": {
+        "python.defaultInterpreterPath": "/usr/local/bin/python",
+        "python.analysis.typeCheckingMode": "basic",
+        "python.analysis.autoImportCompletions": true,
+        "python.analysis.diagnosticMode": "openFilesOnly",
+        "python.analysis.indexing": true,
+        "python.linting.enabled": true,
+        "python.linting.pylintEnabled": false,
+        "python.linting.ruffEnabled": true,
+        "python.linting.ruffPath": "/usr/local/bin/ruff",
+        "python.formatting.provider": "ruff",
+        "python.testing.pytestEnabled": true,
+        "python.testing.pytestArgs": ["tests/", "-v", "--tb=short"],
+        "editor.formatOnSave": true,
+        "editor.codeActionsOnSave": {
+          "source.fixAll": "explicit",
+          "source.organizeImports": "explicit"
+        },
+        "editor.rulers": [100],
+        "editor.tabSize": 4,
+        "editor.insertSpaces": true,
+        "files.exclude": {
+          "**/__pycache__": true,
+          "**/*.pyc": true,
+          "**/.pytest_cache": true,
+          "**/.mypy_cache": true,
+          "**/.ruff_cache": true
+        },
+        "terminal.integrated.defaultProfile.linux": "bash",
+        "files.associations": {
+          "*.env": "dotenv",
+          "*.md": "markdown"
+        },
+        "search.exclude": {
+          "**/node_modules": true,
+          "**/venv": true,
+          "**/.venv": true,
+          "**/__pycache__": true,
+          "**/*.pyc": true,
+          "**/.ruff_cache": true
+        },
+        "ruff.lint.args": ["--config=${workspaceFolder}/pyproject.toml"],
+        "ruff.format.args": ["--config=${workspaceFolder}/pyproject.toml"]
+      }
+    }
+  },
+  "portsAttributes": {
+    "8000": {"label": "FastAPI Backend", "protocol": "http"},
+    "5173": {"label": "Vite Frontend", "protocol": "http"},
+    "11434": {"label": "Ollama LLM", "protocol": "http"},
+    "6379": {"label": "Redis", "protocol": "redis"},
+    "3000": {"label": "Grafana", "protocol": "http"},
+    "16686": {"label": "Jaeger UI", "protocol": "http"},
+    "9090": {"label": "Prometheus", "protocol": "http"}
+  },
+  "onCreateCommand": "pip install --upgrade pip && pip install -e .[dev,tests]",
+  "updateContentCommand": "pip install --upgrade pip && pip install -e .[dev,tests]",
+  "postCreateCommand": "python -m playwright install --with-deps chromium && ruff check --fix . || true",
+  "postStartCommand": "if [ -f .env ]; then echo 'Environment file exists'; else cp .env.example .env; fi",
+  "containerEnv": {
+    "PYTHONUNBUFFERED": "1",
+    "ENVIRONMENT": "development"
+  },
+  "workspaceMount": "source=${localWorkspaceFolder},target=/workspaces/ArbitrageAI,type=bind,consistency=cached",
+  "workspaceFolder": "/workspaces/ArbitrageAI",
+  "remoteUser": "vscode",
+  "runArgs": ["--cap-add=SYS_PTRACE", "--security-opt", "seccomp=unconfined"],
+  "hostRequirements": {
+    "cpus": 4,
+    "memory": "8gb",
+    "gpu": "optional"
+  },
+  "overrideFeatureInstallOrder": ["ghcr.io/devcontainers/features/github-cli:1"]
+}

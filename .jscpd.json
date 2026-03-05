@@ -1,0 +1,19 @@
+{
+  "threshold": 5.0,
+  "minLines": 10,
+  "minTokens": 30,
+  "format": ["python"],
+  "ignore": [
+    "**/tests/**",
+    "**/__pycache__/**",
+    "**/.venv/**",
+    "**/venv/**",
+    "**/alembic/versions/**",
+    "**/scripts/**",
+    "**/*.egg-info/**",
+    "**/node_modules/**"
+  ],
+  "output": "./report/jscpd",
+  "reporters": ["console", "json"],
+  "exclude": []
+}
