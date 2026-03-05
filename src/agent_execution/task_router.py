@@ -135,7 +135,7 @@ class TaskRouter:
                 domain=domain, user_request=user_request, csv_data=csv_data,
                 output_format=OutputFormat.PDF, **kwargs,
             )
-        return self._handle_visualization(
+        return TaskRouter._handle_visualization(
             domain=domain, user_request=user_request, csv_data=csv_data, **kwargs,
         )
 
@@ -180,7 +180,7 @@ class TaskRouter:
         csv_headers = [h.strip() for h in first_line.split(",")]
 
         llm = self.llm or LLMService()
-        system_prompt = self._get_spreadsheet_system_prompt(domain)
+        system_prompt = TaskRouter._get_spreadsheet_system_prompt(domain)
 
         prompt = f"""CSV Headers: {csv_headers}
 User Request: {user_request}
@@ -221,7 +221,8 @@ Generate Python code to create an Excel spreadsheet from the data."""
             logger.error(f"Spreadsheet generation error: {e}", exc_info=True)
             return {"success": False, "message": f"Spreadsheet generation error: {e!s}", "output_format": OutputFormat.XLSX}
 
-    def _get_spreadsheet_system_prompt(self, domain: str) -> str:
+    @staticmethod
+    def _get_spreadsheet_system_prompt(domain: str) -> str:
         """Get system prompt for spreadsheet generation."""
         if domain.lower() == "legal":
             return """You are an expert legal spreadsheet generator. Create a professional Excel spreadsheet."""
