@@ -38,7 +38,7 @@ jobs:
             # Also exclude files that legitimately contain these patterns for detection purposes:
             # - src/utils/secrets.py - defines detection patterns
             # - src/config/__init__.py - config validation
-            # - src/utils/client_auth.py - auth patterns
+            # - src/utils/client_auth.py - auth placeholder patterns
             # - tests/ - test files
             # - .github/workflows/ - workflow files contain patterns
             # - .env.example - documentation placeholders
