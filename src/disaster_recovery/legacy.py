@@ -5,6 +5,7 @@ This module provides comprehensive disaster recovery and backup capabilities
 for the ArbitrageAI platform.
 """
 
+from dataclasses import asdict
 from datetime import datetime
 import threading
 import time
@@ -163,7 +164,6 @@ class DisasterRecoveryOrchestrator:
             else:
                 return {"success": False, "error": f"Unknown backup type: {backup_type}"}
 
-            from dataclasses import asdict
             return {
                 "success": True,
                 "backup_id": metadata.backup_id,
@@ -174,7 +174,6 @@ class DisasterRecoveryOrchestrator:
 
     async def list_backups(self) -> list[dict[str, Any]]:
         """List all available backups."""
-        from dataclasses import asdict
         backups = await self.backup_manager.list_backups()
         return [asdict(backup) for backup in backups]
 
@@ -186,7 +185,6 @@ class DisasterRecoveryOrchestrator:
         self, backup_id: str, plan_id: str = "default",
     ) -> dict[str, Any]:
         """Execute a recovery operation."""
-        from dataclasses import asdict
         result = await self.recovery_manager.execute_recovery(backup_id, plan_id)
         return {
             "success": result.status == RecoveryStatus.COMPLETED,
