@@ -168,8 +168,8 @@ class TestBackupManager:
         """Test database backup functionality."""
         backup_path = Path("/tmp/test_db.sqlite")
 
-        with patch("src.disaster_recovery.Path.exists", return_value=True):
-            with patch("src.disaster_recovery.shutil.copy2") as mock_copy:
+        with patch("src.disaster_recovery.backup_manager.Path.exists", return_value=True):
+            with patch("src.disaster_recovery.backup_manager.shutil.copy2") as mock_copy:
                 await backup_manager._backup_database(backup_path)
                 mock_copy.assert_called_once()
 
@@ -177,8 +177,8 @@ class TestBackupManager:
         """Test database backup when file doesn't exist."""
         backup_path = Path("/tmp/nonexistent.sqlite")
 
-        with patch("src.disaster_recovery.Path.exists", return_value=False):
-            with patch("src.disaster_recovery.Path.touch") as mock_touch:
+        with patch("src.disaster_recovery.backup_manager.Path.exists", return_value=False):
+            with patch("src.disaster_recovery.backup_manager.Path.touch") as mock_touch:
                 await backup_manager._backup_database(backup_path)
                 mock_touch.assert_called_once()
 
@@ -462,7 +462,7 @@ class TestRecoveryManager:
         # Verify that the method completed without error
         assert recovery_op.status == RecoveryStatus.IN_PROGRESS
 
-    @patch("src.disaster_recovery.create_engine")
+    @patch("src.disaster_recovery.recovery_manager.create_engine")
     async def test_validate_recovery(self, mock_create_engine, recovery_manager):
         """Test recovery validation."""
         # Mock recovery operation
@@ -525,14 +525,12 @@ class TestDisasterRecoveryOrchestrator:
     @pytest.fixture
     def orchestrator(self, mock_config, mock_backup_manager, mock_recovery_manager):
         """Create disaster recovery orchestrator."""
-        with patch(
-            "src.disaster_recovery.BackupManager", return_value=mock_backup_manager
-        ):
-            with patch(
-                "src.disaster_recovery.RecoveryManager",
-                return_value=mock_recovery_manager,
-            ):
-                return DisasterRecoveryOrchestrator(mock_config)
+        # Use the provided mock managers directly
+        orchestrator = DisasterRecoveryOrchestrator.__new__(DisasterRecoveryOrchestrator)
+        orchestrator.config = mock_config
+        orchestrator.backup_manager = mock_backup_manager
+        orchestrator.recovery_manager = mock_recovery_manager
+        return orchestrator
 
     async def test_assess_disaster(self, orchestrator):
         """Test disaster assessment."""
@@ -610,7 +608,7 @@ class TestDisasterRecoveryOrchestrator:
             validation_results={},
         )
 
-        with patch("src.disaster_recovery.create_engine") as mock_create_engine:
+        with patch("sqlalchemy.create_engine") as mock_create_engine:
             mock_engine = Mock()
             mock_conn = Mock()
             mock_create_engine.return_value = mock_engine
@@ -618,7 +616,7 @@ class TestDisasterRecoveryOrchestrator:
             mock_connection_context.__enter__ = Mock(return_value=mock_conn)
             mock_connection_context.__exit__ = Mock(return_value=None)
             mock_engine.connect.return_value = mock_connection_context
-            mock_conn.execute.return_value.scalar.return_value = 100  # Task count
+            mock_conn.execute.return_value.scalar.return_value = 1  # SELECT 1 result
 
             validation_results = await orchestrator._validate_disaster_recovery(
                 recovery_result

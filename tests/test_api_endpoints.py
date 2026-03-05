@@ -308,9 +308,9 @@ class TestTaskEndpoints:
 
         client = TestClient(app)
 
-        # Create mock database
+        # Create mock database - must include .options() for the eager loading
         mock_db = Mock()
-        mock_db.query.return_value.filter.return_value.first.return_value = None
+        mock_db.query.return_value.filter.return_value.options.return_value.first.return_value = None
 
         # Override the dependency
         app.dependency_overrides[get_db] = override_get_db(mock_db)
@@ -781,8 +781,8 @@ class TestDeliveryEndpoint:
             response = client.get(
                 "/api/delivery/550e8400-e29b-41d4-a716-446655440102/correct_token_string_1234567890abcdefgh"
             )
-            # Current implementation returns 200 OK even if token was already used
-            assert response.status_code == 200
+            # When token is already used, return 403 Forbidden
+            assert response.status_code == 403
         finally:
             app.dependency_overrides.clear()
 

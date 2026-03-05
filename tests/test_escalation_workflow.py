@@ -36,7 +36,7 @@ def mock_db():
 @pytest.fixture
 def high_value_task():
     """Create a high-value task ($200+)."""
-    task = MagicMock(spec=Task)
+    task = MagicMock()
     task.id = "task-high-value-001"
     task.status = TaskStatus.PAID
     task.amount_paid = 25000  # $250.00
@@ -56,7 +56,7 @@ def high_value_task():
 @pytest.fixture
 def low_value_task():
     """Create a low-value task (< $200)."""
-    task = MagicMock(spec=Task)
+    task = MagicMock()
     task.id = "task-low-value-001"
     task.status = TaskStatus.PAID
     task.amount_paid = 1000  # $10.00
@@ -95,9 +95,9 @@ class TestEscalationIdempotency:
     @pytest.mark.asyncio
     async def test_first_escalation_creates_log(self, mock_db, high_value_task):
         """Test that first escalation creates a new EscalationLog."""
-        from src.api.main import _escalate_task
+        from src.api.threshold import _escalate_task
 
-        with patch("src.api.main.TelegramNotifier") as MockNotifier:
+        with patch("src.api.threshold.TelegramNotifier") as MockNotifier:
             mock_notifier = MockNotifier.return_value
             mock_notifier.request_human_help = AsyncMock(return_value=True)
 
@@ -118,14 +118,14 @@ class TestEscalationIdempotency:
         self, mock_db, high_value_task, existing_escalation_log
     ):
         """Test that duplicate escalation does NOT re-send notification."""
-        from src.api.main import _escalate_task
+        from src.api.threshold import _escalate_task
 
         # Return existing log (notification already sent)
         mock_db.query.return_value.filter.return_value.first.return_value = (
             existing_escalation_log
         )
 
-        with patch("src.api.main.TelegramNotifier") as MockNotifier:
+        with patch("src.api.threshold.TelegramNotifier") as MockNotifier:
             mock_notifier = MockNotifier.return_value
             mock_notifier.request_human_help = AsyncMock(return_value=True)
 
@@ -139,9 +139,9 @@ class TestEscalationIdempotency:
     @pytest.mark.asyncio
     async def test_idempotency_key_format(self, mock_db, high_value_task):
         """Test idempotency key is correctly formatted as task_id_reason."""
-        from src.api.main import _escalate_task
+        from src.api.threshold import _escalate_task
 
-        with patch("src.api.main.TelegramNotifier") as MockNotifier:
+        with patch("src.api.threshold.TelegramNotifier") as MockNotifier:
             mock_notifier = MockNotifier.return_value
             mock_notifier.request_human_help = AsyncMock(return_value=True)
 
@@ -164,9 +164,9 @@ class TestTransactionSafety:
     @pytest.mark.asyncio
     async def test_task_status_updated_to_escalation(self, mock_db, high_value_task):
         """Test task status is set to ESCALATION."""
-        from src.api.main import _escalate_task
+        from src.api.threshold import _escalate_task
 
-        with patch("src.api.main.TelegramNotifier") as MockNotifier:
+        with patch("src.api.threshold.TelegramNotifier") as MockNotifier:
             mock_notifier = MockNotifier.return_value
             mock_notifier.request_human_help = AsyncMock(return_value=True)
 
@@ -182,9 +182,9 @@ class TestTransactionSafety:
     @pytest.mark.asyncio
     async def test_begin_nested_called_for_savepoint(self, mock_db, low_value_task):
         """Test that begin_nested() is called for transaction savepoint."""
-        from src.api.main import _escalate_task
+        from src.api.threshold import _escalate_task
 
-        with patch("src.api.main.TelegramNotifier"):
+        with patch("src.api.threshold.TelegramNotifier"):
             await _escalate_task(mock_db, low_value_task, "max_retries_exceeded")
 
         mock_db.begin_nested.assert_called_once()
@@ -194,11 +194,11 @@ class TestTransactionSafety:
         self, mock_db, low_value_task
     ):
         """Test task status is still committed even if savepoint fails."""
-        from src.api.main import _escalate_task
+        from src.api.threshold import _escalate_task
 
         mock_db.begin_nested.side_effect = Exception("DB connection error")
 
-        with patch("src.api.main.TelegramNotifier"):
+        with patch("src.api.threshold.TelegramNotifier"):
             await _escalate_task(
                 mock_db, low_value_task, "max_retries_exceeded", "Some error"
             )
@@ -221,9 +221,9 @@ class TestNotificationBehavior:
     @pytest.mark.asyncio
     async def test_high_value_task_sends_notification(self, mock_db, high_value_task):
         """Test that high-value tasks trigger Telegram notification."""
-        from src.api.main import _escalate_task
+        from src.api.threshold import _escalate_task
 
-        with patch("src.api.main.TelegramNotifier") as MockNotifier:
+        with patch("src.api.threshold.TelegramNotifier") as MockNotifier:
             mock_notifier = MockNotifier.return_value
             mock_notifier.request_human_help = AsyncMock(return_value=True)
 
@@ -242,9 +242,9 @@ class TestNotificationBehavior:
     @pytest.mark.asyncio
     async def test_low_value_task_skips_notification(self, mock_db, low_value_task):
         """Test that low-value tasks do NOT trigger Telegram notification."""
-        from src.api.main import _escalate_task
+        from src.api.threshold import _escalate_task
 
-        with patch("src.api.main.TelegramNotifier") as MockNotifier:
+        with patch("src.api.threshold.TelegramNotifier") as MockNotifier:
             mock_notifier = MockNotifier.return_value
             mock_notifier.request_human_help = AsyncMock(return_value=True)
 
@@ -257,9 +257,9 @@ class TestNotificationBehavior:
         self, mock_db, high_value_task
     ):
         """Test that notification failure doesn't prevent task status update."""
-        from src.api.main import _escalate_task
+        from src.api.threshold import _escalate_task
 
-        with patch("src.api.main.TelegramNotifier") as MockNotifier:
+        with patch("src.api.threshold.TelegramNotifier") as MockNotifier:
             mock_notifier = MockNotifier.return_value
             mock_notifier.request_human_help = AsyncMock(
                 side_effect=Exception("Network error")
@@ -279,7 +279,7 @@ class TestNotificationBehavior:
     @pytest.mark.asyncio
     async def test_notification_sent_after_db_commit(self, mock_db, high_value_task):
         """Test that notification is sent AFTER db.commit(), not before."""
-        from src.api.main import _escalate_task
+        from src.api.threshold import _escalate_task
 
         call_order = []
 
@@ -288,7 +288,7 @@ class TestNotificationBehavior:
 
         mock_db.commit.side_effect = track_commit
 
-        with patch("src.api.main.TelegramNotifier") as MockNotifier:
+        with patch("src.api.threshold.TelegramNotifier") as MockNotifier:
             mock_notifier = MockNotifier.return_value
 
             async def track_notify(**kwargs):

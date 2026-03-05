@@ -23,9 +23,11 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from src.api.models import (
-    Base, Task, TaskStatus, EscalationLog, Bid, BidStatus,
+    Base, Task, TaskStatus, Bid, BidStatus,
     ArenaCompetition, ArenaCompetitionStatus
 )
+from src.api.financial_models import Base as FinancialBase, EscalationLog
+from src.api.marketplace_models import Base as MarketplaceBase
 from src.agent_execution.bid_lock_manager import BidLockManager
 from src.utils.logger import get_logger
 
@@ -41,6 +43,8 @@ def test_db():
     """Create in-memory test database with proper cleanup."""
     engine = create_engine("sqlite:///:memory:", echo=False)
     Base.metadata.create_all(bind=engine)
+    FinancialBase.metadata.create_all(bind=engine)
+    MarketplaceBase.metadata.create_all(bind=engine)
     SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
     
     session = SessionLocal()

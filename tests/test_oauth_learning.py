@@ -7,7 +7,7 @@ Issue #106: Closed-Loop Learning System
 
 import pytest
 import asyncio
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from src.agent_execution.marketplace_adapters.oauth_manager import (
@@ -71,9 +71,9 @@ class TestOAuthToken:
             expires_in=60,  # Expires in 1 minute
         )
 
-        # Manually set creation time to 2 minutes ago
-        expired_token.created_at = datetime.utcnow() - timedelta(minutes=2)
-        expired_token.expires_at = datetime.utcnow() - timedelta(minutes=1)
+        # Manually set creation time to 2 minutes ago (use timezone-aware datetime)
+        expired_token.created_at = datetime.now(timezone.utc) - timedelta(minutes=2)
+        expired_token.expires_at = datetime.now(timezone.utc) - timedelta(minutes=1)
 
         assert expired_token.is_expired(buffer_seconds=60)
 
@@ -462,7 +462,7 @@ class TestClosedLoopLearningSystem:
     def test_get_learning_history(self, learning_system):
         """Test learning history retrieval."""
         # Disable automatic weekly review during this test
-        learning_system._last_weekly_review = datetime.utcnow()
+        learning_system._last_weekly_review = datetime.now(timezone.utc)
         
         # Record some job completions
         for i in range(5):
@@ -650,7 +650,7 @@ class TestEdgeCases:
         )
 
         # Set expiration to 4 minutes from now
-        token.expires_at = datetime.utcnow() + timedelta(minutes=4)
+        token.expires_at = datetime.now(timezone.utc) + timedelta(minutes=4)
 
         # Should be expired with 5-minute buffer
         assert token.is_expired(buffer_seconds=300)

@@ -373,7 +373,7 @@ class RedisRateLimiter:
             results = pipe.execute()
 
             current_count = results[0]
-            allowed = current_count <= max_requests
+            allowed = current_count < max_requests
 
             return allowed, {
                 "allowed": allowed,
@@ -422,7 +422,7 @@ class RedisRateLimiter:
         self._in_memory_windows[window_key]["count"] += 1
         current_count = self._in_memory_windows[window_key]["count"]
 
-        allowed = current_count <= max_requests
+        allowed = current_count < max_requests
 
         return allowed, {
             "allowed": allowed,

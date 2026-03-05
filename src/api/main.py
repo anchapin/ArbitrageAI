@@ -65,7 +65,9 @@ from .files import (
     _record_ip_delivery_attempt,
     _sanitize_string,
 )
-from .tasks import (
+from .tasks import (  # noqa: F401 - re-exported for tests
+    _reset_redis_rate_limiter,
+    delivery_router,
     get_arena_history,
     get_arena_stats,
     get_secure_delivery,
@@ -222,11 +224,14 @@ class CheckoutResponse(BaseModel):
 # Create the FastAPI app
 app = create_app()
 
-# Register disaster recovery router
-app.include_router(disaster_recovery_router, prefix="/api", tags=["disaster-recovery"])
+# Register disaster recovery router (router already has prefix="/api/disaster-recovery")
+app.include_router(disaster_recovery_router, tags=["disaster-recovery"])
 
 # Register tasks router for task delivery and management endpoints
-app.include_router(tasks_router)
+app.include_router(tasks_router, prefix="/api", tags=["tasks"])
+
+# Register delivery router (delivery_router already has prefix="/delivery")
+app.include_router(delivery_router, prefix="/api", tags=["delivery"])
 
 # Register scheduler routes
 register_scheduler_routes(app)

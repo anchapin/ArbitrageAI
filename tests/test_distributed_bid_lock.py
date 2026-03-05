@@ -25,12 +25,16 @@ from sqlalchemy.orm import sessionmaker
 # Add src to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
-from src.api.models import Base, Bid, BidStatus, DistributedLock
+from src.api.marketplace_models import Base as MarketplaceBase
+from src.api.models import Bid, BidStatus, DistributedLock
 from src.agent_execution.bid_lock_manager import BidLockManager
 from src.agent_execution.bid_deduplication import (
     should_bid,
     create_bid_atomically,
 )
+
+# Alias for convenience in tests
+Base = MarketplaceBase
 
 
 # =============================================================================
@@ -59,10 +63,14 @@ def lock_manager(db_engine, monkeypatch):
     """Create a BidLockManager that uses the test database."""
     manager = BidLockManager(ttl=5)
 
-    Session = sessionmaker(bind=db_engine)
+    # Create session factory bound to test engine
+    TestSession = sessionmaker(bind=db_engine)
 
-    # Patch _get_db to use test database
-    monkeypatch.setattr(manager, "_get_db", lambda: Session())
+    # Patch the _get_db method to use test database
+    def mock_get_db():
+        return TestSession()
+
+    monkeypatch.setattr(manager, "_get_db", mock_get_db)
 
     return manager
 

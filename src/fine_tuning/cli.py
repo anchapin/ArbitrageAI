@@ -6,6 +6,7 @@ Command-line interface for managing fine-tuning pipeline.
 
 import json
 import logging
+import os
 import sys
 
 from .ab_testing import ABTestFramework
@@ -32,34 +33,46 @@ class FineTuningCLI:
 
     def prepare_dataset(
         self,
+        file_path: str | None = None,
         format: str = "openai",
         min_rating: int = 4,
         domain: str | None = None,
         output_dir: str | None = None,
-    ) -> str:
+    ) -> dict | str:
         """
         Prepare a fine-tuning dataset.
 
         Args:
+            file_path: Optional input file path (for processing existing files)
             format: Dataset format (openai, alpaca, jsonl)
             min_rating: Minimum example rating
             domain: Optional domain filter
             output_dir: Output directory
 
         Returns:
-            Path to dataset
+            Path to dataset if successful, or dict with error info
         """
         print("Preparing fine-tuning dataset...")
 
-        dataset_path = prepare_fine_tuning_dataset(
-            output_dir=output_dir,
-            format=format,
-            min_rating=min_rating,
-            domain=domain,
-        )
+        if file_path and not os.path.exists(file_path):
+            return {"success": False, "error": f"File not found: {file_path}"}
 
-        print(f"✓ Dataset prepared: {dataset_path}")
-        return dataset_path
+        if file_path:
+            # Process existing file - check format
+            if not file_path.endswith(".jsonl"):
+                return {"success": False, "error": "Invalid file format. Expected .jsonl file"}
+
+        try:
+            dataset_path = prepare_fine_tuning_dataset(
+                output_dir=output_dir,
+                format=format,
+                min_rating=min_rating,
+                domain=domain,
+            )
+            print(f"✓ Dataset prepared: {dataset_path}")
+            return dataset_path
+        except Exception as e:
+            return {"success": False, "error": str(e)}
 
     def create_openai_job(
         self,
@@ -154,20 +167,26 @@ class FineTuningCLI:
     def evaluate_model(
         self,
         model_name: str,
-        model_type: str,
         test_file: str,
+        model_type: str = "base",
         cost_per_inference: float = 0.0,
-    ) -> None:
+    ) -> dict:
         """
         Evaluate a model on test set.
 
         Args:
             model_name: Model name
-            model_type: Model type (base or fine_tuned)
             test_file: Path to test file (JSONL with predictions, references, latencies)
+            model_type: Model type (base or fine_tuned)
             cost_per_inference: Cost per inference
+
+        Returns:
+            dict with evaluation results
         """
         print(f"Evaluating {model_name}...")
+
+        if not os.path.exists(test_file):
+            return {"success": False, "error": f"Test file not found: {test_file}"}
 
         predictions = []
         references = []
@@ -181,29 +200,43 @@ class FineTuningCLI:
                     references.append(data.get("reference", ""))
                     latencies.append(data.get("latency_ms", 0))
         except FileNotFoundError:
-            print(f"Error: Test file not found: {test_file}")
-            return
+            return {"success": False, "error": f"Test file not found: {test_file}"}
+        except json.JSONDecodeError as e:
+            return {"success": False, "error": f"Invalid JSON in test file: {e}"}
 
-        result = self.evaluator.evaluate_exact_match(
-            predictions=predictions,
-            references=references,
-            model_name=model_name,
-            model_type=model_type,
-            latencies_ms=latencies,
-            cost_per_inference=cost_per_inference,
-        )
+        try:
+            result = self.evaluator.evaluate_exact_match(
+                predictions=predictions,
+                references=references,
+                model_name=model_name,
+                model_type=model_type,
+                latencies_ms=latencies,
+                cost_per_inference=cost_per_inference,
+            )
 
-        print("✓ Evaluation complete")
-        print(f"  Accuracy: {result.accuracy:.2%}")
-        print(f"  Latency: {result.avg_latency_ms:.2f}ms")
-        print(f"  Cost per inference: ${result.cost_per_inference:.6f}")
+            print("✓ Evaluation complete")
+            print(f"  Accuracy: {result.accuracy:.2%}")
+            print(f"  Latency: {result.avg_latency_ms:.2f}ms")
+            print(f"  Cost per inference: ${result.cost_per_inference:.6f}")
+
+            return {
+                "success": True,
+                "accuracy": result.accuracy,
+                "precision": result.precision,
+                "recall": result.recall,
+                "f1_score": result.f1_score,
+                "avg_latency_ms": result.avg_latency_ms,
+                "cost_per_inference": result.cost_per_inference,
+            }
+        except Exception as e:
+            return {"success": False, "error": str(e)}
 
     def setup_ab_test(
         self,
         test_id: str,
         model_a: str,
         model_b: str,
-    ) -> None:
+    ) -> dict:
         """
         Set up a new A/B test.
 
@@ -211,6 +244,9 @@ class FineTuningCLI:
             test_id: Test identifier
             model_a: Base model name
             model_b: Fine-tuned model name
+
+        Returns:
+            dict with test details
         """
         print(f"Setting up A/B test: {test_id}")
 
@@ -218,6 +254,35 @@ class FineTuningCLI:
         print(f"✓ A/B test created: {test_id}")
         print(f"  Control (A): {model_a}")
         print(f"  Variant (B): {model_b}")
+
+        return {
+            "test_id": test_id,
+            "model_a": model_a,
+            "model_b": model_b,
+            "status": "active",
+        }
+
+    def get_ab_test_results(self, test_id: str) -> dict:
+        """
+        Get A/B test results.
+
+        Args:
+            test_id: Test identifier
+
+        Returns:
+            dict with test results
+        """
+        result = self.ab_test.get_test_results(test_id)
+        if result is None:
+            return {"error": f"Test {test_id} not found"}
+
+        return {
+            "test_id": result.test_id,
+            "winner": result.winner,
+            "confidence": result.confidence,
+            "sample_size": result.sample_size_a + result.sample_size_b,
+            "conclusion": result.conclusion,
+        }
 
     def register_model(
         self,
@@ -227,7 +292,7 @@ class FineTuningCLI:
         dataset_size: int,
         accuracy: float | None = None,
         cost: float = 0.0,
-    ) -> None:
+    ) -> dict:
         """
         Register a fine-tuned model.
 
@@ -238,6 +303,9 @@ class FineTuningCLI:
             dataset_size: Training dataset size
             accuracy: Model accuracy
             cost: Training cost
+
+        Returns:
+            dict with registration details
         """
         print(f"Registering model: {model_name}...")
 
@@ -255,29 +323,44 @@ class FineTuningCLI:
             print(f"  Accuracy: {accuracy:.2%}")
         print(f"  Training cost: ${cost:.2f}")
 
-    def list_models(self) -> None:
-        """List all registered models."""
-        print("Registered Models:")
-        print("-" * 70)
+        return {
+            "model_name": model_name,
+            "version": record["version"],
+            "status": record.get("status", "REGISTERED"),
+            "accuracy": accuracy,
+            "cost": cost,
+        }
 
-        stats = self.model_registry.get_registry_stats()
-        print(f"Total models: {stats['total_models']}")
-        print(f"Total versions: {stats['total_versions']}")
-        print(f"Deployed: {stats['deployed_models']}")
-        print(f"Total training cost: ${stats['total_training_cost']:.2f}")
+    def list_models(self) -> dict:
+        """List all registered models.
 
+        Returns:
+            dict with models list and stats
+        """
+        models_list = []
         if self.model_registry.models:
-            print("\nModels:")
             for model_name, versions in self.model_registry.models.items():
                 latest = versions[-1]
-                print(f"  {model_name}:")
-                print(f"    Version: {latest['version']}")
-                print(f"    Status: {latest['status']}")
-                print(f"    Accuracy: {latest.get('accuracy', 'N/A')}")
-                print(f"    Cost: ${latest.get('cost', 0):.2f}")
+                models_list.append({
+                    "model_name": model_name,
+                    "version": latest["version"],
+                    "status": latest.get("status", "REGISTERED"),
+                    "accuracy": latest.get("accuracy"),
+                    "cost": latest.get("cost", 0),
+                })
 
-    def get_cost_summary(self) -> None:
-        """Display cost summary."""
+        stats = self.model_registry.get_registry_stats()
+        return {
+            "models": models_list,
+            "stats": stats,
+        }
+
+    def get_cost_summary(self) -> dict:
+        """Get cost summary.
+
+        Returns:
+            dict with cost breakdown
+        """
         print("Cost Summary:")
         print("-" * 70)
 
@@ -287,23 +370,47 @@ class FineTuningCLI:
         print(f"Total inference cost: ${summary['total_inference_cost']:.2f}")
         print(f"Total cost: ${summary['total_cost']:.2f}")
 
-        if summary["training_by_model"]:
+        if summary.get("training_by_model"):
             print("\nTraining by model:")
             for model, cost in summary["training_by_model"].items():
                 print(f"  {model}: ${cost:.2f}")
 
-        if summary["inference_by_model"]:
+        if summary.get("inference_by_model"):
             print("\nInference by model:")
             for model, data in summary["inference_by_model"].items():
                 print(f"  {model}: {data['count']} calls, ${data['total']:.2f}")
 
-    def rollback_model(self, model_name: str, target_version: int) -> None:
+        return summary
+
+    def get_model_costs(self, model_name: str) -> dict:
+        """
+        Get costs for a specific model.
+
+        Args:
+            model_name: Model name
+
+        Returns:
+            dict with model costs
+        """
+        training_cost = self.cost_tracker.get_model_training_cost(model_name)
+        inference_costs = self.cost_tracker.get_inference_costs(model_name)
+
+        return {
+            "model_name": model_name,
+            "training_cost": training_cost,
+            "inference_cost": sum(c["cost"] for c in inference_costs) if inference_costs else 0.0,
+        }
+
+    def rollback_model(self, model_name: str, target_version: int) -> dict:
         """
         Rollback to a previous model version.
 
         Args:
             model_name: Model name
             target_version: Target version
+
+        Returns:
+            dict with rollback result
         """
         print(f"Rolling back {model_name} to v{target_version}...")
 
@@ -311,8 +418,17 @@ class FineTuningCLI:
 
         if success:
             print(f"✓ Rolled back {model_name} to v{target_version}")
-        else:
-            print(f"✗ Failed to rollback {model_name}")
+            return {
+                "success": True,
+                "model_name": model_name,
+                "rolled_back_to_version": target_version,
+            }
+        print(f"✗ Failed to rollback {model_name}")
+        return {
+            "success": False,
+            "model_name": model_name,
+            "error": "Rollback failed",
+        }
 
     def auto_pipeline(
         self,
@@ -435,6 +551,19 @@ def main():
 
         elif command == "list-models":
             cli.list_models()
+
+        elif command == "evaluate-model":
+            if len(sys.argv) < 5:
+                print("Usage: ft-cli evaluate-model <name> <type> <test_file> [--cost <cost>]")
+                return
+            name = sys.argv[2]
+            eval_type = sys.argv[3]
+            test_file = sys.argv[4]
+            kwargs = {}
+            if "--cost" in sys.argv:
+                idx = sys.argv.index("--cost")
+                kwargs["cost"] = float(sys.argv[idx + 1])
+            cli.evaluate_model(name, eval_type, test_file, **kwargs)
 
         elif command == "cost-summary":
             cli.get_cost_summary()
