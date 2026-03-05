@@ -33,12 +33,12 @@ TRACE_PARENT_HEADER = "traceparent"
 TRACE_STATE_HEADER = "tracestate"
 
 # ContextVar for storing the current trace ID across async boundaries
-_trace_id_context: contextvars.ContextVar[str] = contextvars.ContextVar(
+_trace_id_context: contextvars.ContextVar[str | None] = contextvars.ContextVar(
     "trace_id", default=None,
 )
 
 # ContextVar for storing the parent span ID
-_span_id_context: contextvars.ContextVar[str] = contextvars.ContextVar(
+_span_id_context: contextvars.ContextVar[str | None] = contextvars.ContextVar(
     "span_id", default=None,
 )
 

@@ -98,6 +98,26 @@ repos:
         exclude: .secrets.baseline|requirements.*|pyproject.toml
 
   # ---------------------------------------------------------------------------
+  # Dead Code Detection
+  # ---------------------------------------------------------------------------
+
+  # Vulture - Dead code detection
+  - repo: https://github.com/PyCQA/vulture
+    rev: v2.13.0
+    hooks:
+      - id: vulture
+        name: vulture - Dead code detection
+        description: Find dead code in Python projects
+        entry: vulture
+        language: system
+        types: [python]
+        args: [
+          --min-confidence, 80,
+          --sort-by-size,
+        ]
+        exclude: ^tests/|scripts/|alembic/
+
+  # ---------------------------------------------------------------------------
   # Code Formatting
   # ---------------------------------------------------------------------------
 

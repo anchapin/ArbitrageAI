@@ -60,6 +60,10 @@ dev = [
     "httpx>=0.24.0",
     "pre-commit>=3.6.0",
     "mypy>=1.8.0",
+    "vulture>=2.0.0",
+    "flake8>=7.0.0",
+    "pylint>=3.0.0",
+    "detect-secrets>=1.4.0",
 ]
 tests = [
     "pytest>=7.0.0",
@@ -519,35 +523,15 @@ warn_unused_ignores = true
 warn_no_return = false
 follow_imports = "normal"
 ignore_missing_imports = true
-
-# Mypy paths - use explicit package bases
 namespace_packages = true
 explicit_package_bases = true
-
-# Incremental mode for faster checks
-incremental = true
+incremental = false
 cache_dir = ".mypy_cache"
-
-# Show error context
 show_error_context = true
 show_column_numbers = true
 show_error_codes = true
-
-# Pretty output
 pretty = true
-
-# Disable strict mode for incremental adoption
 strict = false
-
-# Exclude directories that don't need type checking
-[[tool.mypy.overrides]]
-ignore_errors = true
-module = [
-    "tests.*",
-    "alembic.*",
-    "scripts.*",
-    "refactor_models",
-]
 
 # Third-party packages without type stubs
 [[tool.mypy.overrides]]
@@ -564,18 +548,114 @@ module = [
     "httpx",
     "docker",
     "redis",
-    "boto3",
-    "opentelemetry.*",
-    "pydantic.*",
+    "pydantic",
+    "pydantic_settings",
     "fastapi",
     "uvicorn",
     "sqlalchemy",
+    "asyncpg",
+    "psycopg2",
     "alembic",
-    "croniter",
-    "pyjwt",
-    "schedule",
+    "celery",
+    "billiard",
+    "kombu",
+    "prometheus_client",
+    "opentelemetry",
+    "opentelemetry.sdk",
+    "opentelemetry.api",
+    "opentelemetry.sdk.trace",
+    "opentelemetry.sdk.metrics",
+    "opentelemetry.exporter",
+    "opentelemetry.instrumentation",
+    "opentelemetry.trace",
+    "opentelemetry.sdk.resources",
+    "opentelemetry.semconv",
+    "l10n",
+    "playsound",
+    "gitlab",
+    "jira",
+    "oauthlib",
+    "requests_oauthlib",
+    "authlib",
+    "celery.canvas",
+    "celery.result",
+    "pytest",
+    "pytest_asyncio",
+    "pytest_httpx",
+    "faker",
+    "aiosqlite",
+    "aioredis",
+    "aioboto3",
+    "moto",
+    "boto3",
+    "botocore",
+    "mypy.api",
+    "sklearn",
+    "numpy",
     "pandas",
-    "openpyxl",
-    "pypdf2",
 ]
+
+# Exclude directories that don't need type checking
+[[tool.mypy.overrides]]
+ignore_errors = true
+module = [
+    "tests.*",
+    "alembic.*",
+    "scripts.*",
+    "refactor_models",
+]
+
+
+
+# =============================================================================
+# Vulture - Dead Code Detection
+# =============================================================================
+[tool.vulture]
+paths = ["src"]
+min_confidence = 80
+sort_by_size = true
+exclude = [
+    "*/tests/*",
+    "*/test_*.py",
+    "*/__pycache__/*",
+    "*/.venv/*",
+    "*/venv/*",
+    "*/scripts/*",
+    "*/alembic/versions/*",
+]
+
+[tool.vulture.white_list]
+# Add project-specific exceptions here
+
+
+# =============================================================================
+# Flake8 - Code Quality (complements Ruff)
+# =============================================================================
+[tool.flake8]
+max-line-length = 100
+max-complexity = 12
+exclude = [
+    ".git",
+    "__pycache__",
+    ".venv",
+    "venv",
+    "*.egg-info",
+    "build",
+    "dist",
+    "alembic/versions",
+    "tests",
+    "scripts",
+]
+ignore = [
+    "E501",
+    "W191",
+    "E111",
+    "E114",
+    "E117",
+]
+per-file-ignores = [
+    "tests/*:S101,E402,F401",
+    "scripts/*:E402,F401",
+]
+
 

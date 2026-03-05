@@ -139,7 +139,7 @@ class ExperienceVectorDB:
 
     def __init__(
         self,
-        persist_directory: str = DEFAULT_CHROMA_DIR,
+        persist_directory: Path | str = DEFAULT_CHROMA_DIR,
         embedding_model: str = DEFAULT_EMBEDDING_MODEL,
         top_k: int = DEFAULT_TOP_K,
     ):
@@ -495,7 +495,7 @@ class ExperienceVectorDB:
 _experience_db: ExperienceVectorDB | None = None
 
 
-def get_experience_db() -> ExperienceVectorDB:
+def get_experience_db() -> ExperienceVectorDB | None:
     """Get the global ExperienceVectorDB instance.
 
     Creates the instance if it doesn't exist (singleton pattern).
