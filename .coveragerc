@@ -1,0 +1,76 @@
+# Coverage.py configuration for ArbitrageAI
+# This file provides additional coverage configuration options
+# that complement the [tool.coverage] section in pyproject.toml
+#
+# For more information on coverage.py configuration, see:
+# https://coverage.readthedocs.io/en/stable/config.html
+
+[run]
+# Source to measure coverage for
+source = src
+# Omit these patterns from coverage
+omit =
+    tests/*
+    */migrations/*
+    */__init__.py
+    */__main__.py
+    src/client_portal/*
+    */test_*
+    */conftest.py
+# Enable branch coverage
+branch = True
+# Enable parallel mode for pytest-xdist
+parallel = True
+# Concurrency settings for threading/multiprocessing
+concurrency =
+    thread
+    multiprocessing
+
+[report]
+# Exclude lines from coverage
+exclude_lines =
+    pragma: no cover
+    if TYPE_CHECKING:
+    raise NotImplementedError
+    @abstractmethod
+    @abc.abstractmethod
+    if __name__ == .__main__.:
+    import TYPE_CHECKING
+    if DEBUG:
+    if debug:
+    except ImportError:
+    if sys.platform:
+    if platform.system():
+    if sys.version_info
+    logger\.debug\(
+    logger\.info\(
+    def __repr__
+    \.\.\.
+    pass
+# Minimum coverage threshold (must be kept in sync with pyproject.toml)
+# fail_under is set in pyproject.toml to avoid duplication
+show_missing = True
+skip_covered = False
+skip_empty = True
+sort = Miss
+precision = 2
+
+[html]
+# HTML report settings
+directory = htmlcov
+title = ArbitrageAI Coverage Report
+show_contexts = True
+
+[xml]
+# XML report for CI/CD (e.g., SonarQube, Codecov)
+output = coverage.xml
+
+[json]
+# JSON report for programmatic access
+output = coverage.json
+
+# Per-module coverage configuration (optional)
+# These thresholds can be adjusted based on module priority
+[coverage:py]
+# Python version (informational)
+version = 3.10
