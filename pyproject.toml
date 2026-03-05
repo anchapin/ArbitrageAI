@@ -267,7 +267,10 @@ preview = true
 # Ignore commented-out code in config files
 "pyproject.toml" = ["ALL"]
 # __init__.py files can have unused imports and lazy imports (for re-exporting and circular dependency avoidance)
-"**/__init__.py" = ["F401", "F403", "D104", "PLC0415", "PLR6301"]
+# RUF067 is excluded because __init__ modules often need to import adapters/handlers for convenience
+"**/__init__.py" = ["F401", "F403", "D104", "PLC0415", "PLR6301", "RUF067"]
+# Disaster recovery code uses pathlib in async contexts - this is acceptable
+"src/api/disaster_recovery.py" = ["ASYNC240"]
 # Conftest can have unused fixtures and imports
 "**/conftest.py" = ["F401", "F403", "ARG", "D100", "D103"]
 # Scripts can use print statements
