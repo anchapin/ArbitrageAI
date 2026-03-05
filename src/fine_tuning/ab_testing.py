@@ -239,8 +239,9 @@ class ABTestFramework:
 
         return result
 
+    @staticmethod
     def _chi_squared_test(
-        self, accuracy_a: float, accuracy_b: float, n_a: int, n_b: int, alpha: float = 0.05,
+        accuracy_a: float, accuracy_b: float, n_a: int, n_b: int, alpha: float = 0.05,
     ) -> bool:
         """
         Perform chi-squared test for statistical significance.
@@ -298,7 +299,8 @@ class ABTestFramework:
         """
         return list(self.tests.values())
 
-    def recommend_winner(self, test_result: ABTestResult) -> str:
+    @staticmethod
+    def recommend_winner(test_result: ABTestResult) -> str:
         """
         Recommend a winner based on test results.
 

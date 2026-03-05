@@ -39,7 +39,8 @@ class AnalyticsEngine:
         self.cache_ttl = 300
         self.prediction_models = {}
 
-    def _get_cache_key(self, query_type: str, params: dict[str, Any]) -> str:
+    @staticmethod
+    def _get_cache_key(query_type: str, params: dict[str, Any]) -> str:
         """Generate cache key for query results."""
         return f"{query_type}:{hash(json.dumps(params, sort_keys=True))}"
 
@@ -60,7 +61,8 @@ class AnalyticsEngine:
             return self.cache[cache_key]["result"]
         return None
 
-    def _get_time_filter(self, time_range: str) -> datetime:
+    @staticmethod
+    def _get_time_filter(time_range: str) -> datetime:
         """Get time filter for queries."""
         now = datetime.now()
         if time_range == "24h":
@@ -289,7 +291,8 @@ class PredictiveAnalytics(AnalyticsEngine):
         labels = [f"Hour {i}" for i in range(len(results))]
         return TimeSeriesData(timestamps=timestamps, values=values, labels=labels)
 
-    def _train_prediction_model(self, data: TimeSeriesData) -> tuple[LinearRegression, float]:
+    @staticmethod
+    def _train_prediction_model(data: TimeSeriesData) -> tuple[LinearRegression, float]:
         """Train a prediction model using historical data."""
         if len(data.values) < 5:
             return LinearRegression(), 0.0
@@ -307,14 +310,16 @@ class PredictiveAnalytics(AnalyticsEngine):
 
         return model, accuracy
 
-    def _make_prediction(self, model: LinearRegression, horizon_hours: int) -> float:
+    @staticmethod
+    def _make_prediction(model: LinearRegression, horizon_hours: int) -> float:
         """Make prediction for future time point."""
         future_time = np.array([[horizon_hours]])
         prediction = model.predict(future_time)
         return float(prediction[0])
 
+    @staticmethod
     def _calculate_confidence_interval(
-        self, model: LinearRegression, data: TimeSeriesData, prediction: float,
+        model: LinearRegression, data: TimeSeriesData, prediction: float,
     ) -> tuple[float, float]:
         """Calculate confidence interval for prediction."""
         if len(data.values) < 2:
@@ -393,7 +398,8 @@ class AnomalyDetection(AnalyticsEngine):
         results = query.all()
         return [float(row[0] or 0) for row in results]
 
-    def _detect_isolation_forest_anomalies(self, data: list[float]) -> list[dict[str, Any]]:
+    @staticmethod
+    def _detect_isolation_forest_anomalies(data: list[float]) -> list[dict[str, Any]]:
         """Detect anomalies using Isolation Forest algorithm."""
         if len(data) < 20:
             return []
@@ -484,7 +490,8 @@ class PerformanceAnalytics(AnalyticsEngine):
 
         return metrics
 
-    def _analyze_resource_utilization(self) -> list[PerformanceMetric]:
+    @staticmethod
+    def _analyze_resource_utilization() -> list[PerformanceMetric]:
         """Analyze system resource utilization."""
         metrics = []
 
@@ -506,7 +513,8 @@ class PerformanceAnalytics(AnalyticsEngine):
 
         return metrics
 
-    def _analyze_user_experience(self) -> list[PerformanceMetric]:
+    @staticmethod
+    def _analyze_user_experience() -> list[PerformanceMetric]:
         """Analyze user experience metrics."""
         metrics = []
 

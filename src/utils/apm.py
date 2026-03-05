@@ -104,6 +104,12 @@ class APMManager:
     _initialized: bool = False
 
     def __new__(cls) -> "APMManager":
+        """
+        Create or return the singleton APMManager instance.
+
+        Returns:
+            The singleton APMManager instance
+        """
         if cls._instance is None:
             cls._instance = super().__new__(cls)
         return cls._instance
@@ -345,7 +351,8 @@ class APMManager:
 
         logger.info("✓ Created 11 metrics instruments")
 
-    def _setup_instrumentation(self) -> None:
+    @staticmethod
+    def _setup_instrumentation() -> None:
         """Auto-instrument framework libraries."""
         try:
             # FastAPI instrumentation
@@ -373,7 +380,8 @@ class APMManager:
         except Exception as e:
             logger.debug(f"Failed to instrument HTTP clients: {e}")
 
-    def _setup_propagators(self) -> None:
+    @staticmethod
+    def _setup_propagators() -> None:
         """Setup context propagators for distributed tracing."""
         # Build list of available propagators
         propagators = []

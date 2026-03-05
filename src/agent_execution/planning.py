@@ -547,7 +547,8 @@ class ContextExtractor:
 
         return context
 
-    def _extract_basic_insights(self, df) -> list[str]:
+    @staticmethod
+    def _extract_basic_insights(df) -> list[str]:
         """Extract basic statistical insights from the data."""
         # Numeric column statistics
         numeric_cols = df.select_dtypes(include=["number"]).columns
@@ -737,7 +738,8 @@ Generate the work plan as JSON."""
         except Exception as e:
             return {"success": False, "error": str(e)}
 
-    def _build_context_summary(self, context: dict[str, Any]) -> str:
+    @staticmethod
+    def _build_context_summary(context: dict[str, Any]) -> str:
         """Build a text summary of the extracted context."""
         parts = []
 
@@ -771,7 +773,8 @@ Generate the work plan as JSON."""
 
         return "\n".join(parts) if parts else "No context available"
 
-    def _parse_plan_json(self, content: str) -> dict[str, Any] | None:
+    @staticmethod
+    def _parse_plan_json(content: str) -> dict[str, Any] | None:
         """Parse JSON plan from LLM response."""
         # Try to find JSON in the response
         try:
@@ -898,7 +901,8 @@ class PlanExecutor:
 
             return {"success": False, "error": str(e), "execution_log": execution_log}
 
-    def _infer_task_type(self, plan: dict[str, Any]) -> str:
+    @staticmethod
+    def _infer_task_type(plan: dict[str, Any]) -> str:
         """Infer task type from work plan."""
         recommended = plan.get("recommended_chart_type", "")
         if recommended in {"bar", "line", "pie", "scatter", "histogram"}:
@@ -909,7 +913,8 @@ class PlanExecutor:
             return "document"
         return "auto"
 
-    def _infer_output_format(self, plan: dict[str, Any]) -> str:
+    @staticmethod
+    def _infer_output_format(plan: dict[str, Any]) -> str:
         """Infer output format from work plan."""
         output_format = plan.get("output_format", "")
         if output_format in {"image", "docx", "xlsx", "pdf"}:

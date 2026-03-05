@@ -492,7 +492,8 @@ class LegalContractTemplate:
 
                 self.document.add_paragraph()
 
-    def _generate_result(self, filename: str, output_format: str) -> dict:
+    @staticmethod
+    def _generate_result(filename: str, output_format: str) -> dict:
         """Generate the result dictionary."""
         try:
             with open(filename, "rb") as f:

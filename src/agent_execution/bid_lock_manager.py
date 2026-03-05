@@ -52,15 +52,18 @@ class BidLockManager:
         self._lock_conflicts: int = 0
         self._lock_timeouts: int = 0
 
-    def _make_lock_key(self, marketplace_id: str, posting_id: str) -> str:
+    @staticmethod
+    def _make_lock_key(marketplace_id: str, posting_id: str) -> str:
         """Create a lock key from marketplace and posting IDs."""
         return f"bid:lock:{marketplace_id}:{posting_id}"
 
-    def _get_db(self) -> Session:
+    @staticmethod
+    def _get_db() -> Session:
         """Create a new database session."""
         return SessionLocal()
 
-    def _cleanup_expired_locks(self, db: Session) -> int:
+    @staticmethod
+    def _cleanup_expired_locks(db: Session) -> int:
         """Remove expired locks from the database."""
         now = time.time()
         expired = (

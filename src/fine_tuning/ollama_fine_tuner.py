@@ -258,8 +258,9 @@ logger.info(f"Fine-tuning complete! Model saved to ./models/{{OUTPUT_MODEL_NAME}
         logger.info(f"Generated Unsloth script: {output_path}")
         return output_path
 
+    @staticmethod
     def estimate_training_time(
-        self, num_examples: int, num_epochs: int = 3, gpu_type: str = "a100",
+        num_examples: int, num_epochs: int = 3, gpu_type: str = "a100",
     ) -> dict[str, Any]:
         """
         Estimate fine-tuning time based on dataset size and GPU.

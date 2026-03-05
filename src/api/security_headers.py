@@ -263,7 +263,8 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 
         return "; ".join(policy)
 
-    def _is_cacheable_endpoint(self, path: str) -> bool:
+    @staticmethod
+    def _is_cacheable_endpoint(path: str) -> bool:
         """
         Check if endpoint should be cached.
 

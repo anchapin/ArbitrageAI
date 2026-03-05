@@ -137,6 +137,12 @@ class Task(Base):
     outputs = relationship("TaskOutput", cascade="all, delete-orphan")
 
     def to_dict(self):
+        """
+        Convert Task to dictionary.
+
+        Returns:
+            Dictionary containing core task data with billing information.
+        """
         return {
             "id": self.id,
             "title": self.title,
@@ -192,6 +198,12 @@ class TaskExecution(Base):
     completed_at = Column(DateTime, nullable=True)
 
     def to_dict(self):
+        """
+        Convert TaskExecution to dictionary.
+
+        Returns:
+            Dictionary containing execution status, retry count, and timestamps.
+        """
         return {
             "id": self.id,
             "task_id": self.task_id,
@@ -246,6 +258,12 @@ class TaskPlanning(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     def to_dict(self):
+        """
+        Convert TaskPlanning to dictionary.
+
+        Returns:
+            Dictionary containing planning status, content, and timestamps.
+        """
         return {
             "id": self.id,
             "task_id": self.task_id,
@@ -294,6 +312,12 @@ class TaskReview(Base):
     reviewed_at = Column(DateTime, nullable=True)
 
     def to_dict(self):
+        """
+        Convert TaskReview to dictionary.
+
+        Returns:
+            Dictionary containing review status, approval, and feedback.
+        """
         return {
             "id": self.id,
             "task_id": self.task_id,
@@ -344,6 +368,12 @@ class TaskArena(Base):
     completed_at = Column(DateTime, nullable=True)
 
     def to_dict(self):
+        """
+        Convert TaskArena to dictionary.
+
+        Returns:
+            Dictionary containing arena competition results and scores.
+        """
         return {
             "id": self.id,
             "task_id": self.task_id,
@@ -385,6 +415,12 @@ class TaskOutput(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     def to_dict(self):
+        """
+        Convert TaskOutput to dictionary.
+
+        Returns:
+            Dictionary containing output type, URL, and timestamp.
+        """
         return {
             "id": self.id,
             "task_id": self.task_id,

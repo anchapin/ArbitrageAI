@@ -38,8 +38,8 @@ class DatasetBuilder:
         )
         Path(self.output_dir).mkdir(parents=True, exist_ok=True)
 
+    @staticmethod
     def build_from_distillation(
-        self,
         min_rating: int = 4,
         domain: str | None = None,
         task_type: str | None = None,
@@ -78,7 +78,8 @@ class DatasetBuilder:
             logger.error(f"Failed to load distillation data: {e}")
             return []
 
-    def validate_examples(self, examples: list[dict[str, Any]]) -> dict[str, Any]:
+    @staticmethod
+    def validate_examples(examples: list[dict[str, Any]]) -> dict[str, Any]:
         """
         Validate dataset examples for completeness and quality.
 
@@ -119,7 +120,8 @@ class DatasetBuilder:
             "validation_rate": len(valid_examples) / len(examples) if examples else 0,
         }
 
-    def to_openai_format(self, examples: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    @staticmethod
+    def to_openai_format(examples: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """
         Convert examples to OpenAI fine-tuning format.
 
@@ -136,7 +138,8 @@ class DatasetBuilder:
                     ],
                 } for ex in examples]
 
-    def to_alpaca_format(self, examples: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    @staticmethod
+    def to_alpaca_format(examples: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """
         Convert examples to Alpaca fine-tuning format.
 
@@ -151,7 +154,8 @@ class DatasetBuilder:
             for ex in examples
         ]
 
-    def to_jsonl_format(self, examples: list[dict[str, Any]]) -> str:
+    @staticmethod
+    def to_jsonl_format(examples: list[dict[str, Any]]) -> str:
         """
         Convert examples to JSONL format.
 
@@ -164,8 +168,9 @@ class DatasetBuilder:
         lines = [json.dumps(ex) for ex in examples]
         return "\n".join(lines)
 
+    @staticmethod
     def split_train_test(
-        self, examples: list[dict[str, Any]], train_ratio: float = 0.8,
+        examples: list[dict[str, Any]], train_ratio: float = 0.8,
     ) -> tuple:
         """
         Split examples into train and test sets.
@@ -222,7 +227,8 @@ class DatasetBuilder:
         logger.info(f"Saved {len(examples)} examples to {filepath}")
         return filepath
 
-    def get_dataset_stats(self, examples: list[dict[str, Any]]) -> dict[str, Any]:
+    @staticmethod
+    def get_dataset_stats(examples: list[dict[str, Any]]) -> dict[str, Any]:
         """
         Get statistics about the dataset.
 

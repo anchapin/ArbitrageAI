@@ -94,6 +94,14 @@ class GracefulShutdownManager:
         shutdown_timeout: float = 30.0,
         max_state_age_hours: int = 24,
     ):
+        """
+        Initialize the graceful shutdown manager.
+
+        Args:
+            state_dir: Directory for state persistence (default: "data/shutdown_state")
+            shutdown_timeout: Shutdown timeout in seconds (default: 30.0)
+            max_state_age_hours: Maximum state age in hours (default: 24)
+        """
         self.state_dir = Path(state_dir)
         self.shutdown_timeout = shutdown_timeout
         self.max_state_age_hours = max_state_age_hours
@@ -245,8 +253,8 @@ class GracefulShutdownManager:
             self.state = ShutdownState.SHUTDOWN_COMPLETE
             self._shutdown_event.set()
 
+    @staticmethod
     async def _run_handler_with_timeout(
-        self,
         name: str,
         handler: Callable[[], Awaitable[None]],
     ) -> None:
@@ -313,7 +321,8 @@ class GracefulShutdownManager:
         except Exception as e:
             logger.error(f"Failed to recover state: {e}")
 
-    async def _recover_task(self, task_data: dict[str, Any]) -> None:
+    @staticmethod
+    async def _recover_task(task_data: dict[str, Any]) -> None:
         """
         Recover a task from previous state.
 

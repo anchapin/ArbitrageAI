@@ -182,7 +182,8 @@ class LocalDockerSandbox:
             logger.warning(f"Warning: Error checking for image: {e}")
             return False
 
-    def _extract_artifacts(self, host_dir: str) -> list[SandboxArtifact]:
+    @staticmethod
+    def _extract_artifacts(host_dir: str) -> list[SandboxArtifact]:
         """
         Extract artifacts from the host directory.
 

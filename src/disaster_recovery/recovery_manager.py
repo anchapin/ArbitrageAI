@@ -36,7 +36,8 @@ class RecoveryManager:
         self.recovery_dir.mkdir(parents=True, exist_ok=True)
         self.recovery_plans = self._load_recovery_plans()
 
-    def _load_recovery_plans(self) -> dict[str, RecoveryPlan]:
+    @staticmethod
+    def _load_recovery_plans() -> dict[str, RecoveryPlan]:
         """Load recovery plans from configuration."""
         plans = {}
 
@@ -218,8 +219,9 @@ class RecoveryManager:
             logger.error(f"Database restoration failed: {e}")
             raise
 
+    @staticmethod
     async def _restore_configuration(
-        self, recovery_op: RecoveryOperation, backup_metadata: RecoveryOperation,
+        recovery_op: RecoveryOperation, backup_metadata: RecoveryOperation,
     ):
         """Restore configuration from backup."""
         try:
@@ -239,8 +241,9 @@ class RecoveryManager:
             logger.error(f"Configuration restoration failed: {e}")
             raise
 
+    @staticmethod
     async def _restore_files(
-        self, recovery_op: RecoveryOperation, backup_metadata: RecoveryOperation,
+        recovery_op: RecoveryOperation, backup_metadata: RecoveryOperation,
     ):
         """Restore files from backup."""
         try:
@@ -289,11 +292,13 @@ class RecoveryManager:
             recovery_op.validation_results["database_validation"] = False
             raise
 
-    async def _update_system_configuration(self, recovery_op: RecoveryOperation):
+    @staticmethod
+    async def _update_system_configuration(recovery_op: RecoveryOperation):
         """Update system configuration after recovery."""
         logger.info("System configuration updated")
 
-    async def _stop_services(self):
+    @staticmethod
+    async def _stop_services():
         """Stop running services before recovery."""
         logger.info("Services stopped for recovery")
 
@@ -345,6 +350,7 @@ class RecoveryManager:
             logger.error(f"Recovery plan test failed: {e}")
             return {"success": False, "error": str(e)}
 
-    async def get_recovery_status(self, operation_id: str) -> RecoveryOperation | None:
+    @staticmethod
+    async def get_recovery_status(operation_id: str) -> RecoveryOperation | None:
         """Get status of a recovery operation."""
         return None

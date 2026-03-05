@@ -345,7 +345,8 @@ class WebSocketManager:
 
         await self._send_to_client(client_id, WebSocketMessageType.NOTIFICATION, asdict(data))
 
-    async def _send_message(self, websocket: WebSocket, message_type: WebSocketMessageType, data: dict[str, Any]):
+    @staticmethod
+    async def _send_message(websocket: WebSocket, message_type: WebSocketMessageType, data: dict[str, Any]):
         """Send a message to a specific websocket."""
         if websocket.application_state == WebSocketState.CONNECTED:
             message = WebSocketMessage(

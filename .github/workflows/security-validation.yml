@@ -34,10 +34,15 @@ jobs:
           FOUND_ISSUES=0
           
           for pattern in "${PATTERNS[@]}"; do
-            # Search in .env files, config files, and YAML files
-            # Exclude .env as it's gitignored and only check .env.example
-            # Also exclude files that legitimately contain these patterns for detection purposes
-            if grep -r --include="*.env*" --include="*.yml" --include="*.yaml" --include="*.toml" --exclude=".env" "$pattern" . 2>/dev/null | grep -v "src/utils/secrets.py" | grep -v "tests/" | grep -v ".github/workflows/" | grep -v ".env.example"; then
+            # Search in config files and YAML files (exclude .env files - they're gitignored)
+            # Also exclude files that legitimately contain these patterns for detection purposes:
+            # - src/utils/secrets.py - defines detection patterns
+            # - src/config/__init__.py - config validation
+            # - src/utils/client_auth.py - auth patterns
+            # - tests/ - test files
+            # - .github/workflows/ - workflow files contain patterns
+            # - .env.example - documentation placeholders
+            if grep -r --include="*.yml" --include="*.yaml" --include="*.toml" --include="*.py" --include="*.js" --include="*.ts" "$pattern" . 2>/dev/null | grep -v "src/utils/secrets.py" | grep -v "src/config/__init__.py" | grep -v "src/utils/client_auth.py" | grep -v "tests/" | grep -v ".github/workflows/" | grep -v ".env.example"; then
               echo "❌ Found insecure default pattern: $pattern"
               FOUND_ISSUES=1
             fi

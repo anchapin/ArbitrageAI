@@ -525,9 +525,15 @@ class QuotaManager:
     """
 
     def __init__(self):
+        """
+        Initialize the quota enforcer.
+
+        Sets up logging for quota enforcement operations.
+        """
         self.logger = logging.getLogger(__name__)
 
-    def get_current_billing_month(self) -> str:
+    @staticmethod
+    def get_current_billing_month() -> str:
         """Get current billing month in YYYY-MM format."""
         now = datetime.now(timezone.utc)
         return now.strftime("%Y-%m")
@@ -680,8 +686,8 @@ class QuotaManager:
         db.refresh(usage)
         return usage
 
+    @staticmethod
     def check_threshold_and_alert(
-        self,
         db: Session,
         user_id: str,
         quota: UserQuota,
@@ -729,8 +735,8 @@ class QuotaManager:
 
         return alert
 
+    @staticmethod
     def log_rate_limit(
-        self,
         db: Session,
         user_id: str,
         endpoint: str,

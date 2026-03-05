@@ -299,8 +299,9 @@ class AutoThresholdManager:
 
         return petition
 
+    @staticmethod
     def _log_auto_increase(
-        self, db: Session, evaluation: dict[str, Any], petition: ThresholdPetition,
+        db: Session, evaluation: dict[str, Any], petition: ThresholdPetition,
     ):
         """
         Log auto-threshold increase attempt for audit trail.
@@ -319,7 +320,8 @@ class AutoThresholdManager:
             f"  Criteria Met: {evaluation.get('status') == AutoThresholdStatus.MET_CRITERIA.value}",
         )
 
-    def rollback_auto_increase(self, petition_id: str, reasoning: str) -> bool:
+    @staticmethod
+    def rollback_auto_increase(petition_id: str, reasoning: str) -> bool:
         """
         Roll back an auto-increased threshold.
 

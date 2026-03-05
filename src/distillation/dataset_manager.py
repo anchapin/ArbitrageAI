@@ -105,7 +105,8 @@ class DistillationDatasetManager:
 
         return examples
 
-    def validate_example(self, example: dict[str, Any]) -> tuple:
+    @staticmethod
+    def validate_example(example: dict[str, Any]) -> tuple:
         """
         Validate a single example for training quality.
 
@@ -291,7 +292,8 @@ class DistillationDatasetManager:
             "avg_prompt_length": self._avg_field(curated, "prompt", len),
         }
 
-    def _count_by_field(self, examples: list[dict], field: str) -> dict:
+    @staticmethod
+    def _count_by_field(examples: list[dict], field: str) -> dict:
         """Count examples by a specific field."""
         counts = {}
         for ex in examples:
@@ -299,8 +301,9 @@ class DistillationDatasetManager:
             counts[value] = counts.get(value, 0) + 1
         return counts
 
+    @staticmethod
     def _avg_field(
-        self, examples: list[dict], field: str, transform: Callable = len,
+        examples: list[dict], field: str, transform: Callable = len,
     ) -> float:
         """Calculate average of a field."""
         if not examples:

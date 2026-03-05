@@ -11,11 +11,18 @@ logger = logging.getLogger("ExperienceLogger")
 class ExperienceLogger:
     """
     Logs successful AI executions to build a fine-tuning dataset.
+
     Formats data into standard instruction/response JSONL format
     suitable for Unsloth / Hugging Face training.
     """
 
     def __init__(self, dataset_path: str = "data/experience_dataset.jsonl"):
+        """
+        Initialize the experience logger.
+
+        Args:
+            dataset_path: Path to the JSONL dataset file (default: "data/experience_dataset.jsonl")
+        """
         self.dataset_path = dataset_path
 
         # Ensure the data directory exists
@@ -23,8 +30,15 @@ class ExperienceLogger:
 
     def log_success(self, task) -> bool:
         """
-        Extracts successful planning and execution data from a completed task
-        and appends it to the dataset. Strips PII.
+        Extracts successful planning and execution data from a completed task.
+
+        Appends the data to the dataset after stripping PII.
+
+        Args:
+            task: The completed task object
+
+        Returns:
+            True if logging was successful, False otherwise
         """
         try:
             # 1. Skip if there's no work plan (we only want to train on planned successes)

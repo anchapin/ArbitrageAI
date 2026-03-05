@@ -103,6 +103,12 @@ class LLMHealthChecker:
     """
 
     def __init__(self, check_interval_seconds: int = 30):
+        """
+        Initialize the LLM health checker.
+
+        Args:
+            check_interval_seconds: Interval between health checks (default: 30)
+        """
         self.check_interval_seconds = check_interval_seconds
         self.health_status: dict[str, HealthMetrics] = {}
         self._check_thread: threading.Thread | None = None
