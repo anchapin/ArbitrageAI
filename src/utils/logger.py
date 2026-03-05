@@ -1,5 +1,4 @@
-"""
-Robust Logging Configuration.
+"""Robust Logging Configuration.
 
 Provides centralized logging with:
 - Rotating file handler (prevents huge log files)
@@ -27,8 +26,7 @@ def setup_logging(
     backup_count: int = 5,
     log_level: int = logging.INFO,
 ) -> logging.Logger:
-    """
-    Setup logging with rotating file handler and console output.
+    """Setup logging with rotating file handler and console output.
 
     Args:
         log_dir: Directory for log files
@@ -85,8 +83,7 @@ def setup_logging(
 
 
 def get_logger(name: str) -> logging.Logger:
-    """
-    Get a logger instance for the specified module.
+    """Get a logger instance for the specified module.
 
     Args:
         name: Usually __name__ from the calling module
@@ -108,13 +105,17 @@ _root_logger = setup_logging()
 
 
 class TaskLogger:
-    """
-    Specialized logger for task processing with structured logging.
+    """Specialized logger for task processing with structured logging.
 
     Provides convenient methods for common task operations.
     """
 
     def __init__(self, task_id: str | None = None):
+        """Initialize the task logger.
+
+        Args:
+            task_id: Optional task identifier for log correlation
+        """
         self.logger = get_logger("task_processor")
         self.task_id = task_id
 
@@ -195,6 +196,10 @@ class ArenaLogger:
     """Specialized logger for arena operations."""
 
     def __init__(self):
+        """Initialize the arena logger.
+
+        Sets up logging for arena competition operations.
+        """
         self.logger = get_logger("arena")
 
     def competition_start(self, competition_type: str, agent_a: str, agent_b: str):

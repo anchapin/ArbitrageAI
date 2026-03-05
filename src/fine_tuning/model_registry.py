@@ -1,5 +1,4 @@
-"""
-Model Registry and Versioning.
+"""Model Registry and Versioning.
 
 Tracks fine-tuned models, their versions, performance metrics, and deployment status.
 """
@@ -44,8 +43,7 @@ class FinetuneJobRecord:
 
 
 class ModelRegistry:
-    """
-    Registry for fine-tuned models with versioning and history.
+    """Registry for fine-tuned models with versioning and history.
 
     Features:
     - Track fine-tuned model versions
@@ -56,8 +54,7 @@ class ModelRegistry:
     """
 
     def __init__(self, registry_path: str | None = None):
-        """
-        Initialize model registry.
+        """Initialize model registry.
 
         Args:
             registry_path: Path to registry file
@@ -96,8 +93,7 @@ class ModelRegistry:
         cost: float = 0.0,
         metadata: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
-        """
-        Register a new fine-tuned model version.
+        """Register a new fine-tuned model version.
 
         Args:
             model_name: Name of the model
@@ -137,8 +133,7 @@ class ModelRegistry:
         return record
 
     def get_model_version(self, model_name: str, version: int | None = None) -> dict | None:
-        """
-        Get a specific model version.
+        """Get a specific model version.
 
         Args:
             model_name: Model name
@@ -160,8 +155,7 @@ class ModelRegistry:
         return None
 
     def list_model_versions(self, model_name: str) -> list[dict[str, Any]]:
-        """
-        List all versions of a model.
+        """List all versions of a model.
 
         Args:
             model_name: Model name
@@ -174,8 +168,7 @@ class ModelRegistry:
     def set_model_status(
         self, model_name: str, status: str, version: int | None = None,
     ) -> bool:
-        """
-        Update model status.
+        """Update model status.
 
         Args:
             model_name: Model name
@@ -198,8 +191,7 @@ class ModelRegistry:
         return True
 
     def rollback_model(self, model_name: str, target_version: int) -> bool:
-        """
-        Rollback to a previous model version.
+        """Rollback to a previous model version.
 
         Args:
             model_name: Model name
@@ -227,8 +219,7 @@ class ModelRegistry:
         return True
 
     def get_deployment_status(self) -> dict[str, dict[str, Any]]:
-        """
-        Get current deployment status of all models.
+        """Get current deployment status of all models.
 
         Returns:
             Dictionary of deployed models
@@ -248,8 +239,7 @@ class ModelRegistry:
         return deployed
 
     def get_cost_summary(self, model_name: str | None = None) -> dict[str, Any]:
-        """
-        Get cost summary for model(s).
+        """Get cost summary for model(s).
 
         Args:
             model_name: Optional specific model
@@ -279,8 +269,7 @@ class ModelRegistry:
         return summary
 
     def export_registry(self, filepath: str) -> None:
-        """
-        Export registry to JSON file.
+        """Export registry to JSON file.
 
         Args:
             filepath: Path to export
@@ -290,8 +279,7 @@ class ModelRegistry:
         logger.info(f"Exported model registry to {filepath}")
 
     def get_registry_stats(self) -> dict[str, Any]:
-        """
-        Get statistics about the registry.
+        """Get statistics about the registry.
 
         Returns:
             Statistics dictionary

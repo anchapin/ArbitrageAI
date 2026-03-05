@@ -1,5 +1,4 @@
-"""
-Bid Lock Manager Factory.
+"""Bid Lock Manager Factory.
 
 Smart factory that chooses between Redis and in-memory implementations
 based on environment configuration and availability.
@@ -22,8 +21,7 @@ logger = get_logger(__name__)
 async def create_bid_lock_manager(
     use_redis: bool | None = None, ttl: int = 300,
 ) -> Union["RedisBidLockManager", "BidLockManager"]:
-    """
-    Create appropriate BidLockManager based on configuration.
+    """Create appropriate BidLockManager based on configuration.
 
     Args:
         use_redis: Override Redis preference (None = auto-detect from config)
@@ -82,8 +80,7 @@ _bid_lock_manager: Union["RedisBidLockManager", "BidLockManager"] | None = None
 
 
 async def get_bid_lock_manager() -> Union["RedisBidLockManager", "BidLockManager"]:
-    """
-    Get or create the global BidLockManager instance (auto-detect).
+    """Get or create the global BidLockManager instance (auto-detect).
 
     Returns:
         Global BidLockManager (Redis or in-memory)
@@ -97,8 +94,7 @@ async def get_bid_lock_manager() -> Union["RedisBidLockManager", "BidLockManager
 async def init_bid_lock_manager(
     use_redis: bool | None = None, ttl: int = 300,
 ) -> Union["RedisBidLockManager", "BidLockManager"]:
-    """
-    Initialize the global BidLockManager with custom settings.
+    """Initialize the global BidLockManager with custom settings.
 
     Args:
         use_redis: Override Redis preference

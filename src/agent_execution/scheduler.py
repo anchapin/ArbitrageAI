@@ -1,5 +1,4 @@
-"""
-Advanced Task Scheduling System.
+"""Advanced Task Scheduling System.
 
 Implements cron expression parsing, recurring tasks, and intelligent scheduling
 for ArbitrageAI. Supports both one-time and recurring task scheduling with
@@ -131,6 +130,10 @@ class IntelligentScheduler:
     """Handles intelligent scheduling logic."""
 
     def __init__(self):
+        """Initialize the intelligent scheduler.
+
+        Sets up peak hours and batch window configuration.
+        """
         self.peak_hours = [(9, 17)]  # 9 AM to 5 PM business hours
         self.batch_window_size = 30  # minutes
 
@@ -185,6 +188,11 @@ class TaskScheduler:
     """Main task scheduler with cron expression support."""
 
     def __init__(self, db_session: AsyncSession | None = None):
+        """Initialize the task scheduler.
+
+        Args:
+            db_session: Optional async database session
+        """
         self.db_session = db_session
         self.validator = CronExpressionValidator()
         self.intelligent_scheduler = IntelligentScheduler()
@@ -236,8 +244,7 @@ class TaskScheduler:
         priority: int = 1,
         max_runs: int | None = None,
     ) -> str:
-        """
-        Schedule a new task.
+        """Schedule a new task.
 
         Args:
             task_data: Task data to be passed to the execution callback

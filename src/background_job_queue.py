@@ -1,5 +1,4 @@
-"""
-Async Background Job Queue.
+"""Async Background Job Queue.
 
 Non-blocking queue for RAG enrichment and distillation tasks.
 Prevents blocking task execution on secondary systems like ChromaDB.
@@ -50,8 +49,7 @@ class Job:
 
 
 class BackgroundJobQueue:
-    """
-    Async background job queue for non-blocking operations.
+    """Async background job queue for non-blocking operations.
 
     Features:
     - Queue jobs without blocking main thread
@@ -61,6 +59,12 @@ class BackgroundJobQueue:
     """
 
     def __init__(self, max_workers: int = 3, max_queue_size: int = 100):
+        """Initialize the background job queue.
+
+        Args:
+            max_workers: Maximum concurrent workers (default: 3)
+            max_queue_size: Maximum queue size (default: 100)
+        """
         self.max_workers = max_workers
         self.max_queue_size = max_queue_size
 
@@ -121,8 +125,7 @@ class BackgroundJobQueue:
         timeout_seconds: float | None = None,
         fallback_func: Callable | None = None,
     ) -> str:
-        """
-        Queue a background job with optional timeout and fallback.
+        """Queue a background job with optional timeout and fallback.
 
         Args:
             job_type: Type of job (for tracking)

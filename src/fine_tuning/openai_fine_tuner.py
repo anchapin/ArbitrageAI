@@ -1,5 +1,4 @@
-"""
-OpenAI Fine-Tuning Integration.
+"""OpenAI Fine-Tuning Integration.
 
 Handles fine-tuning with OpenAI's API for gpt-3.5-turbo and gpt-4o-mini.
 """
@@ -15,8 +14,7 @@ logger = logging.getLogger(__name__)
 
 
 class OpenAIFineTuner:
-    """
-    Fine-tunes models using OpenAI's API.
+    """Fine-tunes models using OpenAI's API.
 
     Supports:
     - gpt-3.5-turbo
@@ -32,8 +30,7 @@ class OpenAIFineTuner:
     SUPPORTED_MODELS: ClassVar[list] = ["gpt-3.5-turbo", "gpt-4o-mini"]
 
     def __init__(self, api_key: str | None = None):
-        """
-        Initialize OpenAI fine-tuner.
+        """Initialize OpenAI fine-tuner.
 
         Args:
             api_key: OpenAI API key (defaults to OPENAI_API_KEY env var)
@@ -45,8 +42,7 @@ class OpenAIFineTuner:
         self.client = OpenAI(api_key=self.api_key)
 
     def upload_training_file(self, filepath: str) -> str:
-        """
-        Upload training file to OpenAI.
+        """Upload training file to OpenAI.
 
         Args:
             filepath: Path to JSONL training file
@@ -73,8 +69,7 @@ class OpenAIFineTuner:
         learning_rate_multiplier: float = 1.0,
         n_epochs: int = 3,
     ) -> dict[str, Any]:
-        """
-        Create a fine-tuning job.
+        """Create a fine-tuning job.
 
         Args:
             model: Base model (gpt-3.5-turbo or gpt-4o-mini)
@@ -118,8 +113,7 @@ class OpenAIFineTuner:
         }
 
     def get_job_status(self, job_id: str) -> dict[str, Any]:
-        """
-        Get fine-tuning job status.
+        """Get fine-tuning job status.
 
         Args:
             job_id: Fine-tuning job ID
@@ -141,8 +135,7 @@ class OpenAIFineTuner:
         }
 
     def cancel_job(self, job_id: str) -> bool:
-        """
-        Cancel a fine-tuning job.
+        """Cancel a fine-tuning job.
 
         Args:
             job_id: Fine-tuning job ID
@@ -159,8 +152,7 @@ class OpenAIFineTuner:
             return False
 
     def list_jobs(self, limit: int = 10) -> list:
-        """
-        List recent fine-tuning jobs.
+        """List recent fine-tuning jobs.
 
         Args:
             limit: Maximum number of jobs to return
@@ -182,8 +174,7 @@ class OpenAIFineTuner:
 
     @staticmethod
     def estimate_cost(training_tokens: int, model: str) -> dict[str, float]:
-        """
-        Estimate fine-tuning cost.
+        """Estimate fine-tuning cost.
 
         OpenAI pricing (as of 2024):
         - gpt-3.5-turbo: $0.003 per 1K input tokens, $0.006 per 1K output tokens
@@ -225,8 +216,7 @@ class OpenAIFineTuner:
         }
 
     def delete_fine_tuned_model(self, model_id: str) -> bool:
-        """
-        Delete a fine-tuned model.
+        """Delete a fine-tuned model.
 
         Args:
             model_id: Fine-tuned model ID

@@ -1,5 +1,4 @@
-"""
-Market Scanner Module.
+"""Market Scanner Module.
 
 Scans freelance marketplaces for potential tasks using Playwright.
 """
@@ -250,7 +249,8 @@ class MarketScanner:
 
         return job_postings
 
-    async def _extract_job_posting(self, element, index: int) -> JobPosting | None:  # noqa: PLR6301
+    @staticmethod
+    async def _extract_job_posting(element, index: int) -> JobPosting | None:
         """Extract job posting data from a page element."""
         try:
             title_elem = await element.query_selector(["h2", "h3", ".title", ".job-title"])

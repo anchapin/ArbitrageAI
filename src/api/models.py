@@ -1,5 +1,4 @@
-"""
-Core models module - backward-compatible re-exports.
+"""Core models module - backward-compatible re-exports.
 
 This module maintains backward compatibility by re-exporting all models
 from the new modular structure. New code should import directly from

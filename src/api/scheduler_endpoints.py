@@ -1,5 +1,4 @@
-"""
-API endpoints for advanced task scheduling and cron expressions.
+"""API endpoints for advanced task scheduling and cron expressions.
 
 Provides REST endpoints for scheduling tasks with cron expressions,
 managing recurring tasks, and viewing schedule analytics.
@@ -79,8 +78,7 @@ async def schedule_task(
     background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_async_db),  # noqa: B008
 ):
-    """
-    Schedule a new task with cron expression.
+    """Schedule a new task with cron expression.
 
     Supports both one-time and recurring tasks.
     """
@@ -141,8 +139,7 @@ async def schedule_daily_task_endpoint(
     background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_async_db),  # noqa: B008
 ):
-    """
-    Schedule a task to run daily at a specific time.
+    """Schedule a task to run daily at a specific time.
 
     Convenience endpoint for daily scheduling.
     """
@@ -190,8 +187,7 @@ async def schedule_weekly_task_endpoint(
     time_of_day: str = "09:00",
     db: AsyncSession = Depends(get_async_db),  # noqa: B008
 ):
-    """
-    Schedule a task to run weekly on a specific day and time.
+    """Schedule a task to run weekly on a specific day and time.
 
     Convenience endpoint for weekly scheduling.
     """
@@ -244,8 +240,7 @@ async def schedule_monthly_task_endpoint(
     time_of_day: str = "09:00",
     db: AsyncSession = Depends(get_async_db),  # noqa: B008
 ):
-    """
-    Schedule a task to run monthly on a specific day and time.
+    """Schedule a task to run monthly on a specific day and time.
 
     Convenience endpoint for monthly scheduling.
     """

@@ -1,5 +1,4 @@
-"""
-Base Document Template.
+"""Base Document Template.
 
 This is the foundational template for generating Word documents using python-docx.
 It provides a pre-tested Python script that:
@@ -26,8 +25,7 @@ import pandas as pd
 
 
 class BaseDocumentTemplate:
-    """
-    Base template for document generation.
+    """Base template for document generation.
 
     This template provides common functionality for creating Word documents
     with structured content from JSON data.
@@ -57,8 +55,7 @@ class BaseDocumentTemplate:
         output_format: str = "docx",
         **kwargs,
     ) -> dict:
-        """
-        Generate a document from JSON content and CSV data.
+        """Generate a document from JSON content and CSV data.
 
         Args:
             content_json: Structured JSON content from LLM
@@ -379,8 +376,7 @@ if __name__ == "__main__":
 def get_template_code(
     content_json: dict[str, Any], csv_data: str, output_format: str = "docx",
 ) -> str:
-    """
-    Get the executable template code with injected content.
+    """Get the executable template code with injected content.
 
     Args:
         content_json: Structured JSON content

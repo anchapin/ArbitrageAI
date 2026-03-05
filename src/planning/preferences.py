@@ -1,5 +1,4 @@
-"""
-Planning Module - Client Preference Memory and Context Extraction.
+"""Planning Module - Client Preference Memory and Context Extraction.
 
 This module handles client preference memory and context extraction
 for the Research & Plan workflow.
@@ -16,8 +15,7 @@ logger = get_logger(__name__)
 def get_client_preferences_from_tasks(
     client_email: str, db_session=None,
 ) -> dict[str, Any]:
-    """
-    Query the Task table for previous review_feedback from the same client_email.
+    """Query the Task table for previous review_feedback from the same client_email.
 
     Extracts preferences from past review feedback to help the agent
     avoid failing ArtifactReviewer step.

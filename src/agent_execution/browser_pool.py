@@ -1,5 +1,4 @@
-"""
-Browser Connection Pool for Playwright.
+"""Browser Connection Pool for Playwright.
 
 Manages browser instances and page allocation with proper resource cleanup.
 
@@ -36,8 +35,7 @@ class PooledBrowser:
 
 
 class BrowserPool:
-    """
-    Connection pool for Playwright browsers.
+    """Connection pool for Playwright browsers.
 
     Features:
     - Limits concurrent browser instances
@@ -47,8 +45,7 @@ class BrowserPool:
     """
 
     def __init__(self, max_browsers: int = 3, headless: bool = True):
-        """
-        Initialize browser pool.
+        """Initialize browser pool.
 
         Args:
             max_browsers: Maximum concurrent browsers
@@ -98,8 +95,7 @@ class BrowserPool:
             logger.info("Browser pool stopped")
 
     async def acquire_browser(self) -> Any:
-        """
-        Acquire a browser instance from the pool.
+        """Acquire a browser instance from the pool.
 
         Reuses healthy browsers, creates new ones if needed.
 
@@ -117,7 +113,7 @@ class BrowserPool:
             for browser_id, pooled in list(self._browsers.items()):
                 if not pooled.in_use:
                     # Check health and error count
-                    if await BrowserPool._is_browser_healthy(pooled.browser):
+                    if await self._is_browser_healthy(pooled.browser):
                         # Skip browsers with too many errors
                         if pooled.error_count < 5:
                             pooled.in_use = True
@@ -160,8 +156,7 @@ class BrowserPool:
         return await self.acquire_browser()
 
     async def release_browser(self, browser: Any, error: bool = False):
-        """
-        Release a browser back to the pool.
+        """Release a browser back to the pool.
 
         Args:
             browser: Browser instance to release
@@ -187,8 +182,7 @@ class BrowserPool:
         await self.release_browser(browser, error=True)
 
     async def cleanup_stale_browsers(self, max_age_minutes: int = 60):
-        """
-        Remove browsers that haven't been used in a while.
+        """Remove browsers that haven't been used in a while.
 
         Args:
             max_age_minutes: Maximum age for a browser (in minutes)
@@ -213,8 +207,7 @@ class BrowserPool:
 
     @staticmethod
     async def _is_browser_healthy(browser: Any) -> bool:
-        """
-        Check if a browser is still responsive.
+        """Check if a browser is still responsive.
 
         Args:
             browser: Browser to check

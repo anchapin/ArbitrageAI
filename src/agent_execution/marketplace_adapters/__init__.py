@@ -1,5 +1,4 @@
-"""
-Marketplace Adapters Package.
+"""Marketplace Adapters Package.
 
 Provides extensible adapter pattern for multiple freelance marketplaces.
 Implements unified interface for searching, bidding, and tracking across

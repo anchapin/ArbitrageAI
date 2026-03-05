@@ -1,5 +1,4 @@
-"""
-Auto-Threshold Increase Module.
+"""Auto-Threshold Increase Module.
 
 Implements automatic threshold increase when the agent consistently
 performs well. Evaluates performance periodically and creates
@@ -40,8 +39,7 @@ class AutoThresholdStatus(PyEnum):
 
 
 class AutoThresholdManager:
-    """
-    Auto-Threshold Increase Manager.
+    """Auto-Threshold Increase Manager.
 
     Evaluates agent performance periodically and creates petitions
     for threshold increases when the agent consistently performs well.
@@ -69,8 +67,7 @@ class AutoThresholdManager:
         )
 
     def evaluate_and_petition(self) -> dict[str, Any]:
-        """
-        Evaluate performance and create petition if criteria met.
+        """Evaluate performance and create petition if criteria met.
 
         Returns:
             Dictionary with evaluation results
@@ -112,7 +109,7 @@ class AutoThresholdManager:
             petition = self._create_petition(db, evaluation)
 
             # Log the auto-increase attempt
-            _log_auto_increase(db, evaluation, petition)
+            self._log_auto_increase(db, evaluation, petition)
 
             return {
                 "status": AutoThresholdStatus.MET_CRITERIA.value,
@@ -132,8 +129,7 @@ class AutoThresholdManager:
             db.close()
 
     def _evaluate_performance(self, db: Session) -> dict[str, Any]:
-        """
-        Evaluate agent performance against auto-threshold criteria.
+        """Evaluate agent performance against auto-threshold criteria.
 
         Args:
             db: Database session
@@ -234,8 +230,7 @@ class AutoThresholdManager:
     def _create_petition(
         self, db: Session, evaluation: dict[str, Any],
     ) -> ThresholdPetition:
-        """
-        Create a threshold petition based on evaluation.
+        """Create a threshold petition based on evaluation.
 
         Args:
             db: Database session
@@ -303,8 +298,7 @@ class AutoThresholdManager:
     def _log_auto_increase(
         db: Session, evaluation: dict[str, Any], petition: ThresholdPetition,
     ):
-        """
-        Log auto-threshold increase attempt for audit trail.
+        """Log auto-threshold increase attempt for audit trail.
 
         Args:
             db: Database session
@@ -322,8 +316,7 @@ class AutoThresholdManager:
 
     @staticmethod
     def rollback_auto_increase(petition_id: str, reasoning: str) -> bool:
-        """
-        Roll back an auto-increased threshold.
+        """Roll back an auto-increased threshold.
 
         Allows human to undo an auto-increase if it was incorrect.
 

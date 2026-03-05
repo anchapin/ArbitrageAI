@@ -1,5 +1,4 @@
-"""
-WebSocket Manager.
+"""WebSocket Manager.
 
 Manages WebSocket connections for real-time updates.
 """

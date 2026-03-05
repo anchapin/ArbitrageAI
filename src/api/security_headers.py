@@ -1,5 +1,4 @@
-"""
-Security Headers Middleware for FastAPI.
+"""Security Headers Middleware for FastAPI.
 
 Issue #149: Add security headers middleware to FastAPI application
 
@@ -37,8 +36,7 @@ logger = get_logger(__name__)
 
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
-    """
-    Middleware to add security headers to all HTTP responses.
+    """Middleware to add security headers to all HTTP responses.
 
     This middleware implements defense-in-depth by adding multiple
     layers of security through HTTP response headers.
@@ -72,8 +70,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         # Environment
         is_development: bool = False,
     ):
-        """
-        Initialize security headers middleware.
+        """Initialize security headers middleware.
 
         Args:
             app: FastAPI application
@@ -115,8 +112,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
             logger.warning("Development mode: Some security headers relaxed")
 
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
-        """
-        Process request and add security headers to response.
+        """Process request and add security headers to response.
 
         Args:
             request: Incoming HTTP request
@@ -134,8 +130,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
             return await call_next(request)
 
     def _add_security_headers(self, response: Response, request: Request) -> Response:
-        """
-        Add security headers to response.
+        """Add security headers to response.
 
         Args:
             response: HTTP response
@@ -188,7 +183,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         # 8. Cache-Control
         # Prevents caching of sensitive API responses
         # Only add to non-static, non-public endpoints
-        if not SecurityHeadersMiddleware._is_cacheable_endpoint(request.url.path):
+        if not self._is_cacheable_endpoint(request.url.path):
             response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, private"
             response.headers["Pragma"] = "no-cache"
             response.headers["Expires"] = "0"
@@ -225,8 +220,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         return response
 
     def _build_csp_policy(self, request: Request) -> str:
-        """
-        Build Content-Security-Policy header value.
+        """Build Content-Security-Policy header value.
 
         Args:
             request: HTTP request for context
@@ -265,8 +259,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 
     @staticmethod
     def _is_cacheable_endpoint(path: str) -> bool:
-        """
-        Check if endpoint should be cached.
+        """Check if endpoint should be cached.
 
         Static assets and public endpoints can be cached.
         API endpoints with sensitive data should not be cached.
@@ -290,8 +283,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 def create_security_headers_middleware(
     is_development: bool = False,
 ) -> SecurityHeadersMiddleware:
-    """
-    Factory function to create security headers middleware with config-based settings.
+    """Factory function to create security headers middleware with config-based settings.
 
     Args:
         is_development: Whether running in development mode
@@ -333,8 +325,7 @@ def create_security_headers_middleware(
 
 # Convenience function for easy integration
 def setup_security_headers(app, is_development: bool = False):
-    """
-    Setup security headers middleware for FastAPI application.
+    """Setup security headers middleware for FastAPI application.
 
     Usage:
         from fastapi import FastAPI

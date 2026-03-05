@@ -1,5 +1,4 @@
-"""
-Recovery Manager Module.
+"""Recovery Manager Module.
 
 Manages recovery operations for the platform including database,
 configuration, and file restoration.

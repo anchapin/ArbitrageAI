@@ -1,3 +1,8 @@
+"""Database module for API.
+
+This module provides database connection and session management for the API.
+"""
+
 import os
 from pathlib import Path
 

@@ -1,5 +1,4 @@
-"""
-Backup Manager Module.
+"""Backup Manager Module.
 
 Manages backup operations for the platform including full, incremental,
 and point-in-time backups.

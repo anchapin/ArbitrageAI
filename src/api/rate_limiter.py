@@ -1,5 +1,4 @@
-"""
-Redis-backed distributed rate limiting and quota enforcement.
+"""Redis-backed distributed rate limiting and quota enforcement.
 
 Issue #45: API Rate Limiting, Quotas, and Usage Analytics
 Issue #192: Replace In-Memory Rate Limiting with Redis
@@ -91,8 +90,7 @@ end
 
 
 class RedisRateLimiter:
-    """
-    Distributed rate limiter using Redis with atomic Lua scripts.
+    """Distributed rate limiter using Redis with atomic Lua scripts.
 
     Features:
     - Uses Redis INCR/EXPIRE for atomic operations
@@ -119,8 +117,7 @@ class RedisRateLimiter:
         default_ttl: int = 2,
         burst_ttl: int = 3600,
     ):
-        """
-        Initialize Redis rate limiter.
+        """Initialize Redis rate limiter.
 
         Args:
             redis_url: Complete Redis URL (takes priority if provided)
@@ -213,8 +210,7 @@ class RedisRateLimiter:
         burst_limit: int = 50,
         endpoint: str | None = None,
     ) -> tuple[bool, dict[str, Any]]:
-        """
-        Check if request is allowed within rate limits.
+        """Check if request is allowed within rate limits.
 
         Uses sliding window algorithm with burst capacity:
         - Current second: increment counter
@@ -317,8 +313,7 @@ class RedisRateLimiter:
         rps_limit: int,
         burst_limit: int,
     ) -> tuple[bool, dict[str, Any]]:
-        """
-        Check rate limit using in-memory window (fallback).
+        """Check rate limit using in-memory window (fallback).
 
         This is used when Redis is unavailable. Note that this does NOT
         provide distributed rate limiting across workers.
@@ -360,8 +355,7 @@ class RedisRateLimiter:
             del self._in_memory_windows[k]
 
     def reset(self, user_id: str, endpoint: str | None = None) -> bool:
-        """
-        Reset rate limit counters for a user.
+        """Reset rate limit counters for a user.
 
         Args:
             user_id: User identifier
@@ -389,8 +383,7 @@ class RedisRateLimiter:
             return False
 
     def get_usage(self, user_id: str, endpoint: str | None = None) -> dict[str, Any]:
-        """
-        Get current rate limit usage for a user.
+        """Get current rate limit usage for a user.
 
         Args:
             user_id: User identifier
@@ -425,8 +418,7 @@ class RedisRateLimiter:
 
 
 class RateLimiter(RedisRateLimiter):
-    """
-    Backward-compatible rate limiter that maintains the original API.
+    """Backward-compatible rate limiter that maintains the original API.
 
     This class extends RedisRateLimiter to maintain backward compatibility
     with the original RateLimiter API that accepts UserQuota objects.
@@ -442,8 +434,7 @@ class RateLimiter(RedisRateLimiter):
         redis_url: str | None = None,
         **kwargs,
     ):
-        """
-        Initialize rate limiter with backward compatibility.
+        """Initialize rate limiter with backward compatibility.
 
         Args:
             redis_client: Existing Redis client (for backward compatibility)
@@ -477,8 +468,7 @@ class RateLimiter(RedisRateLimiter):
         rps_limit: int | None = None,
         burst_limit: int | None = None,
     ) -> tuple[bool, dict]:
-        """
-        Check if request is allowed within rate limits.
+        """Check if request is allowed within rate limits.
 
         Supports both the original API (with UserQuota) and the new API
         (with explicit rps_limit/burst_limit parameters).
@@ -514,8 +504,7 @@ class RateLimiter(RedisRateLimiter):
 
 
 class QuotaManager:
-    """
-    Manages monthly quota enforcement and tracking.
+    """Manages monthly quota enforcement and tracking.
 
     Handles:
     - Task quota enforcement
@@ -525,6 +514,10 @@ class QuotaManager:
     """
 
     def __init__(self):
+        """Initialize the quota enforcer.
+
+        Sets up logging for quota enforcement operations.
+        """
         self.logger = logging.getLogger(__name__)
 
     @staticmethod

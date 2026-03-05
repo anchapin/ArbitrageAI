@@ -1,5 +1,4 @@
-"""
-Disaster Recovery Models.
+"""Disaster Recovery Models.
 
 Enums and dataclasses for backup and recovery operations.
 """

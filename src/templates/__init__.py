@@ -1,5 +1,4 @@
-"""
-Template Library for Zero-Shot Document Generation.
+"""Template Library for Zero-Shot Document Generation.
 
 This module provides pre-tested Python script templates for standard deliverables.
 Instead of asking the LLM to generate Python code from scratch, the system
@@ -48,8 +47,7 @@ class TemplateRegistry:
 
     @classmethod
     def get_template(cls, template_name: str):
-        """
-        Get a template by name.
+        """Get a template by name.
 
         Args:
             template_name: Name of the template to retrieve
@@ -77,8 +75,7 @@ def generate_document(
     output_format: str = "docx",
     **kwargs,
 ) -> dict:
-    """
-    Generate a document using a template.
+    """Generate a document using a template.
 
     Args:
         template_name: Name of the template to use

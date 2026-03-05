@@ -1,5 +1,4 @@
-"""
-Redis-Based Distributed Lock Manager for Bid Placement.
+"""Redis-Based Distributed Lock Manager for Bid Placement.
 
 This module implements a Redis-backed distributed lock mechanism to prevent
 race conditions when multiple scanner instances attempt to place bids on the
@@ -32,16 +31,14 @@ logger = get_logger(__name__)
 
 
 class RedisBidLockManager:
-    """
-    Redis-backed distributed lock manager for bid placement.
+    """Redis-backed distributed lock manager for bid placement.
 
     Uses Redis SET with NX (atomic compare-and-set) and EX (auto-expiration).
     Safe across multiple processes/instances/servers.
     """
 
     def __init__(self, redis_url: str | None = None, ttl: int = 300):
-        """
-        Initialize the RedisBidLockManager.
+        """Initialize the RedisBidLockManager.
 
         Args:
             redis_url: Redis connection URL (default: from config/env)
@@ -101,8 +98,7 @@ class RedisBidLockManager:
         timeout: float = 10.0,
         holder_id: str | None = None,
     ) -> bool:
-        """
-        Try to acquire a distributed lock for bidding on a specific posting.
+        """Try to acquire a distributed lock for bidding on a specific posting.
 
         Uses Redis SET with NX (atomic compare-and-set).
         Retries with exponential backoff until timeout.
@@ -185,8 +181,7 @@ class RedisBidLockManager:
         posting_id: str,
         holder_id: str | None = None,
     ) -> bool:
-        """
-        Release a previously acquired lock.
+        """Release a previously acquired lock.
 
         Uses Redis DELETE with value check to prevent releasing locks
         held by other processes.
@@ -243,8 +238,7 @@ class RedisBidLockManager:
         timeout: float = 10.0,
         holder_id: str | None = None,
     ):
-        """
-        Async context manager for acquiring and releasing locks.
+        """Async context manager for acquiring and releasing locks.
 
         Usage:
             async with bid_lock_manager.with_lock("upwork", "posting_123"):
