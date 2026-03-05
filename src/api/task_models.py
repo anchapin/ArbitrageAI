@@ -28,8 +28,7 @@ Base = declarative_base()
 
 
 class Task(Base):
-    """
-    Core Task model - reduced to essential fields only.
+    """Core Task model - reduced to essential fields only.
 
     Contains only the essential information needed for task tracking,
     client management, and billing. All other concerns are delegated to
@@ -407,8 +406,7 @@ class Task(Base):
             )
 
     def __init__(self, **kwargs):
-        """
-        Initialize the Task model.
+        """Initialize the Task model.
 
         Args:
             **kwargs: Keyword arguments for task initialization.
@@ -442,8 +440,7 @@ class Task(Base):
             setattr(self, k, v)
 
     def to_dict(self):
-        """
-        Convert the Task model to a dictionary representation.
+        """Convert the Task model to a dictionary representation.
 
         Returns:
             Dictionary containing task data including flattened hybrid properties
@@ -542,8 +539,7 @@ class TaskExecution(Base):
     task = relationship("Task", back_populates="execution")
 
     def to_dict(self):
-        """
-        Convert TaskExecution to dictionary.
+        """Convert TaskExecution to dictionary.
 
         Returns:
             Dictionary containing execution status, retry count, and timestamps.
@@ -590,8 +586,7 @@ class TaskPlanning(Base):
     task = relationship("Task", back_populates="planning")
 
     def to_dict(self):
-        """
-        Convert TaskPlanning to dictionary.
+        """Convert TaskPlanning to dictionary.
 
         Returns:
             Dictionary containing planning status, content, and timestamps.
@@ -639,8 +634,7 @@ class TaskReview(Base):
     task = relationship("Task", back_populates="review")
 
     def to_dict(self):
-        """
-        Convert TaskReview to dictionary.
+        """Convert TaskReview to dictionary.
 
         Returns:
             Dictionary containing review status, approval, and feedback.
@@ -676,8 +670,7 @@ class TaskArena(Base):
     task = relationship("Task", back_populates="arena")
 
     def to_dict(self):
-        """
-        Convert TaskArena to dictionary.
+        """Convert TaskArena to dictionary.
 
         Returns:
             Dictionary containing arena competition results and scores.
@@ -710,8 +703,7 @@ class TaskOutput(Base):
     task = relationship("Task", back_populates="outputs")
 
     def to_dict(self):
-        """
-        Convert TaskOutput to dictionary.
+        """Convert TaskOutput to dictionary.
 
         Returns:
             Dictionary containing output type and URL.

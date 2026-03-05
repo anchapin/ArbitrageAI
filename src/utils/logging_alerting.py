@@ -1,5 +1,4 @@
-"""
-Logging and Alerting System (Issue #103).
+"""Logging and Alerting System (Issue #103).
 
 Provides comprehensive logging and alerting capabilities:
 - Structured logging with multiple levels
@@ -74,6 +73,7 @@ class Alert:
     triggered_count: int = 0
 
     def __post_init__(self):
+        """Set default timestamp if not provided."""
         if not self.timestamp:
             self.timestamp = datetime.now(timezone.utc).isoformat()
 
@@ -91,8 +91,7 @@ class AlertRule:
 
 
 class StructuredLogger:
-    """
-    Structured logger with JSON formatting and context support.
+    """Structured logger with JSON formatting and context support.
 
     Features:
     - JSON structured logging
@@ -109,8 +108,7 @@ class StructuredLogger:
         enable_json: bool = True,
         context: dict[str, Any] | None = None,
     ):
-        """
-        Initialize the structured logger.
+        """Initialize the structured logger.
 
         Args:
             name: Logger name
@@ -234,8 +232,7 @@ class StructuredLogger:
 
 
 class AlertManager:
-    """
-    Alert management system with rule-based triggering.
+    """Alert management system with rule-based triggering.
 
     Features:
     - Rule-based alert triggering
@@ -250,8 +247,7 @@ class AlertManager:
         webhook_url: str | None = None,
         slack_webhook: str | None = None,
     ):
-        """
-        Initialize the alert manager.
+        """Initialize the alert manager.
 
         Args:
             log_dir: Directory for alert logs (default: "logs/alerts")
@@ -288,8 +284,7 @@ class AlertManager:
         metadata: dict[str, Any] | None = None,
         channel: AlertChannel = AlertChannel.LOG,
     ) -> None:
-        """
-        Send an alert.
+        """Send an alert.
 
         Args:
             name: Alert name
@@ -382,8 +377,7 @@ class AlertManager:
             logging.error(f"Slack alert error: {e}")
 
     def check_rules(self, metrics: dict[str, Any]) -> None:
-        """
-        Check alert rules against current metrics.
+        """Check alert rules against current metrics.
 
         Args:
             metrics: Current system metrics
@@ -406,8 +400,7 @@ class AlertManager:
 
     @staticmethod
     def _evaluate_condition(condition: str, metrics: dict[str, Any]) -> bool:
-        """
-        Evaluate an alert condition using a safe AST-based expression parser.
+        """Evaluate an alert condition using a safe AST-based expression parser.
 
         Example condition: "error_count > 10"
 
@@ -504,8 +497,7 @@ class AlertManager:
                 _check_blocked_nodes(child)
 
         def eval_node(node):
-            """
-            Safely evaluate an AST node.
+            """Safely evaluate an AST node.
 
             This function only processes whitelisted node types and operators.
             Any attempt to use blocked operations will raise ValueError.
@@ -633,8 +625,7 @@ class AlertManager:
 
 
 class LogAnalyzer:
-    """
-    Log analysis and metrics extraction.
+    """Log analysis and metrics extraction.
 
     Features:
     - Log parsing and filtering
@@ -644,8 +635,7 @@ class LogAnalyzer:
     """
 
     def __init__(self, log_dir: str = "logs"):
-        """
-        Initialize the log analyzer.
+        """Initialize the log analyzer.
 
         Args:
             log_dir: Directory containing log files (default: "logs")
@@ -707,8 +697,7 @@ class LogAnalyzer:
         baseline: dict[str, Any],
         threshold: float = 2.0,
     ) -> list[str]:
-        """
-        Detect anomalies in metrics compared to baseline.
+        """Detect anomalies in metrics compared to baseline.
 
         Args:
             metrics: Current metrics

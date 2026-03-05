@@ -1,5 +1,4 @@
-"""
-Task State Machine Validation.
+"""Task State Machine Validation.
 
 Prevents invalid state transitions in the refactored Task model.
 
@@ -21,8 +20,7 @@ logger = get_logger(__name__)
 
 
 class TaskStateMachine:
-    """
-    Validates task state transitions.
+    """Validates task state transitions.
 
     Enforces a state machine to prevent impossible task status transitions.
     """
@@ -51,8 +49,7 @@ class TaskStateMachine:
 
     @staticmethod
     def is_valid_transition(current_status: TaskStatus, new_status: TaskStatus) -> bool:
-        """
-        Check if transition is valid.
+        """Check if transition is valid.
 
         Args:
             current_status: Current task status
@@ -68,8 +65,7 @@ class TaskStateMachine:
 
     @staticmethod
     def validate_transition(current_status: TaskStatus, new_status: TaskStatus) -> None:
-        """
-        Validate transition and raise exception if invalid.
+        """Validate transition and raise exception if invalid.
 
         Args:
             current_status: Current task status
@@ -99,8 +95,7 @@ class ExecutionStateMachine:
     def is_valid_transition(
         current_status: ExecutionStatus, new_status: ExecutionStatus,
     ) -> bool:
-        """
-        Check if a state transition is valid for execution status.
+        """Check if a state transition is valid for execution status.
 
         Args:
             current_status: The current execution status
@@ -128,8 +123,7 @@ class PlanningStateMachine:
     def is_valid_transition(
         current_status: PlanningStatus, new_status: PlanningStatus,
     ) -> bool:
-        """
-        Check if a state transition is valid for planning status.
+        """Check if a state transition is valid for planning status.
 
         Args:
             current_status: The current planning status
@@ -157,8 +151,7 @@ class ReviewStateMachine:
     def is_valid_transition(
         current_status: ReviewStatus, new_status: ReviewStatus,
     ) -> bool:
-        """
-        Check if a state transition is valid for review status.
+        """Check if a state transition is valid for review status.
 
         Args:
             current_status: The current review status
@@ -175,8 +168,7 @@ class ReviewStateMachine:
 def validate_task_transition(
     task_id: str, current_status: TaskStatus, new_status: TaskStatus,
 ) -> None:
-    """
-    Validate and log task status transition.
+    """Validate and log task status transition.
 
     Args:
         task_id: Task ID for logging

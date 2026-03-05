@@ -1,5 +1,4 @@
-"""
-Financial endpoints module.
+"""Financial endpoints module.
 
 This module contains pricing calculation, wallet management,
 and financial tracking endpoints.
@@ -34,8 +33,7 @@ DOMAIN_PRICES = DOMAIN_BASE_RATES
 def calculate_task_price(
     domain: str, complexity: str = "medium", urgency: str = "standard",
 ) -> int:
-    """
-    Calculate task price using the Task Price Formula.
+    """Calculate task price using the Task Price Formula.
 
     Price = Base Rate x Complexity x Urgency.
 

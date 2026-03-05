@@ -1,5 +1,4 @@
-"""
-Error Hierarchy and Categorization.
+"""Error Hierarchy and Categorization.
 
 Defines error categories for smart retry logic:
 - TransientError: Temporary failures (network, timeout, resource issues)
@@ -19,8 +18,7 @@ class AgentError(Exception):
     retryable: bool = False
 
     def __init__(self, message: str, original_error: Exception | None = None):
-        """
-        Initialize error with message and optional original error.
+        """Initialize error with message and optional original error.
 
         Args:
             message: Human-readable error message
@@ -32,8 +30,7 @@ class AgentError(Exception):
 
 
 class TransientError(AgentError):
-    """
-    Temporary failures that may succeed on retry.
+    """Temporary failures that may succeed on retry.
 
     Examples: network timeout, rate limit, resource exhaustion, connection reset
     """
@@ -55,8 +52,7 @@ class ResourceExhaustedError(TransientError):
 
 
 class PermanentError(AgentError):
-    """
-    Permanent failures that won't succeed on retry.
+    """Permanent failures that won't succeed on retry.
 
     Examples: authentication failure, validation error, resource not found
     """
@@ -78,8 +74,7 @@ class NotFoundError(PermanentError):
 
 
 class FatalError(AgentError):
-    """
-    System-critical failures that require immediate attention.
+    """System-critical failures that require immediate attention.
 
     Examples: data corruption, security breach, unrecoverable state
     """
@@ -133,8 +128,7 @@ ERROR_CLASSIFICATION: dict[type[Exception], type[AgentError]] = {
 def categorize_exception(
     exception: Exception,
 ) -> tuple[type[AgentError], str]:
-    """
-    Categorize an exception into error type.
+    """Categorize an exception into error type.
 
     Args:
         exception: The exception to categorize
@@ -158,8 +152,7 @@ def categorize_exception(
 
 
 def should_retry(exception: Exception) -> bool:
-    """
-    Determine if an exception should trigger a retry.
+    """Determine if an exception should trigger a retry.
 
     Args:
         exception: The exception to evaluate
@@ -180,8 +173,7 @@ def wrap_exception(
     exception: Exception,
     context: str = "",
 ) -> AgentError:
-    """
-    Wrap a raw exception with categorized AgentError.
+    """Wrap a raw exception with categorized AgentError.
 
     Args:
         exception: The exception to wrap

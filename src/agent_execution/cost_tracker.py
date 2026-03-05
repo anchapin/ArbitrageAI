@@ -1,5 +1,4 @@
-"""
-Cost Tracking Module for ROI Analysis.
+"""Cost Tracking Module for ROI Analysis.
 
 Tracks actual costs per bid/task and calculates ROI to identify
 profitable strategies and marketplaces.
@@ -38,8 +37,7 @@ CostEntry = CostEntryModel
 
 
 class CostTracker:
-    """
-    Cost Tracker for ROI Analysis.
+    """Cost Tracker for ROI Analysis.
 
     Tracks costs and revenue to calculate ROI for bids, tasks, and strategies.
     Provides insights into profitable operations and areas for optimization.
@@ -59,8 +57,7 @@ class CostTracker:
         strategy_type: str | None = None,
         metadata: str | None = None,
     ) -> CostEntry:
-        """
-        Track a cost entry.
+        """Track a cost entry.
 
         Args:
             cost_type: Type of cost (llm, sandbox, bid, marketplace, other)
@@ -117,8 +114,7 @@ class CostTracker:
         task_id: str | None = None,
         bid_id: str | None = None,
     ) -> bool:
-        """
-        Add revenue to a cost entry and calculate ROI.
+        """Add revenue to a cost entry and calculate ROI.
 
         Args:
             revenue_cents: Revenue amount in cents
@@ -180,8 +176,7 @@ class CostTracker:
     def calculate_roi_by_marketplace(
         marketplace: str | None = None,
     ) -> dict[str, Any]:
-        """
-        Calculate ROI by marketplace.
+        """Calculate ROI by marketplace.
 
         Args:
             marketplace: Optional specific marketplace to filter
@@ -257,8 +252,7 @@ class CostTracker:
     def calculate_roi_by_strategy(
         strategy_type: str | None = None,
     ) -> dict[str, Any]:
-        """
-        Calculate ROI by bidding strategy.
+        """Calculate ROI by bidding strategy.
 
         Args:
             strategy_type: Optional specific strategy to filter
@@ -334,8 +328,7 @@ class CostTracker:
         self,
         min_entries: int = 10,
     ) -> list[dict[str, Any]]:
-        """
-        Get list of profitable strategies sorted by ROI.
+        """Get list of profitable strategies sorted by ROI.
 
         Args:
             min_entries: Minimum number of entries to consider a strategy valid
@@ -370,8 +363,7 @@ class CostTracker:
         task_id: str | None = None,
         bid_id: str | None = None,
     ) -> list[CostEntry]:
-        """
-        Get cost history.
+        """Get cost history.
 
         Args:
             limit: Maximum number of entries to return

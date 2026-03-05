@@ -96,6 +96,8 @@ exclude = [
     "scripts/",
     # Temporary/refactor files
     "refactor_models.py",
+    # Legacy compatibility file (not used, kept for reference)
+    "src/api/main_original.py",
 ]
 line-length = 100
 target-version = "py310"

@@ -1,5 +1,4 @@
-"""
-Analytics Engines.
+"""Analytics Engines.
 
 Core analytics engines for KPI, predictive, anomaly, and performance analytics.
 """

@@ -1,5 +1,4 @@
-"""
-Refactored Task Model Using Composition Pattern.
+"""Refactored Task Model Using Composition Pattern.
 
 Decompose the monolithic Task model into focused entities:
 - Task: Core task information only
@@ -96,8 +95,7 @@ class OutputType(PyEnum):
 
 
 class Task(Base):
-    """
-    Core Task model - reduced to essential fields only.
+    """Core Task model - reduced to essential fields only.
 
     Contains only the essential information needed for task tracking,
     client management, and billing. All other concerns are delegated to
@@ -137,8 +135,7 @@ class Task(Base):
     outputs = relationship("TaskOutput", cascade="all, delete-orphan")
 
     def to_dict(self):
-        """
-        Convert Task to dictionary.
+        """Convert Task to dictionary.
 
         Returns:
             Dictionary containing core task data with billing information.
@@ -167,8 +164,7 @@ class Task(Base):
 
 
 class TaskExecution(Base):
-    """
-    Task execution state and results.
+    """Task execution state and results.
 
     Tracks the execution-specific information: status, retries, errors,
     logs, sandbox results, and artifacts.
@@ -198,8 +194,7 @@ class TaskExecution(Base):
     completed_at = Column(DateTime, nullable=True)
 
     def to_dict(self):
-        """
-        Convert TaskExecution to dictionary.
+        """Convert TaskExecution to dictionary.
 
         Returns:
             Dictionary containing execution status, retry count, and timestamps.
@@ -225,8 +220,7 @@ class TaskExecution(Base):
 
 
 class TaskPlanning(Base):
-    """
-    Task planning and research results.
+    """Task planning and research results.
 
     Tracks planning-specific information: status, plan content,
     research findings, and generated files.
@@ -258,8 +252,7 @@ class TaskPlanning(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     def to_dict(self):
-        """
-        Convert TaskPlanning to dictionary.
+        """Convert TaskPlanning to dictionary.
 
         Returns:
             Dictionary containing planning status, content, and timestamps.
@@ -282,8 +275,7 @@ class TaskPlanning(Base):
 
 
 class TaskReview(Base):
-    """
-    Task review and feedback.
+    """Task review and feedback.
 
     Tracks review-specific information: approval status, feedback,
     escalation requirements.
@@ -312,8 +304,7 @@ class TaskReview(Base):
     reviewed_at = Column(DateTime, nullable=True)
 
     def to_dict(self):
-        """
-        Convert TaskReview to dictionary.
+        """Convert TaskReview to dictionary.
 
         Returns:
             Dictionary containing review status, approval, and feedback.
@@ -337,8 +328,7 @@ class TaskReview(Base):
 
 
 class TaskArena(Base):
-    """
-    Arena competition results.
+    """Arena competition results.
 
     Tracks A/B testing data between different agent configurations,
     models, and strategies.
@@ -368,8 +358,7 @@ class TaskArena(Base):
     completed_at = Column(DateTime, nullable=True)
 
     def to_dict(self):
-        """
-        Convert TaskArena to dictionary.
+        """Convert TaskArena to dictionary.
 
         Returns:
             Dictionary containing arena competition results and scores.
@@ -394,8 +383,7 @@ class TaskArena(Base):
 
 
 class TaskOutput(Base):
-    """
-    Task output results (polymorphic).
+    """Task output results (polymorphic).
 
     Stores the various outputs a task can produce: images, documents,
     spreadsheets, etc. One task can have multiple outputs.
@@ -415,8 +403,7 @@ class TaskOutput(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     def to_dict(self):
-        """
-        Convert TaskOutput to dictionary.
+        """Convert TaskOutput to dictionary.
 
         Returns:
             Dictionary containing output type, URL, and timestamp.

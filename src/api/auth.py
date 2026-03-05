@@ -1,5 +1,4 @@
-"""
-Authentication and OAuth endpoints for ArbitrageAI.
+"""Authentication and OAuth endpoints for ArbitrageAI.
 
 Handles:
 - OAuth integration (Upwork, Freelancer, Fiverr)
@@ -30,8 +29,7 @@ logger = get_logger(__name__)
 
 
 async def initiate_oauth(platform: str, redirect_uri: str | None = None):
-    """
-    Initiate OAuth flow for a marketplace platform.
+    """Initiate OAuth flow for a marketplace platform.
 
     Args:
         platform: Marketplace platform (upwork, freelancer, fiverr)
@@ -58,8 +56,7 @@ async def oauth_callback(
     error: str | None = None,
     db: Session = Depends(get_db),  # noqa: B008
 ):
-    """
-    Handle OAuth callback from marketplace platform.
+    """Handle OAuth callback from marketplace platform.
 
     Args:
         platform: Marketplace platform
@@ -89,8 +86,7 @@ async def oauth_callback(
 
 
 async def get_oauth_status(platform: str):
-    """
-    Get OAuth connection status for a platform.
+    """Get OAuth connection status for a platform.
 
     Args:
         platform: Marketplace platform
@@ -107,8 +103,7 @@ async def get_oauth_status(platform: str):
 
 
 async def refresh_oauth_token(platform: str):
-    """
-    Refresh OAuth access token for a platform.
+    """Refresh OAuth access token for a platform.
 
     Args:
         platform: Marketplace platform
@@ -125,8 +120,7 @@ async def refresh_oauth_token(platform: str):
 
 
 async def revoke_oauth_token(platform: str):
-    """
-    Revoke OAuth access token for a platform.
+    """Revoke OAuth access token for a platform.
 
     Args:
         platform: Marketplace platform
@@ -152,8 +146,7 @@ async def get_client_task_history(
     token: str,
     db: Session = Depends(get_db),  # noqa: B008
 ):
-    """
-    Get task history for a client by email (authenticated).
+    """Get task history for a client by email (authenticated).
 
     Requires a valid HMAC token proving ownership of the email address.
     The token is provided when a task is created.
@@ -234,8 +227,7 @@ async def get_client_discount_info(
     token: str,
     db: Session = Depends(get_db),  # noqa: B008
 ):
-    """
-    Get discount information for a client (authenticated).
+    """Get discount information for a client (authenticated).
 
     Args:
         email: Client email address

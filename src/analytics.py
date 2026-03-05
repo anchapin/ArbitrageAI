@@ -1,5 +1,4 @@
-"""
-Advanced Analytics Dashboard with Predictive Insights.
+"""Advanced Analytics Dashboard with Predictive Insights.
 
 This module provides comprehensive analytics and predictive insights
 for the ArbitrageAI platform.

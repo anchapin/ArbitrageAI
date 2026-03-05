@@ -1,5 +1,4 @@
-"""
-E2B Code Interpreter Executor - Core Module.
+"""E2B Code Interpreter Executor - Core Module.
 
 This module provides the core sandbox execution functionality.
 For task routing and document generation, use the specialized modules:
@@ -46,8 +45,7 @@ def _execute_code_in_sandbox(
     output_format: str = "image",
     is_complex_task: bool = False,
 ) -> tuple:
-    """
-    Execute Python code in a sandbox (Docker or E2B) and return the result.
+    """Execute Python code in a sandbox (Docker or E2B) and return the result.
 
     Args:
         code: The Python code to execute

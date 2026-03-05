@@ -1,5 +1,4 @@
-"""
-Task Execution Handlers.
+"""Task Execution Handlers.
 
 Specialized handlers for different task types and domains.
 """

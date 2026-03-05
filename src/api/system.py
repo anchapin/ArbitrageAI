@@ -1,5 +1,4 @@
-"""
-System configuration and lifespan module.
+"""System configuration and lifespan module.
 
 This module contains FastAPI app initialization, lifespan management,
 middleware setup, and system mode endpoints.

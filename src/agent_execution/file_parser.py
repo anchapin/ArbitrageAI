@@ -1,5 +1,4 @@
-"""
-File Parser Module.
+"""File Parser Module.
 
 This module provides functionality for parsing different file types (CSV, Excel, PDF)
 and converting them to a standardized format for data visualization.
@@ -49,8 +48,7 @@ class FileType(Enum):
 
 
 def detect_file_type(filename: str, content: bytes | None = None) -> FileType:
-    """
-    Detect the file type based on filename extension or content.
+    """Detect the file type based on filename extension or content.
 
     Args:
         filename: The name of the file
@@ -82,8 +80,7 @@ def detect_file_type(filename: str, content: bytes | None = None) -> FileType:
 
 
 def parse_csv(content: str) -> dict:
-    """
-    Parse CSV content.
+    """Parse CSV content.
 
     Args:
         content: CSV content as string
@@ -126,8 +123,7 @@ def parse_csv(content: str) -> dict:
 
 
 def parse_excel(content: bytes) -> dict:
-    """
-    Parse Excel file content.
+    """Parse Excel file content.
 
     Args:
         content: Excel file content as bytes
@@ -183,8 +179,7 @@ def parse_excel(content: bytes) -> dict:
 
 
 def parse_pdf(content: bytes) -> dict:
-    """
-    Parse PDF document and extract tabular data.
+    """Parse PDF document and extract tabular data.
 
     For PDFs, this extracts text and tries to identify tables.
     Tables are converted to a format suitable for visualization.
@@ -312,8 +307,7 @@ def parse_pdf(content: bytes) -> dict:
 def parse_file(
     file_content: str, filename: str, file_type: str | None = None,
 ) -> dict:
-    """
-    Parse a file based on its type.
+    """Parse a file based on its type.
 
     This is the main entry point for parsing files. It automatically
     detects the file type if not provided.
@@ -382,8 +376,7 @@ def parse_file(
 
 
 def get_file_type_description(file_type: FileType) -> str:
-    """
-    Get a human-readable description of the file type.
+    """Get a human-readable description of the file type.
 
     Args:
         file_type: The file type enum value

@@ -1,5 +1,4 @@
-"""
-Virtual Wallet Module for Financial Control.
+"""Virtual Wallet Module for Financial Control.
 
 Tracks seed money, operational budget, and revenue from completed tasks.
 Enforces budget caps and provides financial visibility for human oversight.
@@ -29,8 +28,7 @@ VirtualWallet = VirtualWalletModel
 
 
 class VirtualWalletManager:
-    """
-    Virtual Wallet Manager.
+    """Virtual Wallet Manager.
 
     Manages wallet operations including balance tracking, budget enforcement,
     and automatic budget resets. Provides API for financial control.
@@ -90,8 +88,7 @@ class VirtualWalletManager:
         amount_cents: int,
         task_id: str | None = None,
     ) -> bool:
-        """
-        Deduct cost from wallet and budget.
+        """Deduct cost from wallet and budget.
 
         Args:
             cost_type: Type of cost (e.g., "llm", "sandbox", "bid")
@@ -152,8 +149,7 @@ class VirtualWalletManager:
             db.close()
 
     def add_revenue(self, amount_cents: int, task_id: str | None = None) -> bool:
-        """
-        Add revenue from completed task to wallet.
+        """Add revenue from completed task to wallet.
 
         Args:
             amount_cents: Revenue amount in cents
@@ -194,8 +190,7 @@ class VirtualWalletManager:
             db.close()
 
     def get_available_budget(self) -> dict[str, Any]:
-        """
-        Get available budget information.
+        """Get available budget information.
 
         Returns:
             Dictionary with budget details
@@ -235,8 +230,7 @@ class VirtualWalletManager:
             db.close()
 
     def get_wallet_status(self) -> dict[str, Any]:
-        """
-        Get complete wallet status.
+        """Get complete wallet status.
 
         Returns:
             Dictionary with full wallet details
@@ -256,8 +250,7 @@ class VirtualWalletManager:
             db.close()
 
     def add_seed_money(self, amount_cents: int) -> bool:
-        """
-        Add seed money to wallet.
+        """Add seed money to wallet.
 
         Args:
             amount_cents: Amount to add in cents
@@ -297,8 +290,7 @@ class VirtualWalletManager:
         budget_cap_cents: int,
         reset_period: str | None = None,
     ) -> bool:
-        """
-        Set budget cap and reset period.
+        """Set budget cap and reset period.
 
         Args:
             budget_cap_cents: New budget cap in cents

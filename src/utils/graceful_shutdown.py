@@ -1,5 +1,4 @@
-"""
-Graceful Shutdown and State Recovery System (Issue #102).
+"""Graceful Shutdown and State Recovery System (Issue #102).
 
 Provides graceful shutdown capabilities and state recovery for:
 - Active task execution
@@ -76,8 +75,7 @@ class ShutdownStateData:
 
 
 class GracefulShutdownManager:
-    """
-    Manages graceful shutdown and state recovery.
+    """Manages graceful shutdown and state recovery.
 
     Features:
     - Signal handling for SIGTERM and SIGINT
@@ -94,8 +92,7 @@ class GracefulShutdownManager:
         shutdown_timeout: float = 30.0,
         max_state_age_hours: int = 24,
     ):
-        """
-        Initialize the graceful shutdown manager.
+        """Initialize the graceful shutdown manager.
 
         Args:
             state_dir: Directory for state persistence (default: "data/shutdown_state")
@@ -152,8 +149,7 @@ class GracefulShutdownManager:
         name: str,
         handler: Callable[[], Awaitable[None]],
     ) -> None:
-        """
-        Register a shutdown handler.
+        """Register a shutdown handler.
 
         Args:
             name: Handler name
@@ -195,8 +191,7 @@ class GracefulShutdownManager:
             del self.websocket_connections[connection_id]
 
     async def shutdown(self, reason: ShutdownReason = ShutdownReason.SIGNAL) -> None:
-        """
-        Perform graceful shutdown.
+        """Perform graceful shutdown.
 
         Args:
             reason: Reason for shutdown
@@ -323,8 +318,7 @@ class GracefulShutdownManager:
 
     @staticmethod
     async def _recover_task(task_data: dict[str, Any]) -> None:
-        """
-        Recover a task from previous state.
+        """Recover a task from previous state.
 
         Override this method to implement custom task recovery logic.
         """

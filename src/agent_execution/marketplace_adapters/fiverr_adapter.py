@@ -1,5 +1,4 @@
-"""
-Fiverr Marketplace Adapter.
+"""Fiverr Marketplace Adapter.
 
 Implements marketplace adapter for Fiverr platform.
 Handles gig searching, offer placement, and inbox management.
@@ -33,8 +32,7 @@ logger = get_logger(__name__)
 
 
 class FiverrAdapter(MarketplaceAdapter):
-    """
-    Fiverr marketplace adapter.
+    """Fiverr marketplace adapter.
 
     Handles integration with Fiverr API for:
     - Searching gigs/projects
@@ -54,8 +52,7 @@ class FiverrAdapter(MarketplaceAdapter):
         api_secret: str | None = None,
         user_token: str | None = None,
     ):
-        """
-        Initialize Fiverr adapter.
+        """Initialize Fiverr adapter.
 
         Args:
             api_key: Fiverr API key
@@ -68,8 +65,7 @@ class FiverrAdapter(MarketplaceAdapter):
         self.user_id: str | None = None
 
     async def authenticate(self) -> bool:
-        """
-        Authenticate with Fiverr API.
+        """Authenticate with Fiverr API.
 
         Returns:
             True if authentication successful
@@ -105,8 +101,7 @@ class FiverrAdapter(MarketplaceAdapter):
             raise AuthenticationError(f"Fiverr authentication failed: {e!s}") from e
 
     async def search(self, query: SearchQuery) -> list[SearchResult]:
-        """
-        Search for gigs on Fiverr.
+        """Search for gigs on Fiverr.
 
         Args:
             query: Search parameters
@@ -172,8 +167,7 @@ class FiverrAdapter(MarketplaceAdapter):
             raise MarketplaceError(f"Fiverr search failed: {e!s}") from e
 
     async def get_job_details(self, job_id: str) -> SearchResult:
-        """
-        Get detailed information about a Fiverr gig.
+        """Get detailed information about a Fiverr gig.
 
         Args:
             job_id: Gig ID
@@ -215,8 +209,7 @@ class FiverrAdapter(MarketplaceAdapter):
             raise MarketplaceError(f"Failed to get gig details: {e!s}") from e
 
     async def place_bid(self, proposal: BidProposal) -> PlacedBid:
-        """
-        Place an offer on a Fiverr gig.
+        """Place an offer on a Fiverr gig.
 
         Args:
             proposal: Bid proposal
@@ -266,8 +259,7 @@ class FiverrAdapter(MarketplaceAdapter):
             raise MarketplaceError(f"Failed to place Fiverr offer: {e!s}") from e
 
     async def get_bid_status(self, bid_id: str) -> BidStatusUpdate:
-        """
-        Get status of a placed offer.
+        """Get status of a placed offer.
 
         Args:
             bid_id: Offer ID
@@ -312,8 +304,7 @@ class FiverrAdapter(MarketplaceAdapter):
             raise MarketplaceError(f"Failed to get offer status: {e!s}") from e
 
     async def withdraw_bid(self, bid_id: str) -> BidStatusUpdate:
-        """
-        Withdraw a placed offer.
+        """Withdraw a placed offer.
 
         Args:
             bid_id: Offer ID
@@ -350,8 +341,7 @@ class FiverrAdapter(MarketplaceAdapter):
             raise MarketplaceError(f"Failed to withdraw offer: {e!s}") from e
 
     async def check_inbox(self) -> list[InboxMessage]:
-        """
-        Check for new messages in Fiverr inbox.
+        """Check for new messages in Fiverr inbox.
 
         Returns:
             List of unread messages
@@ -390,8 +380,7 @@ class FiverrAdapter(MarketplaceAdapter):
             raise MarketplaceError(f"Failed to check Fiverr inbox: {e!s}") from e
 
     async def mark_message_read(self, message_id: str) -> bool:
-        """
-        Mark a message as read.
+        """Mark a message as read.
 
         Args:
             message_id: ID of the message
@@ -419,8 +408,7 @@ class FiverrAdapter(MarketplaceAdapter):
             raise MarketplaceError(f"Failed to mark message as read: {e!s}") from e
 
     async def sync_portfolio(self, portfolio_items: list[dict[str, Any]]) -> bool:
-        """
-        Sync portfolio with Fiverr.
+        """Sync portfolio with Fiverr.
 
         Args:
             portfolio_items: List of portfolio items
@@ -463,8 +451,7 @@ class FiverrAdapter(MarketplaceAdapter):
         url: str,
         **kwargs,
     ) -> dict[str, Any]:
-        """
-        Make HTTP request with automatic retry and error handling.
+        """Make HTTP request with automatic retry and error handling.
 
         Args:
             method: HTTP method

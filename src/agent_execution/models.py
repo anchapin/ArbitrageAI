@@ -1,5 +1,4 @@
-"""
-Models for Intelligent Task Routing.
+"""Models for Intelligent Task Routing.
 
 This module contains dataclasses and models used by the intelligent routing system.
 """

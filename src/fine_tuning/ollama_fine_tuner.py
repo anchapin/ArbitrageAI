@@ -1,6 +1,5 @@
 # ruff: noqa: F821
-"""
-Ollama Fine-Tuning Integration.
+"""Ollama Fine-Tuning Integration.
 
 Handles fine-tuning with local Ollama models using Unsloth.
 """
@@ -15,8 +14,7 @@ logger = logging.getLogger(__name__)
 
 
 class OllamaFineTuner:
-    """
-    Fine-tunes Ollama models locally using Unsloth.
+    """Fine-tunes Ollama models locally using Unsloth.
 
     Supports:
     - Llama 2, Llama 3.x
@@ -31,8 +29,7 @@ class OllamaFineTuner:
     """
 
     def __init__(self, ollama_base_url: str = "http://localhost:11434"):
-        """
-        Initialize Ollama fine-tuner.
+        """Initialize Ollama fine-tuner.
 
         Args:
             ollama_base_url: Base URL for Ollama service
@@ -46,8 +43,7 @@ class OllamaFineTuner:
     def prepare_dataset_for_unsloth(
         self, examples: list[dict[str, Any]], output_path: str | None = None,
     ) -> str:
-        """
-        Prepare dataset in Unsloth format.
+        """Prepare dataset in Unsloth format.
 
         Args:
             examples: List of training examples
@@ -85,8 +81,7 @@ class OllamaFineTuner:
         learning_rate: float = 0.0005,
         batch_size: int = 4,
     ) -> dict[str, Any]:
-        """
-        Create a fine-tuning configuration for Unsloth.
+        """Create a fine-tuning configuration for Unsloth.
 
         Args:
             base_model: Base model name (e.g., "llama2", "mistral")
@@ -126,8 +121,7 @@ class OllamaFineTuner:
         batch_size: int = 4,
         output_path: str | None = None,
     ) -> str:
-        """
-        Generate a Python script to run Unsloth fine-tuning.
+        """Generate a Python script to run Unsloth fine-tuning.
 
         Args:
             base_model: Base model name
@@ -262,8 +256,7 @@ logger.info(f"Fine-tuning complete! Model saved to ./models/{{OUTPUT_MODEL_NAME}
     def estimate_training_time(
         num_examples: int, num_epochs: int = 3, gpu_type: str = "a100",
     ) -> dict[str, Any]:
-        """
-        Estimate fine-tuning time based on dataset size and GPU.
+        """Estimate fine-tuning time based on dataset size and GPU.
 
         Args:
             num_examples: Number of training examples
@@ -312,8 +305,7 @@ logger.info(f"Fine-tuning complete! Model saved to ./models/{{OUTPUT_MODEL_NAME}
         system_prompt: str | None = None,
         output_path: str | None = None,
     ) -> str:
-        """
-        Create an Ollama Modelfile for a fine-tuned model.
+        """Create an Ollama Modelfile for a fine-tuned model.
 
         Args:
             model_path: Path to fine-tuned model

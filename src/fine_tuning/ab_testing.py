@@ -1,5 +1,4 @@
-"""
-A/B Testing Framework for Fine-Tuned Models.
+"""A/B Testing Framework for Fine-Tuned Models.
 
 Compare fine-tuned models against base models in production.
 """
@@ -49,8 +48,7 @@ class ABTestResult:
 
 
 class ABTestFramework:
-    """
-    A/B testing framework for comparing models.
+    """A/B testing framework for comparing models.
 
     Features:
     - Traffic splitting between models
@@ -71,8 +69,7 @@ class ABTestFramework:
         model_b: str,
         metadata: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
-        """
-        Create a new A/B test.
+        """Create a new A/B test.
 
         Args:
             test_id: Unique test identifier
@@ -107,8 +104,7 @@ class ABTestFramework:
         cost: float,
         metadata: dict[str, Any] | None = None,
     ) -> bool:
-        """
-        Record a sample in the A/B test.
+        """Record a sample in the A/B test.
 
         Args:
             test_id: Test ID
@@ -159,8 +155,7 @@ class ABTestFramework:
         test_id: str,
         alpha: float = 0.05,
     ) -> ABTestResult:
-        """
-        Conclude an A/B test and compute results.
+        """Conclude an A/B test and compute results.
 
         Uses chi-squared test for statistical significance.
 
@@ -243,8 +238,7 @@ class ABTestFramework:
     def _chi_squared_test(
         accuracy_a: float, accuracy_b: float, n_a: int, n_b: int, alpha: float = 0.05,
     ) -> bool:
-        """
-        Perform chi-squared test for statistical significance.
+        """Perform chi-squared test for statistical significance.
 
         Args:
             accuracy_a: Accuracy of model A
@@ -279,8 +273,7 @@ class ABTestFramework:
         return abs(z) > critical_z
 
     def get_test_results(self, test_id: str) -> ABTestResult | None:
-        """
-        Get results of a completed test.
+        """Get results of a completed test.
 
         Args:
             test_id: Test ID
@@ -291,8 +284,7 @@ class ABTestFramework:
         return self.tests.get(test_id)
 
     def get_all_results(self) -> list[ABTestResult]:
-        """
-        Get all completed test results.
+        """Get all completed test results.
 
         Returns:
             List of test results
@@ -301,8 +293,7 @@ class ABTestFramework:
 
     @staticmethod
     def recommend_winner(test_result: ABTestResult) -> str:
-        """
-        Recommend a winner based on test results.
+        """Recommend a winner based on test results.
 
         Args:
             test_result: A/B test result
@@ -331,8 +322,7 @@ class ABTestFramework:
         return test_result.model_a
 
     def export_results(self, filepath: str) -> None:
-        """
-        Export all test results to JSON file.
+        """Export all test results to JSON file.
 
         Args:
             filepath: Path to save results

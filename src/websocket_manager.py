@@ -1,5 +1,4 @@
-"""
-WebSocket Manager for Real-Time Task Updates and Notifications.
+"""WebSocket Manager for Real-Time Task Updates and Notifications.
 
 Implements WebSocket support for real-time task status updates,
 live notifications, and interactive task monitoring.
