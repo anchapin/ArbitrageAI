@@ -64,8 +64,8 @@ class SimulationEngine:
             f"Simulation Engine initialized - Training Mode: {self.training_mode}",
         )
 
+    @staticmethod
     def record_simulation_bid(
-        self,
         job_title: str,
         job_description: str,
         job_url: str,
@@ -134,8 +134,8 @@ class SimulationEngine:
         finally:
             db.close()
 
+    @staticmethod
     def calculate_total_profit(
-        self,
         strategy_type: str | None = None,
         date_filter: dict[str, str] | None = None,
     ) -> dict[str, Any]:
@@ -241,7 +241,7 @@ class SimulationEngine:
         # Calculate stats for each strategy
         results = {}
         for strategy in strategies:
-            results[strategy] = self.calculate_total_profit(
+            results[strategy] = SimulationEngine.calculate_total_profit(
                 strategy_type=strategy, date_filter=date_filter,
             )
 
@@ -257,7 +257,7 @@ class SimulationEngine:
                 best_strategy = strategy
 
         # Generate insights
-        insights = self._generate_insights(results)
+        insights = SimulationEngine._generate_insights(results)
 
         return {
             "strategies": results,
@@ -267,7 +267,8 @@ class SimulationEngine:
             "insights": insights,
         }
 
-    def _generate_insights(self, results: dict[str, Any]) -> list[str]:
+    @staticmethod
+    def _generate_insights(results: dict[str, Any]) -> list[str]:
         """
         Generate actionable insights from simulation results.
 
@@ -346,7 +347,7 @@ class SimulationEngine:
         Returns:
             Dictionary with detailed strategy summary
         """
-        stats = self.calculate_total_profit(
+        stats = SimulationEngine.calculate_total_profit(
             strategy_type=strategy_type, date_filter=date_filter,
         )
 
@@ -363,8 +364,9 @@ class SimulationEngine:
             "average_bid_cents": stats["average_bid_cents"],
         }
 
+    @staticmethod
     def get_recent_simulations(
-        self, limit: int = 100, date_filter: dict[str, str] | None = None,
+        limit: int = 100, date_filter: dict[str, str] | None = None,
     ) -> list[SimulationBid]:
         """
         Get recent simulation bids for review and analysis.
@@ -448,7 +450,7 @@ if __name__ == "__main__":
         # Record some test simulation bids
         logger.info("\nRecording test simulation bids...")
 
-        engine.record_simulation_bid(
+        SimulationEngine.record_simulation_bid(
             job_title="Python Data Analysis Script",
             job_description="Need Python developer for data analysis",
             job_url="https://example.com/job1",
@@ -461,7 +463,7 @@ if __name__ == "__main__":
             skills_matched=["Python", "pandas"],
         )
 
-        engine.record_simulation_bid(
+        SimulationEngine.record_simulation_bid(
             job_title="React Dashboard Development",
             job_description="Build dashboard with charts",
             job_url="https://example.com/job2",
@@ -474,7 +476,7 @@ if __name__ == "__main__":
             skills_matched=["React", "D3.js"],
         )
 
-        engine.record_simulation_bid(
+        SimulationEngine.record_simulation_bid(
             job_title="Excel Spreadsheet Automation",
             job_description="VBA macros for automation",
             job_url="https://example.com/job3",

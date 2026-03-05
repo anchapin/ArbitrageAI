@@ -103,7 +103,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             return await call_next(request)
 
         # Extract user ID
-        user_id = self._extract_user_id(request)
+        user_id = RateLimitMiddleware._extract_user_id(request)
 
         db = SessionLocal()
         try:
@@ -238,7 +238,8 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         finally:
             db.close()
 
-    def _extract_user_id(self, request: Request) -> str:
+    @staticmethod
+    def _extract_user_id(request: Request) -> str:
         """Extract user ID from request."""
         # Try header first
         user_id = request.headers.get("X-User-ID")
