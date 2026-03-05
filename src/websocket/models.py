@@ -1,5 +1,4 @@
-"""
-WebSocket Models.
+"""WebSocket Models.
 
 Enums and dataclasses for WebSocket communication.
 """

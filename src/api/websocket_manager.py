@@ -1,5 +1,4 @@
-"""
-WebSocket Manager for Real-Time Task Updates and Notifications.
+"""WebSocket Manager for Real-Time Task Updates and Notifications.
 
 Implements WebSocket support for real-time task status updates, live notifications,
 and interactive task monitoring. Provides connection pooling, heartbeat mechanism,
@@ -159,7 +158,7 @@ class WebSocketManager:
         """Initialize the WebSocket manager.
 
         Args:
-            config: Optional configuration for the WebSocket manager.
+            config: Configuration object (default: None)
         """
         self.config = config or Config()
 
@@ -662,7 +661,8 @@ class WebSocketManager:
         except Exception as e:
             logger.error(f"Error processing message from client {client_id}: {e}", exc_info=True)
 
-    async def _send_message(self, websocket: WebSocket, message_type: WebSocketMessageType, data: dict[str, Any]):
+    @staticmethod
+    async def _send_message(websocket: WebSocket, message_type: WebSocketMessageType, data: dict[str, Any]):
         """Send a message to a specific websocket."""
         if websocket.application_state == WebSocketState.CONNECTED:
             message = WebSocketMessage(
@@ -770,8 +770,7 @@ class WebSocketManager:
         return True
 
     async def _validate_task_access(self, client_id: str, task_id: str) -> bool:
-        """
-        Validate that a client has access to a task.
+        """Validate that a client has access to a task.
 
         Args:
             client_id: The client identifier
@@ -823,8 +822,7 @@ class WebSocketManager:
             return False
 
     async def _pause_task(self, task_id: str, params: dict[str, Any]) -> dict[str, Any]:
-        """
-        Pause a task execution.
+        """Pause a task execution.
 
         Args:
             task_id: The task identifier to pause
@@ -924,8 +922,7 @@ class WebSocketManager:
                 await self.send_message(client_id, message)
 
     async def _cancel_task(self, task_id: str, params: dict[str, Any]) -> dict[str, Any]:
-        """
-        Cancel a task execution.
+        """Cancel a task execution.
 
         Args:
             task_id: The task identifier to cancel
@@ -1043,8 +1040,7 @@ class WebSocketManager:
                 await self.send_message(client_id, message)
 
     async def _prioritize_task(self, task_id: str, params: dict[str, Any]) -> dict[str, Any]:
-        """
-        Prioritize a task in the execution queue.
+        """Prioritize a task in the execution queue.
 
         Args:
             task_id: The task identifier to prioritize

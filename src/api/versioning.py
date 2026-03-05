@@ -1,5 +1,4 @@
-"""
-API Versioning Utilities and Dependencies.
+"""API Versioning Utilities and Dependencies.
 
 This module provides utilities for API versioning, including version detection,
 validation, and deprecation handling.
@@ -34,8 +33,7 @@ WARNING_HEADER = "Warning"
 def get_api_version(
     x_api_version: Annotated[str | None, Header(alias="X-API-Version")] = None,
 ) -> APIVersion:
-    """
-    Extract and validate API version from request headers.
+    """Extract and validate API version from request headers.
 
     Args:
         x_api_version: Optional API version from X-API-Version header.
@@ -90,8 +88,7 @@ def add_deprecation_headers(
     successor_version: str | None = None,
     warning_message: str | None = None,
 ) -> None:
-    """
-    Add deprecation headers to response.
+    """Add deprecation headers to response.
 
     Args:
         response: FastAPI Response object.
@@ -129,8 +126,7 @@ def add_deprecation_headers(
 
 
 def validate_version_supported(version: str) -> bool:
-    """
-    Check if an API version is supported.
+    """Check if an API version is supported.
 
     Args:
         version: Version string to validate.
@@ -142,8 +138,7 @@ def validate_version_supported(version: str) -> bool:
 
 
 def get_successor_version(version: APIVersion) -> APIVersion | None:
-    """
-    Get the successor version for a given API version.
+    """Get the successor version for a given API version.
 
     Args:
         version: Current API version.
@@ -156,8 +151,7 @@ def get_successor_version(version: APIVersion) -> APIVersion | None:
 
 
 class APIVersionMiddleware(BaseHTTPMiddleware):
-    """
-    Middleware to handle API versioning from URL path.
+    """Middleware to handle API versioning from URL path.
 
     This middleware extracts the API version from the URL path (/api/v1/, /api/v2/, etc.)
     and validates it against supported versions. It also adds deprecation headers
@@ -172,8 +166,7 @@ class APIVersionMiddleware(BaseHTTPMiddleware):
     """
 
     async def dispatch(self, request: Request, call_next):
-        """
-        Process request and validate API version.
+        """Process request and validate API version.
 
         Args:
             request: Incoming HTTP request
@@ -220,9 +213,9 @@ class APIVersionMiddleware(BaseHTTPMiddleware):
 
         return response
 
-    def _extract_version_from_path(self, path: str) -> str | None:
-        """
-        Extract API version from URL path.
+    @staticmethod
+    def _extract_version_from_path(path: str) -> str | None:
+        """Extract API version from URL path.
 
         Args:
             path: URL path (e.g., /api/v1/tasks)
@@ -238,9 +231,9 @@ class APIVersionMiddleware(BaseHTTPMiddleware):
             return match.group(1)
         return None
 
-    def _is_version_supported(self, version: str) -> bool:
-        """
-        Check if version is supported.
+    @staticmethod
+    def _is_version_supported(version: str) -> bool:
+        """Check if version is supported.
 
         Args:
             version: Version string to check
@@ -250,9 +243,9 @@ class APIVersionMiddleware(BaseHTTPMiddleware):
         """
         return version in [v.value for v in SUPPORTED_VERSIONS]
 
-    def _is_version_deprecated(self, version: str) -> bool:
-        """
-        Check if version is deprecated.
+    @staticmethod
+    def _is_version_deprecated(version: str) -> bool:
+        """Check if version is deprecated.
 
         Currently, no versions are deprecated. This will be updated
         when newer versions are released.
@@ -268,8 +261,7 @@ class APIVersionMiddleware(BaseHTTPMiddleware):
 
 
 def setup_api_versioning(app, is_development: bool = False):
-    """
-    Setup API versioning middleware for FastAPI application.
+    """Setup API versioning middleware for FastAPI application.
 
     Usage:
         from fastapi import FastAPI

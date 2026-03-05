@@ -1,5 +1,4 @@
-"""
-URL Circuit Breaker for Market Scanner.
+"""URL Circuit Breaker for Market Scanner.
 
 Prevents repeated requests to failing marketplace URLs.
 
@@ -24,8 +23,7 @@ class URLCircuitBreakerConfig:
 
 
 class URLCircuitBreaker:
-    """
-    Circuit breaker pattern for marketplace URLs.
+    """Circuit breaker pattern for marketplace URLs.
 
     Prevents hammering failing URLs by tracking failures and
     pausing requests after threshold is exceeded.
@@ -35,7 +33,7 @@ class URLCircuitBreaker:
         """Initialize the URL circuit breaker.
 
         Args:
-            config: Optional configuration for the circuit breaker.
+            config: Circuit breaker configuration (default: None)
         """
         self.config = config or URLCircuitBreakerConfig()
 
@@ -49,8 +47,7 @@ class URLCircuitBreaker:
         self.urls_recovered = 0
 
     def should_request(self, url: str) -> bool:
-        """
-        Check if a request should be attempted for a URL.
+        """Check if a request should be attempted for a URL.
 
         Args:
             url: URL to check
@@ -75,8 +72,7 @@ class URLCircuitBreaker:
         return True
 
     def record_failure(self, url: str):
-        """
-        Record a failed request for a URL.
+        """Record a failed request for a URL.
 
         Args:
             url: URL that failed
@@ -111,8 +107,7 @@ class URLCircuitBreaker:
         self._successes[url] = 0
 
     def record_success(self, url: str):
-        """
-        Record a successful request for a URL.
+        """Record a successful request for a URL.
 
         Args:
             url: URL that succeeded

@@ -1,5 +1,4 @@
-"""
-Financial Summary Template.
+"""Financial Summary Template.
 
 This template provides a pre-tested Python script for generating financial documents
 such as financial summaries, reports, and accounting documents.
@@ -21,8 +20,7 @@ import pandas as pd
 
 
 class FinancialSummaryTemplate:
-    """
-    Template for generating financial summaries and reports.
+    """Template for generating financial summaries and reports.
 
     This template provides proper financial document formatting including:
     - Executive summary
@@ -53,8 +51,7 @@ class FinancialSummaryTemplate:
         output_format: str = "docx",
         **kwargs,
     ) -> dict:
-        """
-        Generate a financial document from JSON content and CSV data.
+        """Generate a financial document from JSON content and CSV data.
 
         Args:
             content_json: Structured JSON content from LLM
@@ -316,7 +313,8 @@ class FinancialSummaryTemplate:
 
         self.document.add_paragraph()
 
-    def _format_currency(self, value) -> str:
+    @staticmethod
+    def _format_currency(value) -> str:
         """Format a value as currency."""
         try:
             num_value = float(value)
@@ -324,7 +322,8 @@ class FinancialSummaryTemplate:
         except (ValueError, TypeError):
             return str(value)
 
-    def _is_currency(self, metric_name: str) -> bool:
+    @staticmethod
+    def _is_currency(metric_name: str) -> bool:
         """Check if a metric should be formatted as currency."""
         currency_keywords = [
             "revenue",
@@ -374,7 +373,8 @@ class FinancialSummaryTemplate:
 
         return para
 
-    def _generate_result(self, filename: str, output_format: str) -> dict:
+    @staticmethod
+    def _generate_result(filename: str, output_format: str) -> dict:
         """Generate the result dictionary."""
         try:
             with open(filename, "rb") as f:

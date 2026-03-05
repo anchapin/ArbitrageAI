@@ -1,5 +1,4 @@
-"""
-Auto-Execution Pipeline (Issue #104).
+"""Auto-Execution Pipeline (Issue #104).
 
 Provides automated task execution with:
 - Automatic bid placement
@@ -81,8 +80,7 @@ class BidDecision:
 
 
 class AutoExecutionPipeline:
-    """
-    Automated task execution pipeline.
+    """Automated task execution pipeline.
 
     Features:
     - Automatic marketplace scanning
@@ -101,15 +99,15 @@ class AutoExecutionPipeline:
         retry_attempts: int = 3,
         retry_delay_seconds: float = 1.0,
     ):
-        """Initialize the auto execution engine.
+        """Initialize the autonomous execution engine.
 
         Args:
-            strategy: The execution strategy to use.
-            min_confidence_threshold: Minimum confidence threshold for execution.
-            max_bid_amount_cents: Maximum bid amount in cents.
-            max_concurrent_tasks: Maximum number of concurrent tasks.
-            retry_attempts: Number of retry attempts.
-            retry_delay_seconds: Delay between retries in seconds.
+            strategy: Execution strategy to use (default: BALANCED)
+            min_confidence_threshold: Minimum confidence for bids (default: 0.6)
+            max_bid_amount_cents: Maximum bid amount in cents (default: 50000)
+            max_concurrent_tasks: Maximum concurrent tasks (default: 5)
+            retry_attempts: Number of retry attempts (default: 3)
+            retry_delay_seconds: Delay between retries in seconds (default: 1.0)
         """
         self.strategy = strategy
         self.min_confidence_threshold = min_confidence_threshold
@@ -157,8 +155,7 @@ class AutoExecutionPipeline:
         opportunity: dict[str, Any],
         db: Session | None = None,
     ) -> ExecutionResult:
-        """
-        Execute a marketplace opportunity.
+        """Execute a marketplace opportunity.
 
         Args:
             opportunity: Opportunity data from marketplace
@@ -258,8 +255,7 @@ class AutoExecutionPipeline:
         self,
         opportunity: dict[str, Any],
     ) -> BidDecision:
-        """
-        Analyze an opportunity and decide whether to bid.
+        """Analyze an opportunity and decide whether to bid.
 
         Args:
             opportunity: Opportunity data
@@ -324,8 +320,7 @@ class AutoExecutionPipeline:
         confidence: float,
         strategy: ExecutionStrategy,
     ) -> int:
-        """
-        Calculate optimal bid amount.
+        """Calculate optimal bid amount.
 
         Strategy:
         - High confidence: Bid 70-90% of budget
@@ -357,8 +352,7 @@ class AutoExecutionPipeline:
         amount_cents: int,
         db: Session,
     ) -> dict[str, Any]:
-        """
-        Place a bid on an opportunity.
+        """Place a bid on an opportunity.
 
         Args:
             opportunity: Opportunity data
@@ -415,8 +409,7 @@ class AutoExecutionPipeline:
         bid_id: str,
         db: Session,
     ) -> dict[str, Any]:
-        """
-        Execute a task after winning the bid.
+        """Execute a task after winning the bid.
 
         Args:
             task_data: Task data
@@ -512,8 +505,7 @@ class AutoExecutionPipeline:
         task_id: str,
         domain: str,
     ) -> dict[str, Any]:
-        """
-        Execute task with retry logic.
+        """Execute task with retry logic.
 
         Args:
             task_data: Task data

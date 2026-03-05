@@ -1,5 +1,4 @@
-"""
-Base Marketplace Adapter.
+"""Base Marketplace Adapter.
 
 Defines abstract interface for all marketplace adapters.
 Provides common data models, error handling, and retry logic.
@@ -163,8 +162,7 @@ class InboxMessage:
 
 
 class MarketplaceAdapter(ABC):
-    """
-    Abstract base class for marketplace adapters.
+    """Abstract base class for marketplace adapters.
 
     Defines the interface that all marketplace adapters must implement.
     Provides common functionality for error handling and retry logic.
@@ -176,8 +174,7 @@ class MarketplaceAdapter(ABC):
         api_key: str | None = None,
         api_secret: str | None = None,
     ):
-        """
-        Initialize adapter.
+        """Initialize adapter.
 
         Args:
             marketplace_name: Name of the marketplace
@@ -195,8 +192,7 @@ class MarketplaceAdapter(ABC):
 
     @abstractmethod
     async def authenticate(self) -> bool:
-        """
-        Authenticate with the marketplace.
+        """Authenticate with the marketplace.
 
         Returns:
             True if authentication successful, False otherwise
@@ -207,8 +203,7 @@ class MarketplaceAdapter(ABC):
 
     @abstractmethod
     async def search(self, query: SearchQuery) -> list[SearchResult]:
-        """
-        Search for jobs on the marketplace.
+        """Search for jobs on the marketplace.
 
         Args:
             query: Search parameters
@@ -223,8 +218,7 @@ class MarketplaceAdapter(ABC):
 
     @abstractmethod
     async def get_job_details(self, job_id: str) -> SearchResult:
-        """
-        Get detailed information about a job.
+        """Get detailed information about a job.
 
         Args:
             job_id: ID of the job
@@ -239,8 +233,7 @@ class MarketplaceAdapter(ABC):
 
     @abstractmethod
     async def place_bid(self, proposal: BidProposal) -> PlacedBid:
-        """
-        Place a bid/offer on a job.
+        """Place a bid/offer on a job.
 
         Args:
             proposal: Bid proposal
@@ -255,8 +248,7 @@ class MarketplaceAdapter(ABC):
 
     @abstractmethod
     async def get_bid_status(self, bid_id: str) -> BidStatusUpdate:
-        """
-        Get status of a placed bid.
+        """Get status of a placed bid.
 
         Args:
             bid_id: ID of the bid
@@ -271,8 +263,7 @@ class MarketplaceAdapter(ABC):
 
     @abstractmethod
     async def withdraw_bid(self, bid_id: str) -> BidStatusUpdate:
-        """
-        Withdraw a placed bid.
+        """Withdraw a placed bid.
 
         Args:
             bid_id: ID of the bid
@@ -287,8 +278,7 @@ class MarketplaceAdapter(ABC):
 
     @abstractmethod
     async def check_inbox(self) -> list[InboxMessage]:
-        """
-        Check for new messages in marketplace inbox.
+        """Check for new messages in marketplace inbox.
 
         Returns:
             List of unread messages
@@ -299,8 +289,7 @@ class MarketplaceAdapter(ABC):
 
     @abstractmethod
     async def mark_message_read(self, message_id: str) -> bool:
-        """
-        Mark a message as read.
+        """Mark a message as read.
 
         Args:
             message_id: ID of the message
@@ -315,8 +304,7 @@ class MarketplaceAdapter(ABC):
 
     @abstractmethod
     async def sync_portfolio(self, portfolio_items: list[dict[str, Any]]) -> bool:
-        """
-        Sync portfolio/profile with marketplace.
+        """Sync portfolio/profile with marketplace.
 
         Args:
             portfolio_items: List of portfolio items

@@ -1,5 +1,4 @@
-"""
-Client Authentication via HMAC-signed email tokens.
+"""Client Authentication via HMAC-signed email tokens.
 
 Provides stateless authentication for client dashboard endpoints
 without requiring user registration or JWT infrastructure.
@@ -38,8 +37,7 @@ CLIENT_AUTH_SECRET = os.environ.get(
 
 
 def generate_client_token(email: str) -> str:
-    """
-    Generate an HMAC-signed token for a client email.
+    """Generate an HMAC-signed token for a client email.
 
     Args:
         email: The client's email address (case-insensitive)
@@ -54,8 +52,7 @@ def generate_client_token(email: str) -> str:
 
 
 def verify_client_token(email: str, token: str) -> bool:
-    """
-    Verify that an HMAC token is valid for a given email.
+    """Verify that an HMAC token is valid for a given email.
 
     Uses constant-time comparison to prevent timing attacks.
 
@@ -90,8 +87,8 @@ class AuthenticatedClient:
         """Initialize the authenticated client.
 
         Args:
-            email: Client email address.
-            token: Authentication token.
+            email: Client email address
+            token: HMAC authentication token
         """
         self.email = email.strip().lower() if email else ""
         self.token = token.strip() if token else ""
@@ -107,8 +104,7 @@ def require_client_auth(
     email: str = Query(..., description="Client email address"),
     token: str = Query(..., description="HMAC authentication token"),
 ) -> AuthenticatedClient:
-    """
-    FastAPI dependency for requiring client authentication on endpoints.
+    """FastAPI dependency for requiring client authentication on endpoints.
 
     Validates that email and token form a valid HMAC signature.
 
@@ -148,8 +144,7 @@ def optional_client_auth(
     email: str | None = Query(None, description="Client email address"),
     token: str | None = Query(None, description="HMAC authentication token"),
 ) -> AuthenticatedClient:
-    """
-    FastAPI dependency for optional client authentication.
+    """FastAPI dependency for optional client authentication.
 
     If email and token are provided, they must be valid.
     If both are missing, returns an empty authenticated client (not authenticated).

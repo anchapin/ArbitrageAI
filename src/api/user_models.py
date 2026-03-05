@@ -1,6 +1,4 @@
-"""
-User-related database models.
-"""
+"""User-related database models."""
 
 from datetime import datetime
 import logging
@@ -53,10 +51,10 @@ class ClientProfile(Base):
     last_task_at = Column(DateTime, nullable=True, index=True)
 
     def to_dict(self):
-        """Convert the UserPreferences model to a dictionary.
+        """Convert ClientProfile to dictionary.
 
         Returns:
-            dict: A dictionary representation of the UserPreferences model.
+            Dictionary containing client preferences and task statistics.
         """
         return {
             "id": self.id, "client_email": self.client_email,
@@ -77,10 +75,10 @@ class ClientProfile(Base):
         }
 
     def get_preferences_summary(self) -> str:
-        """Get a summary of user preferences.
+        """Get a human-readable summary of client preferences.
 
         Returns:
-            str: A human-readable summary of preferences.
+            String summarizing preferred colors, fonts, chart types, and formats.
         """
         parts = []
         if self.preferred_colors:
@@ -123,10 +121,10 @@ class UserQuota(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     def to_dict(self):
-        """Convert the UserQuota model to a dictionary.
+        """Convert UserQuota to dictionary representation.
 
         Returns:
-            dict: A dictionary representation of the UserQuota model.
+            Dictionary containing user quota limits, tier, and billing cycle.
         """
         return {
             "id": self.id, "user_id": self.user_id,
@@ -167,10 +165,10 @@ class QuotaUsage(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     def to_dict(self):
-        """Convert the QuotaUsage model to a dictionary.
+        """Convert QuotaUsage to dictionary representation.
 
         Returns:
-            dict: A dictionary representation of the QuotaUsage model.
+            Dictionary containing monthly quota usage and alert timestamps.
         """
         return {
             "id": self.id, "user_id": self.user_id, "billing_month": self.billing_month,
@@ -205,10 +203,10 @@ class RateLimitLog(Base):
     timestamp = Column(DateTime, default=datetime.utcnow)
 
     def to_dict(self):
-        """Convert the RateLimitLog model to a dictionary.
+        """Convert RateLimitLog to dictionary representation.
 
         Returns:
-            dict: A dictionary representation of the RateLimitLog model.
+            Dictionary containing rate limit violation details and timestamps.
         """
         return {
             "id": self.id, "user_id": self.user_id, "endpoint": self.endpoint,

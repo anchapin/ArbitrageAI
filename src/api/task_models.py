@@ -1,6 +1,4 @@
-"""
-Task-related database models.
-"""
+"""Task-related database models."""
 
 from datetime import datetime
 import logging
@@ -30,8 +28,7 @@ Base = declarative_base()
 
 
 class Task(Base):
-    """
-    Core Task model - reduced to essential fields only.
+    """Core Task model - reduced to essential fields only.
 
     Contains only the essential information needed for task tracking,
     client management, and billing. All other concerns are delegated to
@@ -116,11 +113,7 @@ class Task(Base):
     # Hybrid properties for backward compatibility (Issue #5)
     @hybrid_property
     def work_plan(self):
-        """Get the work plan from planning phase.
-
-        Returns:
-            The plan content from the planning phase, or None if not available.
-        """
+        """Return the work plan content from planning entity."""
         return self.planning.plan_content if self.planning else None
 
     @work_plan.setter
@@ -131,11 +124,7 @@ class Task(Base):
 
     @hybrid_property
     def plan_status(self):
-        """Get the planning status.
-
-        Returns:
-            The planning status, or None if not available.
-        """
+        """Return the planning status from planning entity."""
         return self.planning.status if self.planning else None
 
     @plan_status.setter
@@ -153,11 +142,7 @@ class Task(Base):
 
     @hybrid_property
     def file_content(self):
-        """Get the uploaded file content from planning phase.
-
-        Returns:
-            The file content from the planning phase, or None if not available.
-        """
+        """Return the file content from planning entity."""
         return self.planning.file_content if self.planning else None
 
     @file_content.setter
@@ -168,11 +153,7 @@ class Task(Base):
 
     @hybrid_property
     def filename(self):
-        """Get the uploaded filename from planning phase.
-
-        Returns:
-            The filename from the planning phase, or None if not available.
-        """
+        """Return the filename from planning entity."""
         return self.planning.filename if self.planning else None
 
     @filename.setter
@@ -183,11 +164,7 @@ class Task(Base):
 
     @hybrid_property
     def file_type(self):
-        """Get the uploaded file type from planning phase.
-
-        Returns:
-            The file type from the planning phase, or None if not available.
-        """
+        """Return the file type from planning entity."""
         return self.planning.file_type if self.planning else None
 
     @file_type.setter
@@ -198,11 +175,7 @@ class Task(Base):
 
     @hybrid_property
     def csv_data(self):
-        """Get CSV data from planning phase file content.
-
-        Returns:
-            The CSV file content if file_type is 'csv', otherwise None.
-        """
+        """Return CSV data if file type is CSV, otherwise None."""
         return (
             self.planning.file_content
             if self.planning and self.planning.file_type == "csv"
@@ -218,11 +191,7 @@ class Task(Base):
 
     @hybrid_property
     def retry_count(self):
-        """Get the retry count from execution phase.
-
-        Returns:
-            The retry count from the execution phase, or 0 if not available.
-        """
+        """Return the retry count from execution entity."""
         return self.execution.retry_count if self.execution else 0
 
     @retry_count.setter
@@ -233,11 +202,7 @@ class Task(Base):
 
     @hybrid_property
     def execution_log(self):
-        """Get the execution logs from execution phase.
-
-        Returns:
-            The execution logs from the execution phase, or None if not available.
-        """
+        """Return the execution logs from execution entity."""
         return self.execution.execution_logs if self.execution else None
 
     @execution_log.setter
@@ -248,11 +213,7 @@ class Task(Base):
 
     @hybrid_property
     def review_feedback(self):
-        """Get the review feedback from review phase.
-
-        Returns:
-            The review feedback from the review phase, or None if not available.
-        """
+        """Return the review feedback from review entity."""
         return self.review.review_feedback if self.review else None
 
     @review_feedback.setter
@@ -263,11 +224,7 @@ class Task(Base):
 
     @hybrid_property
     def review_approved(self):
-        """Get the approval status from review phase.
-
-        Returns:
-            The approval status from the review phase, or False if not available.
-        """
+        """Return whether the task was approved by review."""
         return self.review.approved if self.review else False
 
     @review_approved.setter
@@ -278,11 +235,7 @@ class Task(Base):
 
     @hybrid_property
     def review_attempts(self):
-        """Get the review attempts from review phase.
-
-        Returns:
-            The review attempts from the review phase, or 0 if not available.
-        """
+        """Return the number of review attempts from review entity."""
         return self.review.review_attempts if self.review else 0
 
     @review_attempts.setter
@@ -293,11 +246,7 @@ class Task(Base):
 
     @hybrid_property
     def escalation_reason(self):
-        """Get the escalation reason from review phase.
-
-        Returns:
-            The escalation reason from the review phase, or None if not available.
-        """
+        """Return the escalation reason from review entity."""
         return self.review.escalation_reason if self.review else None
 
     @escalation_reason.setter
@@ -308,11 +257,7 @@ class Task(Base):
 
     @hybrid_property
     def escalated_at(self):
-        """Get the escalation timestamp from review phase.
-
-        Returns:
-            The escalation timestamp from the review phase, or None if not available.
-        """
+        """Return the escalation timestamp from review entity."""
         return self.review.escalated_at if self.review else None
 
     @escalated_at.setter
@@ -323,11 +268,7 @@ class Task(Base):
 
     @hybrid_property
     def last_error(self):
-        """Get the last error from review or execution phase.
-
-        Returns:
-            The last error from the review phase, or None if not available.
-        """
+        """Return the last error from review entity."""
         return (
             self.review.last_error if self.review else None
         )  # Actually could be in execution or review
@@ -340,11 +281,7 @@ class Task(Base):
 
     @hybrid_property
     def review_status(self):
-        """Get the review status from review phase.
-
-        Returns:
-            The review status from the review phase, or None if not available.
-        """
+        """Return the review status from review entity."""
         return self.review.status if self.review else None
 
     @review_status.setter
@@ -361,11 +298,7 @@ class Task(Base):
 
     @hybrid_property
     def extracted_context(self):
-        """Get the extracted context from planning phase.
-
-        Returns:
-            The extracted context from the planning phase, or None if not available.
-        """
+        """Return the extracted context from planning entity."""
         return self.planning.extracted_context if self.planning else None
 
     @extracted_context.setter
@@ -376,11 +309,7 @@ class Task(Base):
 
     @hybrid_property
     def result_image_url(self):
-        """Get the image output URL from outputs.
-
-        Returns:
-            The image output URL, or None if not available.
-        """
+        """Return the image output URL if available."""
         if not hasattr(self, "outputs") or not self.outputs:
             return None
         try:
@@ -410,11 +339,7 @@ class Task(Base):
 
     @hybrid_property
     def result_document_url(self):
-        """Get the document output URL from outputs.
-
-        Returns:
-            The document output URL, or None if not available.
-        """
+        """Return the document or PDF output URL if available."""
         if not hasattr(self, "outputs") or not self.outputs:
             return None
         try:
@@ -452,11 +377,7 @@ class Task(Base):
 
     @hybrid_property
     def result_spreadsheet_url(self):
-        """Get the spreadsheet output URL from outputs.
-
-        Returns:
-            The spreadsheet output URL, or None if not available.
-        """
+        """Return the spreadsheet output URL if available."""
         if not hasattr(self, "outputs") or not self.outputs:
             return None
         try:
@@ -485,10 +406,11 @@ class Task(Base):
             )
 
     def __init__(self, **kwargs):
-        """Initialize the Task with hybrid property support.
+        """Initialize the Task model.
 
         Args:
-            **kwargs: Keyword arguments including hybrid properties.
+            **kwargs: Keyword arguments for task initialization.
+                Hybrid fields are extracted and set after initialization.
         """
         # List of hybrid properties that should be handled manually
         hybrid_fields = [
@@ -518,10 +440,11 @@ class Task(Base):
             setattr(self, k, v)
 
     def to_dict(self):
-        """Convert the Task model to a dictionary.
+        """Convert the Task model to a dictionary representation.
 
         Returns:
-            dict: A dictionary representation of the Task model.
+            Dictionary containing task data including flattened hybrid properties
+            and nested entity structures.
         """
         data = {
             "id": self.id,
@@ -616,10 +539,10 @@ class TaskExecution(Base):
     task = relationship("Task", back_populates="execution")
 
     def to_dict(self):
-        """Convert the TaskExecution model to a dictionary.
+        """Convert TaskExecution to dictionary.
 
         Returns:
-            dict: A dictionary representation of the TaskExecution model.
+            Dictionary containing execution status, retry count, and timestamps.
         """
         return {
             "status": self.status.value
@@ -663,10 +586,10 @@ class TaskPlanning(Base):
     task = relationship("Task", back_populates="planning")
 
     def to_dict(self):
-        """Convert the TaskPlanning model to a dictionary.
+        """Convert TaskPlanning to dictionary.
 
         Returns:
-            dict: A dictionary representation of the TaskPlanning model.
+            Dictionary containing planning status, content, and timestamps.
         """
         return {
             "status": self.status.value
@@ -711,10 +634,10 @@ class TaskReview(Base):
     task = relationship("Task", back_populates="review")
 
     def to_dict(self):
-        """Convert the TaskReview model to a dictionary.
+        """Convert TaskReview to dictionary.
 
         Returns:
-            dict: A dictionary representation of the TaskReview model.
+            Dictionary containing review status, approval, and feedback.
         """
         return {
             "status": self.status.value
@@ -747,10 +670,10 @@ class TaskArena(Base):
     task = relationship("Task", back_populates="arena")
 
     def to_dict(self):
-        """Convert the TaskArena model to a dictionary.
+        """Convert TaskArena to dictionary.
 
         Returns:
-            dict: A dictionary representation of the TaskArena model.
+            Dictionary containing arena competition results and scores.
         """
         return {
             "winning_model": self.winning_model,
@@ -780,10 +703,10 @@ class TaskOutput(Base):
     task = relationship("Task", back_populates="outputs")
 
     def to_dict(self):
-        """Convert the TaskOutput model to a dictionary.
+        """Convert TaskOutput to dictionary.
 
         Returns:
-            dict: A dictionary representation of the TaskOutput model.
+            Dictionary containing output type and URL.
         """
         return {
             "output_type": self.output_type.value

@@ -1,5 +1,4 @@
-"""
-Backup Manager Module.
+"""Backup Manager Module.
 
 Manages backup operations for the platform including full, incremental,
 and point-in-time backups.
@@ -223,7 +222,8 @@ class BackupManager:
             logger.error(f"Database backup failed: {e}")
             raise
 
-    async def _backup_configuration(self, backup_dir: Path):
+    @staticmethod
+    async def _backup_configuration(backup_dir: Path):
         """Backup configuration files."""
         try:
             backup_dir.mkdir(parents=True, exist_ok=True)
@@ -243,7 +243,8 @@ class BackupManager:
             logger.error(f"Configuration backup failed: {e}")
             raise
 
-    async def _backup_logs(self, backup_dir: Path):
+    @staticmethod
+    async def _backup_logs(backup_dir: Path):
         """Backup log files."""
         try:
             backup_dir.mkdir(parents=True, exist_ok=True)
@@ -257,7 +258,8 @@ class BackupManager:
             logger.error(f"Log backup failed: {e}")
             raise
 
-    async def _backup_uploads(self, backup_dir: Path):
+    @staticmethod
+    async def _backup_uploads(backup_dir: Path):
         """Backup user uploads."""
         try:
             backup_dir.mkdir(parents=True, exist_ok=True)
@@ -283,7 +285,8 @@ class BackupManager:
         """Backup database changes since timestamp."""
         await self._backup_database(backup_path)
 
-    async def _backup_new_files(self, backup_dir: Path, since: datetime):
+    @staticmethod
+    async def _backup_new_files(backup_dir: Path, since: datetime):
         """Backup files modified since timestamp."""
         try:
             backup_dir.mkdir(parents=True, exist_ok=True)
@@ -328,7 +331,8 @@ class BackupManager:
             logger.error(f"Transaction logs backup failed: {e}")
             raise
 
-    async def _create_archive(self, source_dir: Path, archive_path: Path):
+    @staticmethod
+    async def _create_archive(source_dir: Path, archive_path: Path):
         """Create compressed archive of backup data."""
         try:
             with tarfile.open(archive_path, "w:gz") as tar:
@@ -338,7 +342,8 @@ class BackupManager:
             logger.error(f"Archive creation failed: {e}")
             raise
 
-    async def _calculate_checksum(self, file_path: Path) -> str:
+    @staticmethod
+    async def _calculate_checksum(file_path: Path) -> str:
         """Calculate SHA256 checksum of file."""
         try:
             sha256_hash = hashlib.sha256()

@@ -1,6 +1,4 @@
-"""
-
-Simulation Engine Module for Training Mode.
+"""Simulation Engine Module for Training Mode.
 
 Provides functionality to track hypothetical bids and calculate simulation profits
 when the system operates in training mode without making real financial commitments.
@@ -46,8 +44,7 @@ logger = get_logger(__name__)
 
 
 class SimulationEngine:
-    """
-    Simulation Engine for Tracking Hypothetical Bids.
+    """Simulation Engine for Tracking Hypothetical Bids.
 
     Manages simulation bids made during training mode when no real financial
     commitment is made. Provides tools for analyzing bidding strategies
@@ -77,8 +74,7 @@ class SimulationEngine:
         job_marketplace: str | None = None,
         skills_matched: list[str] | None = None,
     ) -> SimulationBid:
-        """
-        Record a hypothetical bid to the simulation database.
+        """Record a hypothetical bid to the simulation database.
 
         When in training mode, this method saves a bid without submitting it
         to the actual marketplace. This allows for analysis and strategy testing.
@@ -139,8 +135,7 @@ class SimulationEngine:
         strategy_type: str | None = None,
         date_filter: dict[str, str] | None = None,
     ) -> dict[str, Any]:
-        """
-        Calculate total simulated profit/loss from simulation bids.
+        """Calculate total simulated profit/loss from simulation bids.
 
         Calculates the total profit/loss based on simulated outcomes.
         If would_have_won=True, adds bid_amount to profit.
@@ -224,8 +219,7 @@ class SimulationEngine:
         self,
         date_filter: dict[str, str] | None = None,
     ) -> dict[str, Any]:
-        """
-        Compare performance of different bidding strategies.
+        """Compare performance of different bidding strategies.
 
         Compares aggressive, conservative, and balanced strategies to determine
         which performs better. Generates insights for bidding optimization.
@@ -268,8 +262,7 @@ class SimulationEngine:
         }
 
     def _generate_insights(self, results: dict[str, Any]) -> list[str]:
-        """
-        Generate actionable insights from simulation results.
+        """Generate actionable insights from simulation results.
 
         Analyzes simulation data to provide recommendations for bidding optimization.
 
@@ -336,8 +329,7 @@ class SimulationEngine:
         strategy_type: str,
         date_filter: dict[str, str] | None = None,
     ) -> dict[str, Any]:
-        """
-        Get a summary of performance for a specific strategy.
+        """Get a summary of performance for a specific strategy.
 
         Args:
             strategy_type: Strategy type to analyze (aggressive, conservative, balanced)
@@ -366,8 +358,7 @@ class SimulationEngine:
     def get_recent_simulations(
         self, limit: int = 100, date_filter: dict[str, str] | None = None,
     ) -> list[SimulationBid]:
-        """
-        Get recent simulation bids for review and analysis.
+        """Get recent simulation bids for review and analysis.
 
         Args:
             limit: Maximum number of simulations to return
@@ -410,8 +401,7 @@ _sim_engine_instance: Optional["SimulationEngine"] = None
 
 
 def get_simulation_engine() -> SimulationEngine:
-    """
-    Get or create the global Simulation Engine singleton.
+    """Get or create the global Simulation Engine singleton.
 
     Returns:
         SimulationEngine: Global instance of the simulation engine

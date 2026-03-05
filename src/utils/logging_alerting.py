@@ -1,5 +1,4 @@
-"""
-Logging and Alerting System (Issue #103).
+"""Logging and Alerting System (Issue #103).
 
 Provides comprehensive logging and alerting capabilities:
 - Structured logging with multiple levels
@@ -74,6 +73,7 @@ class Alert:
     triggered_count: int = 0
 
     def __post_init__(self):
+        """Set default timestamp if not provided."""
         if not self.timestamp:
             self.timestamp = datetime.now(timezone.utc).isoformat()
 
@@ -91,8 +91,7 @@ class AlertRule:
 
 
 class StructuredLogger:
-    """
-    Structured logger with JSON formatting and context support.
+    """Structured logger with JSON formatting and context support.
 
     Features:
     - JSON structured logging
@@ -112,11 +111,11 @@ class StructuredLogger:
         """Initialize the structured logger.
 
         Args:
-            name: Logger name.
-            level: Logging level.
-            log_file: Optional file path for log output.
-            enable_json: Whether to use JSON formatting.
-            context: Additional context to include in logs.
+            name: Logger name
+            level: Logging level (default: INFO)
+            log_file: Optional log file path (default: None)
+            enable_json: Enable JSON structured logging (default: True)
+            context: Optional context dictionary (default: None)
         """
         self.name = name
         self.context = context or {}
@@ -155,7 +154,8 @@ class StructuredLogger:
                 file_handler.setFormatter(self._json_formatter())
             self.logger.addHandler(file_handler)
 
-    def _json_formatter(self) -> logging.Formatter:
+    @staticmethod
+    def _json_formatter() -> logging.Formatter:
         """Create JSON log formatter."""
         class JSONFormatter(logging.Formatter):
             def format(self, record):
@@ -232,8 +232,7 @@ class StructuredLogger:
 
 
 class AlertManager:
-    """
-    Alert management system with rule-based triggering.
+    """Alert management system with rule-based triggering.
 
     Features:
     - Rule-based alert triggering
@@ -251,9 +250,9 @@ class AlertManager:
         """Initialize the alert manager.
 
         Args:
-            log_dir: Directory to store alert logs.
-            webhook_url: Optional webhook URL for alerts.
-            slack_webhook: Optional Slack webhook URL.
+            log_dir: Directory for alert logs (default: "logs/alerts")
+            webhook_url: Optional webhook URL for notifications (default: None)
+            slack_webhook: Optional Slack webhook URL (default: None)
         """
         self.log_dir = Path(log_dir)
         self.log_dir.mkdir(parents=True, exist_ok=True)
@@ -285,8 +284,7 @@ class AlertManager:
         metadata: dict[str, Any] | None = None,
         channel: AlertChannel = AlertChannel.LOG,
     ) -> None:
-        """
-        Send an alert.
+        """Send an alert.
 
         Args:
             name: Alert name
@@ -379,8 +377,7 @@ class AlertManager:
             logging.error(f"Slack alert error: {e}")
 
     def check_rules(self, metrics: dict[str, Any]) -> None:
-        """
-        Check alert rules against current metrics.
+        """Check alert rules against current metrics.
 
         Args:
             metrics: Current system metrics
@@ -401,9 +398,9 @@ class AlertManager:
                 asyncio.create_task(self._trigger_rule(rule, metrics))
                 rule.last_triggered = datetime.now(timezone.utc)
 
-    def _evaluate_condition(self, condition: str, metrics: dict[str, Any]) -> bool:
-        """
-        Evaluate an alert condition using a safe AST-based expression parser.
+    @staticmethod
+    def _evaluate_condition(condition: str, metrics: dict[str, Any]) -> bool:
+        """Evaluate an alert condition using a safe AST-based expression parser.
 
         Example condition: "error_count > 10"
 
@@ -500,8 +497,7 @@ class AlertManager:
                 _check_blocked_nodes(child)
 
         def eval_node(node):
-            """
-            Safely evaluate an AST node.
+            """Safely evaluate an AST node.
 
             This function only processes whitelisted node types and operators.
             Any attempt to use blocked operations will raise ValueError.
@@ -629,8 +625,7 @@ class AlertManager:
 
 
 class LogAnalyzer:
-    """
-    Log analysis and metrics extraction.
+    """Log analysis and metrics extraction.
 
     Features:
     - Log parsing and filtering
@@ -643,7 +638,7 @@ class LogAnalyzer:
         """Initialize the log analyzer.
 
         Args:
-            log_dir: Directory containing log files.
+            log_dir: Directory containing log files (default: "logs")
         """
         self.log_dir = Path(log_dir)
 
@@ -665,7 +660,8 @@ class LogAnalyzer:
 
         return logs
 
-    def extract_metrics(self, logs: list[dict[str, Any]]) -> dict[str, Any]:
+    @staticmethod
+    def extract_metrics(logs: list[dict[str, Any]]) -> dict[str, Any]:
         """Extract metrics from logs."""
         metrics = {
             "total_logs": len(logs),
@@ -695,14 +691,13 @@ class LogAnalyzer:
 
         return metrics
 
+    @staticmethod
     def detect_anomalies(
-        self,
         metrics: dict[str, Any],
         baseline: dict[str, Any],
         threshold: float = 2.0,
     ) -> list[str]:
-        """
-        Detect anomalies in metrics compared to baseline.
+        """Detect anomalies in metrics compared to baseline.
 
         Args:
             metrics: Current metrics

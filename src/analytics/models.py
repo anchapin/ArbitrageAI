@@ -1,5 +1,4 @@
-"""
-Analytics Models.
+"""Analytics Models.
 
 Pydantic models and dataclasses for analytics.
 """

@@ -1,5 +1,4 @@
-"""
-Fine-Tuning CLI Tool.
+"""Fine-Tuning CLI Tool.
 
 Command-line interface for managing fine-tuning pipeline.
 """
@@ -30,15 +29,14 @@ class FineTuningCLI:
         self.evaluator = ModelEvaluator()
         self.ab_test = ABTestFramework()
 
+    @staticmethod
     def prepare_dataset(
-        self,
         format: str = "openai",
         min_rating: int = 4,
         domain: str | None = None,
         output_dir: str | None = None,
     ) -> str:
-        """
-        Prepare a fine-tuning dataset.
+        """Prepare a fine-tuning dataset.
 
         Args:
             format: Dataset format (openai, alpaca, jsonl)
@@ -61,15 +59,14 @@ class FineTuningCLI:
         print(f"✓ Dataset prepared: {dataset_path}")
         return dataset_path
 
+    @staticmethod
     def create_openai_job(
-        self,
         model: str,
         training_file: str,
         suffix: str | None = None,
         validation_file: str | None = None,
     ) -> None:
-        """
-        Create an OpenAI fine-tuning job.
+        """Create an OpenAI fine-tuning job.
 
         Args:
             model: Base model (gpt-3.5-turbo or gpt-4o-mini)
@@ -102,9 +99,9 @@ class FineTuningCLI:
         print(f"  Status: {job['status']}")
         print(f"  Fine-tuned model: {job['fine_tuned_model']}")
 
-    def check_openai_job_status(self, job_id: str) -> None:
-        """
-        Check status of OpenAI fine-tuning job.
+    @staticmethod
+    def check_openai_job_status(job_id: str) -> None:
+        """Check status of OpenAI fine-tuning job.
 
         Args:
             job_id: Fine-tuning job ID
@@ -119,15 +116,14 @@ class FineTuningCLI:
         if status.get("trained_tokens"):
             print(f"  Trained tokens: {status['trained_tokens']}")
 
+    @staticmethod
     def create_ollama_finetuning_script(
-        self,
         base_model: str,
         dataset_file: str,
         output_model_name: str,
         num_epochs: int = 3,
     ) -> None:
-        """
-        Generate Ollama fine-tuning script.
+        """Generate Ollama fine-tuning script.
 
         Args:
             base_model: Base model name
@@ -158,8 +154,7 @@ class FineTuningCLI:
         test_file: str,
         cost_per_inference: float = 0.0,
     ) -> None:
-        """
-        Evaluate a model on test set.
+        """Evaluate a model on test set.
 
         Args:
             model_name: Model name
@@ -204,8 +199,7 @@ class FineTuningCLI:
         model_a: str,
         model_b: str,
     ) -> None:
-        """
-        Set up a new A/B test.
+        """Set up a new A/B test.
 
         Args:
             test_id: Test identifier
@@ -228,8 +222,7 @@ class FineTuningCLI:
         accuracy: float | None = None,
         cost: float = 0.0,
     ) -> None:
-        """
-        Register a fine-tuned model.
+        """Register a fine-tuned model.
 
         Args:
             model_name: Model name
@@ -298,8 +291,7 @@ class FineTuningCLI:
                 print(f"  {model}: {data['count']} calls, ${data['total']:.2f}")
 
     def rollback_model(self, model_name: str, target_version: int) -> None:
-        """
-        Rollback to a previous model version.
+        """Rollback to a previous model version.
 
         Args:
             model_name: Model name
@@ -320,8 +312,7 @@ class FineTuningCLI:
         domain: str | None = None,
         suffix: str | None = None,
     ) -> None:
-        """
-        Run end-to-end fine-tuning pipeline automatically.
+        """Run end-to-end fine-tuning pipeline automatically.
 
         Args:
             base_model: Base model to fine-tune

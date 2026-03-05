@@ -1,5 +1,4 @@
-"""
-Advanced Analytics Dashboard with Predictive Insights.
+"""Advanced Analytics Dashboard with Predictive Insights.
 
 This module provides comprehensive analytics and predictive insights for the ArbitrageAI platform.
 It includes real-time metrics, trend analysis, predictive modeling, and business intelligence features.
@@ -140,8 +139,7 @@ class AnalyticsEngine:
     """Core analytics engine for processing and analyzing platform data."""
 
     def __init__(self, db: Session):
-        """
-        Initialize the analytics engine.
+        """Initialize the analytics engine.
 
         Args:
             db: Database session
@@ -151,7 +149,8 @@ class AnalyticsEngine:
         self.cache_ttl = 300  # 5 minutes
         self.prediction_models = {}
 
-    def _get_cache_key(self, query_type: str, params: dict[str, Any]) -> str:
+    @staticmethod
+    def _get_cache_key(query_type: str, params: dict[str, Any]) -> str:
         """Generate cache key for query results."""
         return f"{query_type}:{hash(json.dumps(params, sort_keys=True))}"
 
@@ -226,8 +225,7 @@ class KPIAnalytics(AnalyticsEngine):
 
     @task(name="calculate_kpis")
     def calculate_kpis(self, time_range: str = "24h") -> KPIResponse:
-        """
-        Calculate key performance indicators.
+        """Calculate key performance indicators.
 
         Args:
             time_range: Time range for calculation ("24h", "7d", "30d", "all")
@@ -265,7 +263,8 @@ class KPIAnalytics(AnalyticsEngine):
         self._cache_result(cache_key, kpis)
         return kpis
 
-    def _get_time_filter(self, time_range: str) -> datetime:
+    @staticmethod
+    def _get_time_filter(time_range: str) -> datetime:
         """Get time filter for queries."""
         now = datetime.now()
         if time_range == "24h":
@@ -330,8 +329,7 @@ class PredictiveAnalytics(AnalyticsEngine):
     def generate_predictions(
         self, metric: str, horizon_hours: int = 24,
     ) -> PredictionResult:
-        """
-        Generate predictions for a specific metric.
+        """Generate predictions for a specific metric.
 
         Args:
             metric: Metric to predict ("revenue", "tasks", "success_rate")
@@ -455,8 +453,9 @@ class PredictiveAnalytics(AnalyticsEngine):
 
         return TimeSeriesData(timestamps=timestamps, values=values, labels=labels)
 
+    @staticmethod
     def _train_prediction_model(
-        self, data: TimeSeriesData,
+        data: TimeSeriesData,
     ) -> tuple[LinearRegression, float]:
         """Train a prediction model using historical data."""
         if len(data.values) < 5:
@@ -480,15 +479,17 @@ class PredictiveAnalytics(AnalyticsEngine):
 
         return model, accuracy
 
-    def _make_prediction(self, model: LinearRegression, horizon_hours: int) -> float:
+    @staticmethod
+    def _make_prediction(model: LinearRegression, horizon_hours: int) -> float:
         """Make prediction for future time point."""
         # Predict for the next time point
         future_time = np.array([[horizon_hours]])
         prediction = model.predict(future_time)
         return float(prediction[0])
 
+    @staticmethod
     def _calculate_confidence_interval(
-        self, model: LinearRegression, data: TimeSeriesData, prediction: float,
+        model: LinearRegression, data: TimeSeriesData, prediction: float,
     ) -> tuple[float, float]:
         """Calculate confidence interval for prediction."""
         # Simple confidence interval based on historical variance
@@ -508,8 +509,7 @@ class AnomalyDetection(AnalyticsEngine):
     def detect_anomalies(
         self, metric: str, time_range: str = "24h",
     ) -> list[AnomalyAlert]:
-        """
-        Detect anomalies in a specific metric.
+        """Detect anomalies in a specific metric.
 
         Args:
             metric: Metric to analyze ("revenue", "tasks", "success_rate")
@@ -592,8 +592,9 @@ class AnomalyDetection(AnalyticsEngine):
         results = query.all()
         return [float(row[0] or 0) for row in results]
 
+    @staticmethod
     def _detect_isolation_forest_anomalies(
-        self, data: list[float],
+        data: list[float],
     ) -> list[dict[str, Any]]:
         """Detect anomalies using Isolation Forest algorithm."""
         if len(data) < 20:
@@ -646,8 +647,7 @@ class PerformanceAnalytics(AnalyticsEngine):
 
     @task(name="analyze_performance")
     def analyze_performance(self) -> list[PerformanceMetric]:
-        """
-        Analyze system performance and generate metrics.
+        """Analyze system performance and generate metrics.
 
         Returns:
             List of performance metrics
@@ -786,22 +786,26 @@ class PerformanceAnalytics(AnalyticsEngine):
             .count()
         )
 
-    def _calculate_avg_query_time(self) -> float:
+    @staticmethod
+    def _calculate_avg_query_time() -> float:
         """Calculate average database query time (placeholder)."""
         # This would integrate with actual query performance monitoring
         return 50.0  # Placeholder value
 
-    def _calculate_avg_response_time(self) -> float:
+    @staticmethod
+    def _calculate_avg_response_time() -> float:
         """Calculate average API response time (placeholder)."""
         # This would integrate with actual response time monitoring
         return 200.0  # Placeholder value
 
-    def _calculate_user_satisfaction(self) -> float:
+    @staticmethod
+    def _calculate_user_satisfaction() -> float:
         """Calculate user satisfaction score (placeholder)."""
         # This would integrate with actual user feedback and metrics
         return 8.5  # Placeholder value
 
-    def _calculate_dashboard_load_time(self) -> float:
+    @staticmethod
+    def _calculate_dashboard_load_time() -> float:
         """Calculate dashboard load time (placeholder)."""
         # This would integrate with actual frontend performance monitoring
         return 1500.0  # Placeholder value
@@ -811,8 +815,7 @@ class AnalyticsAPI:
     """Main analytics API class combining all analytics engines."""
 
     def __init__(self, db: Session):
-        """
-        Initialize the analytics API.
+        """Initialize the analytics API.
 
         Args:
             db: Database session
@@ -824,8 +827,7 @@ class AnalyticsAPI:
 
     @task(name="get_analytics_summary")
     def get_analytics_summary(self, time_range: str = "24h") -> AnalyticsSummary:
-        """
-        Get comprehensive analytics summary.
+        """Get comprehensive analytics summary.
 
         Args:
             time_range: Time range for analysis
@@ -907,8 +909,9 @@ class AnalyticsAPI:
 
         return anomalies
 
+    @staticmethod
     def _generate_recommendations(
-        self, kpis: KPIResponse, performance_metrics: list[PerformanceMetric],
+        kpis: KPIResponse, performance_metrics: list[PerformanceMetric],
     ) -> list[str]:
         """Generate actionable recommendations based on analytics."""
         recommendations = []
@@ -952,8 +955,7 @@ async def get_kpis(
     time_range: str = Query("24h", description="Time range: 24h, 7d, 30d, all"),
     db: Session = Depends(get_db),  # noqa: B008
 ):
-    """
-    Get key performance indicators.
+    """Get key performance indicators.
 
     Args:
         time_range: Time range for KPI calculation
@@ -977,8 +979,7 @@ async def get_predictions(
     horizon_hours: int = Query(24, description="Prediction horizon in hours"),
     db: Session = Depends(get_db),  # noqa: B008
 ):
-    """
-    Get predictions for a specific metric.
+    """Get predictions for a specific metric.
 
     Args:
         metric: Metric to predict (revenue, tasks, success_rate)
@@ -1003,8 +1004,7 @@ async def get_anomalies(
     time_range: str = Query("24h", description="Time range for anomaly detection"),
     db: Session = Depends(get_db),  # noqa: B008
 ):
-    """
-    Get anomalies for a specific metric.
+    """Get anomalies for a specific metric.
 
     Args:
         metric: Metric to analyze (revenue, tasks, success_rate)
@@ -1025,8 +1025,7 @@ async def get_anomalies(
 @router.get("/performance", response_model=list[PerformanceMetric])
 @task(name="get_performance_endpoint")
 async def get_performance(db: Session = Depends(get_db)):  # noqa: B008
-    """
-    Get performance metrics.
+    """Get performance metrics.
 
     Args:
         db: Database session
@@ -1048,8 +1047,7 @@ async def get_analytics_summary(
     time_range: str = Query("24h", description="Time range for analysis"),
     db: Session = Depends(get_db),  # noqa: B008
 ):
-    """
-    Get comprehensive analytics summary.
+    """Get comprehensive analytics summary.
 
     Args:
         time_range: Time range for analysis
@@ -1069,8 +1067,7 @@ async def get_analytics_summary(
 @router.get("/recommendations", response_model=list[str])
 @task(name="get_recommendations_endpoint")
 async def get_recommendations(db: Session = Depends(get_db)):  # noqa: B008
-    """
-    Get actionable recommendations based on analytics.
+    """Get actionable recommendations based on analytics.
 
     Args:
         db: Database session
@@ -1090,8 +1087,7 @@ async def get_recommendations(db: Session = Depends(get_db)):  # noqa: B008
 @router.get("/widgets", response_model=list[DashboardWidget])
 @task(name="get_dashboard_widgets_endpoint")
 async def get_dashboard_widgets(db: Session = Depends(get_db)):  # noqa: B008
-    """
-    Get configured dashboard widgets.
+    """Get configured dashboard widgets.
 
     Args:
         db: Database session

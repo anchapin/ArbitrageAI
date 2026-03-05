@@ -1,5 +1,5 @@
-"""
-Centralized Configuration Manager for ArbitrageAI.
+"""Centralized Configuration Manager for ArbitrageAI.
+
 Combines and replaces legacy configuration management.
 Provides validation and audit logging for configuration changes.
 """
@@ -27,8 +27,8 @@ class ValidationError(Exception):
 
 
 class ConfigManager:
-    """
-    Manages application configuration, replacing hardcoded magic numbers.
+    """Manages application configuration, replacing hardcoded magic numbers.
+
     Loads from environment variables with safe defaults and validation.
     """
 
@@ -124,6 +124,7 @@ class ConfigManager:
         "DATABASE_URL": "sqlite:///./data/tasks.db",
         # Authentication - Auto-loaded from secure storage or environment
         # JWT_SECRET_KEY is loaded from secrets or environment (not hardcoded)
+        "JWT_SECRET_KEY": None,
     }
 
     def __init__(self):
@@ -157,9 +158,9 @@ class ConfigManager:
                 f"LLM_HEALTH_CHECK_INITIAL_DELAY_MS ({self.LLM_HEALTH_CHECK_INITIAL_DELAY_MS}) cannot exceed LLM_HEALTH_CHECK_MAX_DELAY_MS ({self.LLM_HEALTH_CHECK_MAX_DELAY_MS})",
             )
 
-    def _load_secure_secrets(self):
-        """
-        Load secure secrets from secure storage or environment variables.
+    @staticmethod
+    def _load_secure_secrets():
+        """Load secure secrets from secure storage or environment variables.
 
         This method:
         1. Attempts to load secrets from secure file storage
@@ -269,8 +270,7 @@ class ConfigManager:
 
     @staticmethod
     def validate_production_configuration() -> None:
-        """
-        Validate production configuration and fail fast on insecure defaults.
+        """Validate production configuration and fail fast on insecure defaults.
 
         This function should be called during application startup,
         before any sensitive operations are performed.

@@ -1,5 +1,4 @@
-"""
-Distributed Lock Manager for Bid Placement.
+"""Distributed Lock Manager for Bid Placement.
 
 This module implements a database-backed distributed lock mechanism to prevent
 race conditions when multiple scanner instances attempt to place bids on the
@@ -29,8 +28,7 @@ logger = get_logger(__name__)
 
 
 class BidLockManager:
-    """
-    Database-backed distributed lock manager for bid placement.
+    """Database-backed distributed lock manager for bid placement.
 
     Prevents concurrent bids on the same marketplace posting by using
     a DistributedLock table with a unique constraint on lock_key.
@@ -38,8 +36,7 @@ class BidLockManager:
     """
 
     def __init__(self, ttl: int = 300):
-        """
-        Initialize the BidLockManager.
+        """Initialize the BidLockManager.
 
         Args:
             ttl: Time to live for locks in seconds (default: 300 = 5 minutes)
@@ -52,15 +49,18 @@ class BidLockManager:
         self._lock_conflicts: int = 0
         self._lock_timeouts: int = 0
 
-    def _make_lock_key(self, marketplace_id: str, posting_id: str) -> str:
+    @staticmethod
+    def _make_lock_key(marketplace_id: str, posting_id: str) -> str:
         """Create a lock key from marketplace and posting IDs."""
         return f"bid:lock:{marketplace_id}:{posting_id}"
 
-    def _get_db(self) -> Session:
+    @staticmethod
+    def _get_db() -> Session:
         """Create a new database session."""
         return SessionLocal()
 
-    def _cleanup_expired_locks(self, db: Session) -> int:
+    @staticmethod
+    def _cleanup_expired_locks(db: Session) -> int:
         """Remove expired locks from the database."""
         now = time.time()
         expired = (
@@ -84,8 +84,7 @@ class BidLockManager:
         timeout: float = 10.0,
         holder_id: str = "default",
     ) -> bool:
-        """
-        Try to acquire a distributed lock for bidding on a specific posting.
+        """Try to acquire a distributed lock for bidding on a specific posting.
 
         Uses atomic INSERT with unique constraint as compare-and-set.
         Retries with short sleeps until timeout.
@@ -187,8 +186,7 @@ class BidLockManager:
     async def release_lock(
         self, marketplace_id: str, posting_id: str, holder_id: str = "default",
     ) -> bool:
-        """
-        Release a previously acquired lock.
+        """Release a previously acquired lock.
 
         Args:
             marketplace_id: ID of the marketplace
@@ -240,8 +238,7 @@ class BidLockManager:
         timeout: float = 10.0,
         holder_id: str = "default",
     ):
-        """
-        Async context manager for acquiring and releasing locks.
+        """Async context manager for acquiring and releasing locks.
 
         Usage:
             async with bid_lock_manager.with_lock("upwork", "posting_123"):

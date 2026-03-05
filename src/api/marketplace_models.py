@@ -1,6 +1,4 @@
-"""
-Marketplace-related database models.
-"""
+"""Marketplace-related database models."""
 
 from datetime import datetime
 import logging
@@ -61,10 +59,10 @@ class Bid(Base):
     submitted_at = Column(DateTime, nullable=True)
 
     def to_dict(self):
-        """Convert the Bid model to a dictionary.
+        """Convert Bid to dictionary representation.
 
         Returns:
-            dict: A dictionary representation of the Bid model.
+            Dictionary containing bid details, status, and timestamps.
         """
         return {
             "id": self.id, "job_title": self.job_title, "job_description": self.job_description,
@@ -128,10 +126,10 @@ class ArenaCompetition(Base):
     completed_at = Column(DateTime, nullable=True)
 
     def to_dict(self):
-        """Convert the ArenaCompetition model to a dictionary.
+        """Convert ArenaCompetition to dictionary representation.
 
         Returns:
-            dict: A dictionary representation of the ArenaCompetition model.
+            Dictionary containing competition details, agent stats, and results.
         """
         return {
             "id": self.id, "task_id": self.task_id,
@@ -165,10 +163,10 @@ class DistributedLock(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     def to_dict(self):
-        """Convert the DistributedLock model to a dictionary.
+        """Convert DistributedLock to dictionary representation.
 
         Returns:
-            dict: A dictionary representation of the DistributedLock model.
+            Dictionary containing lock key, holder, and timing information.
         """
         return {
             "id": self.id, "lock_key": self.lock_key, "holder_id": self.holder_id,
@@ -203,10 +201,10 @@ class SimulationBid(Base):
     outcome_updated_at = Column(DateTime, nullable=True)
 
     def to_dict(self):
-        """Convert the SimulationBid model to a dictionary.
+        """Convert SimulationBid to dictionary representation.
 
         Returns:
-            dict: A dictionary representation of the SimulationBid model.
+            Dictionary containing simulation bid details and outcome data.
         """
         return {
             "id": self.id, "job_title": self.job_title, "job_description": self.job_description,

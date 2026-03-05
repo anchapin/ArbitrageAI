@@ -1,5 +1,4 @@
-"""
-File upload validation module.
+"""File upload validation module.
 
 Provides comprehensive file validation including:
 - File type validation (whitelist allowed extensions)
@@ -56,8 +55,7 @@ FILE_TYPE_TO_EXTENSIONS = {
 
 
 def sanitize_filename(filename: str) -> str:
-    """
-    Sanitize filename to prevent directory traversal and other attacks.
+    """Sanitize filename to prevent directory traversal and other attacks.
 
     Args:
         filename: Original filename
@@ -104,8 +102,7 @@ def sanitize_filename(filename: str) -> str:
 
 
 def validate_file_extension(filename: str, allowed_types: list | None = None) -> str:
-    """
-    Validate file extension against whitelist.
+    """Validate file extension against whitelist.
 
     Args:
         filename: Original filename
@@ -144,8 +141,7 @@ def validate_file_extension(filename: str, allowed_types: list | None = None) ->
 
 
 def validate_file_size(file_content: bytes, max_size: int = MAX_FILE_SIZE_BYTES) -> int:
-    """
-    Validate file size.
+    """Validate file size.
 
     Args:
         file_content: Raw file content (bytes)
@@ -175,8 +171,7 @@ def validate_file_size(file_content: bytes, max_size: int = MAX_FILE_SIZE_BYTES)
 
 
 def validate_file_signature(file_content: bytes, ext: str) -> bool:
-    """
-    Validate file content using magic bytes (file signatures).
+    """Validate file content using magic bytes (file signatures).
 
     Args:
         file_content: Raw file content (bytes)
@@ -221,8 +216,7 @@ def validate_file_signature(file_content: bytes, ext: str) -> bool:
 def decode_base64_file(
     base64_content: str,
 ) -> tuple[bytes, int]:
-    """
-    Decode base64-encoded file content.
+    """Decode base64-encoded file content.
 
     Args:
         base64_content: Base64-encoded file content
@@ -247,8 +241,7 @@ def decode_base64_file(
 
 
 def scan_file_for_malware(file_content: bytes, filename: str) -> bool:
-    """
-    Scan file for malware using external service (ClamAV, VirusTotal, etc).
+    """Scan file for malware using external service (ClamAV, VirusTotal, etc).
 
     This is a mock implementation for local testing. In production, integrate with:
     - ClamAV (open-source)
@@ -283,8 +276,7 @@ def scan_file_for_malware(file_content: bytes, filename: str) -> bool:
 
 
 def _scan_with_virustotal(file_content: bytes, filename: str) -> bool:
-    """
-    Scan using VirusTotal API (requires API key).
+    """Scan using VirusTotal API (requires API key).
 
     Args:
         file_content: Raw file content
@@ -327,8 +319,7 @@ def _scan_with_virustotal(file_content: bytes, filename: str) -> bool:
 
 
 def _scan_with_clamav(file_content: bytes, filename: str) -> bool:
-    """
-    Scan using ClamAV daemon.
+    """Scan using ClamAV daemon.
 
     Args:
         file_content: Raw file content
@@ -383,8 +374,7 @@ def validate_file_upload(
     max_size: int = MAX_FILE_SIZE_BYTES,
     scan_malware: bool = True,
 ) -> tuple[str, bytes, str]:
-    """
-    Comprehensive file validation pipeline.
+    """Comprehensive file validation pipeline.
 
     Performs all validation checks in sequence:
     1. Filename sanitization

@@ -1,5 +1,4 @@
-"""
-Plan Executor and Reviewer.
+"""Plan Executor and Reviewer.
 
 This module handles plan execution and artifact review.
 """
@@ -91,7 +90,8 @@ class PlanExecutor:
             execution_log["completed_at"] = datetime.now(timezone.utc).isoformat()
             return {"success": False, "error": str(e), "execution_log": execution_log}
 
-    def _infer_task_type(self, plan: dict[str, Any]) -> str:
+    @staticmethod
+    def _infer_task_type(plan: dict[str, Any]) -> str:
         """Infer task type from work plan."""
         recommended = plan.get("recommended_chart_type", "")
         if recommended in {"bar", "line", "pie", "scatter", "histogram"}:
@@ -102,7 +102,8 @@ class PlanExecutor:
             return "document"
         return "auto"
 
-    def _infer_output_format(self, plan: dict[str, Any]) -> str:
+    @staticmethod
+    def _infer_output_format(plan: dict[str, Any]) -> str:
         """Infer output format from work plan."""
         output_format = plan.get("output_format", "")
         if output_format in {"image", "docx", "xlsx", "pdf"}:

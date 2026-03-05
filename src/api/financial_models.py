@@ -1,6 +1,4 @@
-"""
-Financial database models.
-"""
+"""Financial database models."""
 
 from datetime import datetime
 import logging
@@ -51,10 +49,10 @@ class EscalationLog(Base):
     resolved_at = Column(DateTime, nullable=True)
 
     def to_dict(self):
-        """Convert the Refund model to a dictionary.
+        """Convert EscalationLog to dictionary.
 
         Returns:
-            dict: A dictionary representation of the Refund model.
+            Dictionary containing escalation log data with timestamps.
         """
         return {
             "id": self.id, "task_id": self.task_id, "reason": self.reason,
@@ -95,10 +93,10 @@ class ThresholdPetition(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     def to_dict(self):
-        """Convert the ThresholdPetition model to a dictionary.
+        """Convert ThresholdPetition to dictionary.
 
         Returns:
-            dict: A dictionary representation of the ThresholdPetition model.
+            Dictionary containing petition data with threshold values and decision info.
         """
         return {
             "id": self.id,
@@ -147,10 +145,10 @@ class CostEntry(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     def to_dict(self):
-        """Convert the CostEntry model to a dictionary.
+        """Convert CostEntry to dictionary.
 
         Returns:
-            dict: A dictionary representation of the CostEntry model.
+            Dictionary containing cost entry data with ROI information.
         """
         return {
             "id": self.id, "task_id": self.task_id, "bid_id": self.bid_id,
@@ -191,10 +189,10 @@ class ConfidenceEntry(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     def to_dict(self):
-        """Convert the ConfidenceEntry model to a dictionary.
+        """Convert ConfidenceEntry to dictionary.
 
         Returns:
-            dict: A dictionary representation of the ConfidenceEntry model.
+            Dictionary containing confidence entry data with streak information.
         """
         return {
             "id": self.id, "threshold": self.threshold,
@@ -230,10 +228,10 @@ class ConfidenceAdjustment(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     def to_dict(self):
-        """Convert the ConfidenceAdjustment model to a dictionary.
+        """Convert ConfidenceAdjustment to dictionary.
 
         Returns:
-            dict: A dictionary representation of the ConfidenceAdjustment model.
+            Dictionary containing adjustment data with old/new conservatism values.
         """
         return {
             "id": self.id, "old_conservatism": self.old_conservatism,
@@ -265,10 +263,10 @@ class VirtualWallet(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     def to_dict(self):
-        """Convert the VirtualWallet model to a dictionary.
+        """Convert VirtualWallet to dictionary.
 
         Returns:
-            dict: A dictionary representation of the VirtualWallet model.
+            Dictionary containing wallet balance, budget info, and usage percentages.
         """
         balance_cents = self.balance_cents or 0
         total_spent_cents = self.total_spent_cents or 0
@@ -304,10 +302,10 @@ class WebhookSecret(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     def to_dict(self):
-        """Convert the WebhookSecret model to a dictionary.
+        """Convert WebhookSecret to dictionary.
 
         Returns:
-            dict: A dictionary representation of the WebhookSecret model.
+            Dictionary containing webhook secret metadata.
         """
         return {
             "id": self.id, "name": self.name, "is_active": self.is_active,
@@ -344,10 +342,10 @@ class LearningEntry(Base):
     created_at = Column(DateTime, default=datetime.utcnow, index=True)
 
     def to_dict(self) -> dict:
-        """Convert the LearningEntry model to a dictionary.
+        """Convert LearningEntry to dictionary.
 
         Returns:
-            dict: A dictionary representation of the LearningEntry model.
+            Dictionary containing learning event data with prediction errors.
         """
         return {
             "id": self.id, "task_id": self.task_id, "event_type": self.event_type,

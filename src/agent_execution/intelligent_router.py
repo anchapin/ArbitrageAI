@@ -1,5 +1,4 @@
-"""
-Intelligent Task Routing System.
+"""Intelligent Task Routing System.
 
 This module provides ML-based task classification and automatic routing
 to optimize task distribution and improve success rates.
@@ -21,13 +20,10 @@ logger = get_logger(__name__)
 
 
 class IntelligentRouter:
-    """
-    Intelligent task router using ML classification and performance data.
-    """
+    """Intelligent task router using ML classification and performance data."""
 
     def __init__(self, db_session=None, model_path: str | None = None):
-        """
-        Initialize the intelligent router.
+        """Initialize the intelligent router.
 
         Args:
             db_session: Database session for performance tracking
@@ -164,8 +160,9 @@ class IntelligentRouter:
             created_at=datetime.now(),
         )
 
+    @staticmethod
     def _calculate_complexity_score(
-        self, user_request: str, csv_headers: list[str], domain: str,
+        user_request: str, csv_headers: list[str], domain: str,
     ) -> float:
         """Calculate task complexity score."""
         score = 0.0
@@ -196,7 +193,8 @@ class IntelligentRouter:
 
         return min(score, 1.0)
 
-    def _estimate_execution_time(self, complexity: float, output_format: str) -> float:
+    @staticmethod
+    def _estimate_execution_time(complexity: float, output_format: str) -> float:
         """Estimate execution time based on complexity and output format."""
         base_time = 60
         time_multiplier = 1 + (complexity * 2)
@@ -206,8 +204,9 @@ class IntelligentRouter:
 
         return base_time * time_multiplier * format_multiplier
 
+    @staticmethod
     def _calculate_success_rate(
-        self, domain: str, task_type: str, output_format: str,
+        domain: str, task_type: str, output_format: str,
     ) -> float:
         """Calculate expected success rate."""
         domain_rates = {"legal": 0.85, "accounting": 0.90, "data_analysis": 0.95}
@@ -385,7 +384,8 @@ class IntelligentRouter:
                 "model_used": "none",
             }
 
-    def _profile_to_dict(self, profile: TaskProfile) -> dict[str, Any]:
+    @staticmethod
+    def _profile_to_dict(profile: TaskProfile) -> dict[str, Any]:
         """Convert TaskProfile to dictionary."""
         from dataclasses import asdict
         return asdict(profile)
@@ -424,3 +424,36 @@ class IntelligentRouter:
             "handler_performance": self.performance_tracker.metrics,
             "top_handlers": performance_recommendations[:5] if performance_recommendations else [],
         }
+
+
+# Module-level singleton instance
+_router_instance: IntelligentRouter | None = None
+
+
+def get_intelligent_router() -> IntelligentRouter:
+    """Get the singleton IntelligentRouter instance."""
+    global _router_instance
+    if _router_instance is None:
+        _router_instance = IntelligentRouter()
+    return _router_instance
+
+
+async def route_task_intelligently(
+    task_profile: TaskProfile,
+    db_session=None,
+    **kwargs,
+) -> tuple[RouteDecision, dict[str, Any]]:
+    """Convenience function to route a task intelligently.
+
+    Args:
+        task_profile: The task profile to route
+        db_session: Optional database session
+        **kwargs: Additional arguments for execution
+
+    Returns:
+        Tuple of (RouteDecision, execution_result)
+    """
+    router = get_intelligent_router()
+    decision = await router.route_task(task_profile)
+    result = await router._execute_with_handler(task_profile, decision, **kwargs)
+    return decision, result

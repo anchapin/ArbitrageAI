@@ -1,5 +1,4 @@
-"""
-Distillation Dataset Manager.
+"""Distillation Dataset Manager.
 
 This module manages the curated dataset of high-quality examples for fine-tuning.
 It provides utilities for filtering, validating, and preparing data for training.
@@ -30,8 +29,7 @@ from .data_collector import (  # noqa: E402
 
 
 class DistillationDatasetManager:
-    """
-    Manages the curated distillation dataset.
+    """Manages the curated distillation dataset.
 
     Provides utilities for:
     - Loading and filtering examples
@@ -42,8 +40,7 @@ class DistillationDatasetManager:
     def __init__(
         self, curated_file: str | None = None, teacher_file: str | None = None,
     ):
-        """
-        Initialize the dataset manager.
+        """Initialize the dataset manager.
 
         Args:
             curated_file: Path to curated dataset file
@@ -61,8 +58,7 @@ class DistillationDatasetManager:
         max_rating: int = 5,
         limit: int | None = None,
     ) -> list[dict[str, Any]]:
-        """
-        Load examples from the dataset with optional filters.
+        """Load examples from the dataset with optional filters.
 
         Args:
             filepath: Path to JSONL file (defaults to curated)
@@ -105,9 +101,9 @@ class DistillationDatasetManager:
 
         return examples
 
-    def validate_example(self, example: dict[str, Any]) -> tuple:
-        """
-        Validate a single example for training quality.
+    @staticmethod
+    def validate_example(example: dict[str, Any]) -> tuple:
+        """Validate a single example for training quality.
 
         Args:
             example: The example to validate
@@ -139,8 +135,7 @@ class DistillationDatasetManager:
         filepath: str | None = None,
         min_examples: int = MIN_EXAMPLES_FOR_TRAINING,
     ) -> dict[str, Any]:
-        """
-        Validate the entire dataset.
+        """Validate the entire dataset.
 
         Args:
             filepath: Path to dataset file
@@ -199,8 +194,7 @@ class DistillationDatasetManager:
         domain: str | None = None,
         min_rating: int = MIN_CURATION_RATING,
     ) -> str:
-        """
-        Prepare dataset for Unsloth fine-tuning.
+        """Prepare dataset for Unsloth fine-tuning.
 
         Args:
             output_path: Path for output file
@@ -237,8 +231,7 @@ class DistillationDatasetManager:
         domain: str | None = None,
         min_rating: int = MIN_CURATION_RATING,
     ) -> str:
-        """
-        Prepare dataset for Ollama fine-tuning.
+        """Prepare dataset for Ollama fine-tuning.
 
         Args:
             output_path: Path for output file
@@ -266,8 +259,7 @@ class DistillationDatasetManager:
         return output_path
 
     def get_statistics(self) -> dict[str, Any]:
-        """
-        Get comprehensive dataset statistics.
+        """Get comprehensive dataset statistics.
 
         Returns:
             Dictionary with statistics
@@ -291,7 +283,8 @@ class DistillationDatasetManager:
             "avg_prompt_length": self._avg_field(curated, "prompt", len),
         }
 
-    def _count_by_field(self, examples: list[dict], field: str) -> dict:
+    @staticmethod
+    def _count_by_field(examples: list[dict], field: str) -> dict:
         """Count examples by a specific field."""
         counts = {}
         for ex in examples:
@@ -299,8 +292,9 @@ class DistillationDatasetManager:
             counts[value] = counts.get(value, 0) + 1
         return counts
 
+    @staticmethod
     def _avg_field(
-        self, examples: list[dict], field: str, transform: Callable = len,
+        examples: list[dict], field: str, transform: Callable = len,
     ) -> float:
         """Calculate average of a field."""
         if not examples:
@@ -309,8 +303,7 @@ class DistillationDatasetManager:
         return total / len(examples)
 
     def deduplicate(self, output_path: str | None = None) -> int:
-        """
-        Remove duplicate examples based on prompt content.
+        """Remove duplicate examples based on prompt content.
 
         Args:
             output_path: Path for deduplicated file (defaults to overwriting curated)
@@ -360,8 +353,7 @@ def validate_distillation_data() -> dict[str, Any]:
 
 
 def prepare_training_data(format: str = "unsloth", domain: str | None = None) -> str:
-    """
-    Prepare training data in the specified format.
+    """Prepare training data in the specified format.
 
     Args:
         format: Format type (unsloth, ollama, alpaca)

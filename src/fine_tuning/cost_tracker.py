@@ -1,5 +1,4 @@
-"""
-Cost Tracking and ROI Analysis.
+"""Cost Tracking and ROI Analysis.
 
 Tracks costs of fine-tuning and inference to calculate ROI.
 """
@@ -31,8 +30,7 @@ class CostAnalysis:
 
 
 class CostTracker:
-    """
-    Tracks and analyzes costs for fine-tuning and inference.
+    """Tracks and analyzes costs for fine-tuning and inference.
 
     Features:
     - Cost per training job
@@ -43,8 +41,7 @@ class CostTracker:
     """
 
     def __init__(self, tracker_path: str | None = None):
-        """
-        Initialize cost tracker.
+        """Initialize cost tracker.
 
         Args:
             tracker_path: Path to cost tracking file
@@ -83,8 +80,7 @@ class CostTracker:
         total_cost: float,
         metadata: dict[str, Any] | None = None,
     ) -> None:
-        """
-        Record a training job cost.
+        """Record a training job cost.
 
         Args:
             job_id: Training job ID
@@ -119,8 +115,7 @@ class CostTracker:
         is_fine_tuned: bool,
         metadata: dict[str, Any] | None = None,
     ) -> None:
-        """
-        Record an inference call cost.
+        """Record an inference call cost.
 
         Args:
             model_name: Model name
@@ -142,8 +137,7 @@ class CostTracker:
         self._save_costs()
 
     def get_job_cost(self, job_id: str) -> dict[str, Any] | None:
-        """
-        Get cost of a specific training job.
+        """Get cost of a specific training job.
 
         Args:
             job_id: Training job ID
@@ -154,8 +148,7 @@ class CostTracker:
         return self.costs["jobs"].get(job_id)
 
     def get_model_training_cost(self, model_name: str) -> float:
-        """
-        Get total training cost for a model.
+        """Get total training cost for a model.
 
         Args:
             model_name: Model name
@@ -172,8 +165,7 @@ class CostTracker:
     def get_inference_costs(
         self, model_name: str | None = None,
     ) -> dict[str, float]:
-        """
-        Get inference costs by model.
+        """Get inference costs by model.
 
         Args:
             model_name: Optional specific model
@@ -204,8 +196,7 @@ class CostTracker:
         expected_inference_count: int,
         cost_per_error: float = 10.0,
     ) -> CostAnalysis:
-        """
-        Calculate ROI for a fine-tuned model.
+        """Calculate ROI for a fine-tuned model.
 
         Args:
             model_name: Fine-tuned model name
@@ -274,8 +265,7 @@ class CostTracker:
         )
 
     def get_cost_summary(self) -> dict[str, Any]:
-        """
-        Get overall cost summary.
+        """Get overall cost summary.
 
         Returns:
             Cost summary dictionary
@@ -306,8 +296,7 @@ class CostTracker:
         }
 
     def export_costs(self, filepath: str) -> None:
-        """
-        Export cost tracking data.
+        """Export cost tracking data.
 
         Args:
             filepath: Path to export

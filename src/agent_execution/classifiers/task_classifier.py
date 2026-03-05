@@ -1,5 +1,4 @@
-"""
-Task Classifier Module.
+"""Task Classifier Module.
 
 ML-based task classifier using embeddings and clustering for intelligent task routing.
 """
@@ -17,14 +16,13 @@ from sklearn.metrics import accuracy_score
 
 from src.utils.logger import get_logger
 
-from .models import TaskProfile
+from src.agent_execution.models import TaskProfile
 
 logger = get_logger(__name__)
 
 
 class TaskClassifier:
-    """
-    ML-based task classifier using embeddings and clustering.
+    """ML-based task classifier using embeddings and clustering.
 
     Uses multiple classification approaches:
     1. Text-based classification using TF-IDF and Random Forest
@@ -33,8 +31,7 @@ class TaskClassifier:
     """
 
     def __init__(self, model_path: str | None = None):
-        """
-        Initialize the task classifier.
+        """Initialize the task classifier.
 
         Args:
             model_path: Optional path to load pre-trained models
@@ -49,7 +46,8 @@ class TaskClassifier:
         self.classification_metrics = defaultdict(list)
         self._load_models()
 
-    def _get_default_model_path(self) -> str:
+    @staticmethod
+    def _get_default_model_path() -> str:
         """Get default model storage path."""
         return str(Path(__file__).parent / "models" / "task_classifier.pkl")
 
@@ -92,8 +90,7 @@ class TaskClassifier:
             logger.error(f"Failed to save models: {e}", exc_info=True)
 
     def extract_features(self, task_profiles: list[TaskProfile]) -> np.ndarray:
-        """
-        Extract features from task profiles for ML classification.
+        """Extract features from task profiles for ML classification.
 
         Args:
             task_profiles: List of task profiles
@@ -137,8 +134,7 @@ class TaskClassifier:
         return combined_features
 
     def train(self, task_profiles: list[TaskProfile], labels: list[str]):
-        """
-        Train the task classifier using historical data.
+        """Train the task classifier using historical data.
 
         Args:
             task_profiles: List of task profiles with features
@@ -168,8 +164,7 @@ class TaskClassifier:
         self.classification_metrics["training_accuracy"].append(accuracy)
 
     def classify(self, task_profile: TaskProfile) -> dict[str, Any]:
-        """
-        Classify a task and return routing recommendations.
+        """Classify a task and return routing recommendations.
 
         Args:
             task_profile: Task profile to classify
@@ -212,7 +207,8 @@ class TaskClassifier:
             logger.warning(f"ML classification failed: {e}, falling back to rule-based", exc_info=True)
             return self._rule_based_classification(task_profile)
 
-    def _rule_based_classification(self, task_profile: TaskProfile) -> dict[str, Any]:
+    @staticmethod
+    def _rule_based_classification(task_profile: TaskProfile) -> dict[str, Any]:
         """Fallback rule-based classification for untrained models."""
         from collections import Counter
 

@@ -1,5 +1,4 @@
-"""
-Marketplace Discovery Module.
+"""Marketplace Discovery Module.
 
 This module handles autonomous discovery and evaluation of freelance marketplaces.
 It searches for new marketplaces, tracks their performance, and maintains a curated
@@ -143,8 +142,7 @@ class DiscoveryConfig:
 
 
 class MarketplaceDiscovery:
-    """
-    Main orchestrator for marketplace discovery and evaluation.
+    """Main orchestrator for marketplace discovery and evaluation.
 
     Responsibilities:
     - Search for new marketplaces using web search
@@ -155,8 +153,7 @@ class MarketplaceDiscovery:
     """
 
     def __init__(self, config_file: str = MARKETPLACES_FILE):
-        """
-        Initialize the marketplace discovery system.
+        """Initialize the marketplace discovery system.
 
         Args:
             config_file: Path to the marketplaces.json configuration file
@@ -231,8 +228,7 @@ class MarketplaceDiscovery:
             logger.error(f"Failed to save marketplaces: {e}")
 
     def get_active_marketplaces(self) -> list[DiscoveredMarketplace]:
-        """
-        Get active marketplaces sorted by priority score.
+        """Get active marketplaces sorted by priority score.
 
         Returns:
             List of active marketplaces sorted by priority (highest first)
@@ -254,8 +250,7 @@ class MarketplaceDiscovery:
         category: str,
         metadata: dict[str, Any] | None = None,
     ) -> DiscoveredMarketplace:
-        """
-        Add a new marketplace to the list.
+        """Add a new marketplace to the list.
 
         Args:
             name: Marketplace name
@@ -292,8 +287,7 @@ class MarketplaceDiscovery:
         bid_won: bool = False,
         revenue: float = 0.0,
     ) -> None:
-        """
-        Update statistics for a marketplace after scanning/bidding.
+        """Update statistics for a marketplace after scanning/bidding.
 
         Args:
             url: Marketplace URL
@@ -326,8 +320,7 @@ class MarketplaceDiscovery:
         self._calculate_priority_score(marketplace)
 
     def _calculate_priority_score(self, marketplace: DiscoveredMarketplace) -> None:
-        """
-        Calculate the priority score for a marketplace.
+        """Calculate the priority score for a marketplace.
 
         Priority = (success_rate * 0.5) + (revenue / max_revenue * 0.5)
         with activity factor (scan_count)
@@ -373,8 +366,7 @@ class MarketplaceDiscovery:
     async def search_marketplaces(
         self, keywords: list[str] | None = None, limit: int = 5,
     ) -> list[dict[str, Any]]:
-        """
-        Search for new marketplaces using web search.
+        """Search for new marketplaces using web search.
 
         Args:
             keywords: Search keywords (uses config if not provided)
@@ -432,9 +424,9 @@ class MarketplaceDiscovery:
 
         return discovered
 
-    async def evaluate_marketplace(self, url: str, timeout: int = 30) -> dict[str, Any]:
-        """
-        Evaluate a marketplace by visiting it with Playwright.
+    @staticmethod
+    async def evaluate_marketplace(url: str, timeout: int = 30) -> dict[str, Any]:
+        """Evaluate a marketplace by visiting it with Playwright.
 
         Uses async context managers for proper resource cleanup.
 
@@ -554,8 +546,7 @@ class MarketplaceDiscovery:
             }
 
     async def discover_and_update(self) -> dict[str, Any]:
-        """
-        Main orchestration: discovers new marketplaces and updates existing stats.
+        """Main orchestration: discovers new marketplaces and updates existing stats.
 
         Returns:
             Dictionary with discovery summary
@@ -613,8 +604,7 @@ class MarketplaceDiscovery:
 def load_marketplaces(
     config_file: str = MARKETPLACES_FILE,
 ) -> list[DiscoveredMarketplace]:
-    """
-    Load marketplace list from JSON file.
+    """Load marketplace list from JSON file.
 
     Args:
         config_file: Path to the marketplaces.json configuration file
@@ -629,8 +619,7 @@ def load_marketplaces(
 def save_marketplaces_config(
     marketplaces: list[DiscoveredMarketplace], config_file: str = MARKETPLACES_FILE,
 ) -> None:
-    """
-    Save marketplace list to JSON file.
+    """Save marketplace list to JSON file.
 
     Args:
         marketplaces: List of marketplaces to save
@@ -644,8 +633,7 @@ def save_marketplaces_config(
 async def discover_new_marketplaces(
     config_file: str = MARKETPLACES_FILE,
 ) -> dict[str, Any]:
-    """
-    Discover new marketplaces and update the configuration.
+    """Discover new marketplaces and update the configuration.
 
     Args:
         config_file: Path to the marketplaces.json configuration file

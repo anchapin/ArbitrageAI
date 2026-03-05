@@ -1,5 +1,4 @@
-"""
-Learning and experience logging module.
+"""Learning and experience logging module.
 
 This module contains experience vector database integration,
 arena learning logging, and closed-loop learning functionality.
