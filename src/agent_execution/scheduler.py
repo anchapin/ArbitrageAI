@@ -131,10 +131,16 @@ class IntelligentScheduler:
     """Handles intelligent scheduling logic."""
 
     def __init__(self):
+        """
+        Initialize the intelligent scheduler.
+
+        Sets up peak hours and batch window configuration.
+        """
         self.peak_hours = [(9, 17)]  # 9 AM to 5 PM business hours
         self.batch_window_size = 30  # minutes
 
-    def should_avoid_peak_hours(self, schedule: ScheduledTask) -> bool:
+    @staticmethod
+    def should_avoid_peak_hours(schedule: ScheduledTask) -> bool:
         """Check if schedule should avoid peak hours."""
         return schedule.avoid_peak_hours
 
@@ -168,7 +174,8 @@ class IntelligentScheduler:
 
         return base_time
 
-    def should_batch_tasks(self, schedule: ScheduledTask) -> bool:
+    @staticmethod
+    def should_batch_tasks(schedule: ScheduledTask) -> bool:
         """Check if tasks should be batched."""
         return schedule.batch_size > 1
 
@@ -183,6 +190,12 @@ class TaskScheduler:
     """Main task scheduler with cron expression support."""
 
     def __init__(self, db_session: AsyncSession | None = None):
+        """
+        Initialize the task scheduler.
+
+        Args:
+            db_session: Optional async database session
+        """
         self.db_session = db_session
         self.validator = CronExpressionValidator()
         self.intelligent_scheduler = IntelligentScheduler()

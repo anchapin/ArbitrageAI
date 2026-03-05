@@ -156,6 +156,12 @@ class WebSocketManager:
     """WebSocket connection manager with authentication and real-time updates."""
 
     def __init__(self, config: Config | None = None):
+        """
+        Initialize the WebSocket manager.
+
+        Args:
+            config: Configuration object (default: None)
+        """
         self.config = config or Config()
 
         # Connection management
@@ -657,7 +663,8 @@ class WebSocketManager:
         except Exception as e:
             logger.error(f"Error processing message from client {client_id}: {e}", exc_info=True)
 
-    async def _send_message(self, websocket: WebSocket, message_type: WebSocketMessageType, data: dict[str, Any]):
+    @staticmethod
+    async def _send_message(websocket: WebSocket, message_type: WebSocketMessageType, data: dict[str, Any]):
         """Send a message to a specific websocket."""
         if websocket.application_state == WebSocketState.CONNECTED:
             message = WebSocketMessage(

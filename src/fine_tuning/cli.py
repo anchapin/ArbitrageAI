@@ -30,8 +30,8 @@ class FineTuningCLI:
         self.evaluator = ModelEvaluator()
         self.ab_test = ABTestFramework()
 
+    @staticmethod
     def prepare_dataset(
-        self,
         format: str = "openai",
         min_rating: int = 4,
         domain: str | None = None,
@@ -61,8 +61,8 @@ class FineTuningCLI:
         print(f"✓ Dataset prepared: {dataset_path}")
         return dataset_path
 
+    @staticmethod
     def create_openai_job(
-        self,
         model: str,
         training_file: str,
         suffix: str | None = None,
@@ -102,7 +102,8 @@ class FineTuningCLI:
         print(f"  Status: {job['status']}")
         print(f"  Fine-tuned model: {job['fine_tuned_model']}")
 
-    def check_openai_job_status(self, job_id: str) -> None:
+    @staticmethod
+    def check_openai_job_status(job_id: str) -> None:
         """
         Check status of OpenAI fine-tuning job.
 
@@ -119,8 +120,8 @@ class FineTuningCLI:
         if status.get("trained_tokens"):
             print(f"  Trained tokens: {status['trained_tokens']}")
 
+    @staticmethod
     def create_ollama_finetuning_script(
-        self,
         base_model: str,
         dataset_file: str,
         output_model_name: str,

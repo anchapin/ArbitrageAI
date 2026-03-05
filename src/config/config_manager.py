@@ -1,5 +1,6 @@
 """
 Centralized Configuration Manager for ArbitrageAI.
+
 Combines and replaces legacy configuration management.
 Provides validation and audit logging for configuration changes.
 """
@@ -29,6 +30,7 @@ class ValidationError(Exception):
 class ConfigManager:
     """
     Manages application configuration, replacing hardcoded magic numbers.
+
     Loads from environment variables with safe defaults and validation.
     """
 
@@ -157,7 +159,8 @@ class ConfigManager:
                 f"LLM_HEALTH_CHECK_INITIAL_DELAY_MS ({self.LLM_HEALTH_CHECK_INITIAL_DELAY_MS}) cannot exceed LLM_HEALTH_CHECK_MAX_DELAY_MS ({self.LLM_HEALTH_CHECK_MAX_DELAY_MS})",
             )
 
-    def _load_secure_secrets(self):
+    @staticmethod
+    def _load_secure_secrets():
         """
         Load secure secrets from secure storage or environment variables.
 

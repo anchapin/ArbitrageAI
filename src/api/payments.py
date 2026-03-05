@@ -81,7 +81,8 @@ def calculate_task_price(
     urgency: str = "standard",
 ) -> int:
     """
-    Calculate task price using the Task Price Formula:
+    Calculate task price using the Task Price Formula.
+
     Price = Base Rate × Complexity × Urgency.
 
     Args:

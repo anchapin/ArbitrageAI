@@ -220,7 +220,8 @@ class APIVersionMiddleware(BaseHTTPMiddleware):
 
         return response
 
-    def _extract_version_from_path(self, path: str) -> str | None:
+    @staticmethod
+    def _extract_version_from_path(path: str) -> str | None:
         """
         Extract API version from URL path.
 
@@ -238,7 +239,8 @@ class APIVersionMiddleware(BaseHTTPMiddleware):
             return match.group(1)
         return None
 
-    def _is_version_supported(self, version: str) -> bool:
+    @staticmethod
+    def _is_version_supported(version: str) -> bool:
         """
         Check if version is supported.
 
@@ -250,7 +252,8 @@ class APIVersionMiddleware(BaseHTTPMiddleware):
         """
         return version in [v.value for v in SUPPORTED_VERSIONS]
 
-    def _is_version_deprecated(self, version: str) -> bool:
+    @staticmethod
+    def _is_version_deprecated(version: str) -> bool:
         """
         Check if version is deprecated.
 

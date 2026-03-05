@@ -294,6 +294,7 @@ class MarketScanner:
     async def start(self):
         """
         Start the Playwright browser.
+
         Now uses BrowserPool to prevent resource leaks (Issue #4).
         """
         if not PLAYWRIGHT_AVAILABLE:
@@ -337,6 +338,7 @@ class MarketScanner:
     async def stop(self):
         """
         Stop the Playwright browser and cleanup all resources.
+
         Now releases browser back to pool (Issue #4).
         """
         try:
@@ -476,7 +478,8 @@ class MarketScanner:
 
         return job_postings
 
-    async def _extract_job_posting(self, element, index: int) -> JobPosting | None:
+    @staticmethod
+    async def _extract_job_posting(element, index: int) -> JobPosting | None:
         """
         Extract job posting data from a page element.
 
@@ -536,7 +539,8 @@ class MarketScanner:
             logger.warning(f"Failed to extract job posting: {e}", exc_info=True)
             return None
 
-    def _get_mock_job_postings(self, max_posts: int) -> list[JobPosting]:
+    @staticmethod
+    def _get_mock_job_postings(max_posts: int) -> list[JobPosting]:
         """
         Get mock job postings for testing or when marketplace is unavailable.
 
@@ -697,8 +701,9 @@ Evaluate this job posting and return JSON."""
             logger.error(f"LLM evaluation failed: {e}", exc_info=True)
             return self._evaluate_fallback(title, description, task_id)
 
+    @staticmethod
     def _evaluate_fallback(
-        self, title: str, description: str, task_id: str,
+        title: str, description: str, task_id: str,
     ) -> EvaluationResult:
         """
         Fallback rule-based evaluation when LLM is unavailable.

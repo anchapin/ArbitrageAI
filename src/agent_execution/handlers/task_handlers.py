@@ -7,8 +7,7 @@ Specialized handlers for different task types and domains.
 from typing import Any
 
 from src.utils.logger import get_logger
-
-from .models import TaskProfile
+from src.agent_execution.models import TaskProfile
 
 logger = get_logger(__name__)
 

@@ -250,7 +250,8 @@ class MarketScanner:
 
         return job_postings
 
-    async def _extract_job_posting(self, element, index: int) -> JobPosting | None:
+    @staticmethod
+    async def _extract_job_posting(element, index: int) -> JobPosting | None:
         """Extract job posting data from a page element."""
         try:
             title_elem = await element.query_selector(["h2", "h3", ".title", ".job-title"])
@@ -284,7 +285,8 @@ class MarketScanner:
             logger.warning(f"Failed to extract job posting: {e}", exc_info=True)
             return None
 
-    def _get_mock_job_postings(self, max_posts: int) -> list[JobPosting]:
+    @staticmethod
+    def _get_mock_job_postings(max_posts: int) -> list[JobPosting]:
         """Get mock job postings for testing."""
         mock_postings = [
             JobPosting(
@@ -357,7 +359,8 @@ Evaluate this job posting and return JSON."""
             logger.error(f"LLM evaluation failed: {e}", exc_info=True)
             return self._evaluate_fallback(title, description, task_id)
 
-    def _evaluate_fallback(self, title: str, description: str, task_id: str) -> EvaluationResult:
+    @staticmethod
+    def _evaluate_fallback(title: str, description: str, task_id: str) -> EvaluationResult:
         """Fallback rule-based evaluation."""
         title_lower = title.lower()
         desc_lower = description.lower()

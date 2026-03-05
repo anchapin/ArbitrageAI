@@ -1,6 +1,4 @@
-"""
-Financial database models.
-"""
+"""Financial database models."""
 
 from datetime import datetime
 import logging
@@ -51,6 +49,12 @@ class EscalationLog(Base):
     resolved_at = Column(DateTime, nullable=True)
 
     def to_dict(self):
+        """
+        Convert EscalationLog to dictionary.
+
+        Returns:
+            Dictionary containing escalation log data with timestamps.
+        """
         return {
             "id": self.id, "task_id": self.task_id, "reason": self.reason,
             "error_message": self.error_message, "notification_sent": self.notification_sent,
@@ -90,6 +94,12 @@ class ThresholdPetition(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     def to_dict(self):
+        """
+        Convert ThresholdPetition to dictionary.
+
+        Returns:
+            Dictionary containing petition data with threshold values and decision info.
+        """
         return {
             "id": self.id,
             "current_threshold_dollars": self.current_threshold_cents / 100,
@@ -137,6 +147,12 @@ class CostEntry(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     def to_dict(self):
+        """
+        Convert CostEntry to dictionary.
+
+        Returns:
+            Dictionary containing cost entry data with ROI information.
+        """
         return {
             "id": self.id, "task_id": self.task_id, "bid_id": self.bid_id,
             "cost_type": self.cost_type, "cost_cents": self.cost_cents,
@@ -176,6 +192,12 @@ class ConfidenceEntry(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     def to_dict(self):
+        """
+        Convert ConfidenceEntry to dictionary.
+
+        Returns:
+            Dictionary containing confidence entry data with streak information.
+        """
         return {
             "id": self.id, "threshold": self.threshold,
             "bid_amount_dollars": self.bid_amount_cents / 100,
@@ -210,6 +232,12 @@ class ConfidenceAdjustment(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     def to_dict(self):
+        """
+        Convert ConfidenceAdjustment to dictionary.
+
+        Returns:
+            Dictionary containing adjustment data with old/new conservatism values.
+        """
         return {
             "id": self.id, "old_conservatism": self.old_conservatism,
             "new_conservatism": self.new_conservatism,
@@ -240,6 +268,12 @@ class VirtualWallet(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     def to_dict(self):
+        """
+        Convert VirtualWallet to dictionary.
+
+        Returns:
+            Dictionary containing wallet balance, budget info, and usage percentages.
+        """
         balance_cents = self.balance_cents or 0
         total_spent_cents = self.total_spent_cents or 0
         total_earned_cents = self.total_earned_cents or 0
@@ -274,6 +308,12 @@ class WebhookSecret(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     def to_dict(self):
+        """
+        Convert WebhookSecret to dictionary.
+
+        Returns:
+            Dictionary containing webhook secret metadata.
+        """
         return {
             "id": self.id, "name": self.name, "is_active": self.is_active,
             "created_at": self.created_at.isoformat() if self.created_at else None,
@@ -309,6 +349,12 @@ class LearningEntry(Base):
     created_at = Column(DateTime, default=datetime.utcnow, index=True)
 
     def to_dict(self) -> dict:
+        """
+        Convert LearningEntry to dictionary.
+
+        Returns:
+            Dictionary containing learning event data with prediction errors.
+        """
         return {
             "id": self.id, "task_id": self.task_id, "event_type": self.event_type,
             "marketplace": self.marketplace, "predicted_profit_cents": self.predicted_profit_cents,

@@ -173,8 +173,9 @@ class ModelEvaluator:
         logger.info(f"Evaluated {model_name}: substring_accuracy={accuracy:.2%}")
         return result
 
+    @staticmethod
     def compare_models(
-        self, base_result: EvaluationResult, finetuned_result: EvaluationResult,
+        base_result: EvaluationResult, finetuned_result: EvaluationResult,
     ) -> dict[str, Any]:
         """
         Compare base and fine-tuned models.
@@ -217,8 +218,8 @@ class ModelEvaluator:
             "finetuned_metrics": asdict(finetuned_result),
         }
 
+    @staticmethod
     def calculate_roi(
-        self,
         base_cost: float,
         finetuned_cost: float,
         accuracy_improvement: float,

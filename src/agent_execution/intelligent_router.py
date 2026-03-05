@@ -21,9 +21,7 @@ logger = get_logger(__name__)
 
 
 class IntelligentRouter:
-    """
-    Intelligent task router using ML classification and performance data.
-    """
+    """Intelligent task router using ML classification and performance data."""
 
     def __init__(self, db_session=None, model_path: str | None = None):
         """
@@ -164,8 +162,9 @@ class IntelligentRouter:
             created_at=datetime.now(),
         )
 
+    @staticmethod
     def _calculate_complexity_score(
-        self, user_request: str, csv_headers: list[str], domain: str,
+        user_request: str, csv_headers: list[str], domain: str,
     ) -> float:
         """Calculate task complexity score."""
         score = 0.0
@@ -196,7 +195,8 @@ class IntelligentRouter:
 
         return min(score, 1.0)
 
-    def _estimate_execution_time(self, complexity: float, output_format: str) -> float:
+    @staticmethod
+    def _estimate_execution_time(complexity: float, output_format: str) -> float:
         """Estimate execution time based on complexity and output format."""
         base_time = 60
         time_multiplier = 1 + (complexity * 2)
@@ -206,8 +206,9 @@ class IntelligentRouter:
 
         return base_time * time_multiplier * format_multiplier
 
+    @staticmethod
     def _calculate_success_rate(
-        self, domain: str, task_type: str, output_format: str,
+        domain: str, task_type: str, output_format: str,
     ) -> float:
         """Calculate expected success rate."""
         domain_rates = {"legal": 0.85, "accounting": 0.90, "data_analysis": 0.95}
@@ -385,7 +386,8 @@ class IntelligentRouter:
                 "model_used": "none",
             }
 
-    def _profile_to_dict(self, profile: TaskProfile) -> dict[str, Any]:
+    @staticmethod
+    def _profile_to_dict(profile: TaskProfile) -> dict[str, Any]:
         """Convert TaskProfile to dictionary."""
         from dataclasses import asdict
         return asdict(profile)

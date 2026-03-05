@@ -32,6 +32,12 @@ class URLCircuitBreaker:
     """
 
     def __init__(self, config: URLCircuitBreakerConfig = None):
+        """
+        Initialize the URL circuit breaker.
+
+        Args:
+            config: Circuit breaker configuration (default: None)
+        """
         self.config = config or URLCircuitBreakerConfig()
 
         # Track failures per URL

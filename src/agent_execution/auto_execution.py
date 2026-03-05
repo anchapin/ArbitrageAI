@@ -101,6 +101,17 @@ class AutoExecutionPipeline:
         retry_attempts: int = 3,
         retry_delay_seconds: float = 1.0,
     ):
+        """
+        Initialize the autonomous execution engine.
+
+        Args:
+            strategy: Execution strategy to use (default: BALANCED)
+            min_confidence_threshold: Minimum confidence for bids (default: 0.6)
+            max_bid_amount_cents: Maximum bid amount in cents (default: 50000)
+            max_concurrent_tasks: Maximum concurrent tasks (default: 5)
+            retry_attempts: Number of retry attempts (default: 3)
+            retry_delay_seconds: Delay between retries in seconds (default: 1.0)
+        """
         self.strategy = strategy
         self.min_confidence_threshold = min_confidence_threshold
         self.max_bid_amount_cents = max_bid_amount_cents

@@ -262,7 +262,8 @@ class ConfidenceTracker:
         finally:
             db.close()
 
-    def _calculate_variance(self, entries: list[ConfidenceEntry]) -> float:
+    @staticmethod
+    def _calculate_variance(entries: list[ConfidenceEntry]) -> float:
         """Calculate variance in profit outcomes."""
         profits = [e.profit_cents for e in entries if e.profit_cents]
 
@@ -438,8 +439,8 @@ class ConfidenceTracker:
         finally:
             db.close()
 
+    @staticmethod
     def get_recent_history(
-        self,
         limit: int = 50,
         threshold: int | None = None,
     ) -> list[dict[str, Any]]:

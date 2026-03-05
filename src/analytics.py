@@ -98,8 +98,9 @@ class AnalyticsAPI:
         anomalies.extend(task_anomalies)
         return anomalies
 
+    @staticmethod
     def _generate_recommendations(
-        self, kpis: KPIResponse, performance_metrics: list[PerformanceMetric],
+        kpis: KPIResponse, performance_metrics: list[PerformanceMetric],
     ) -> list[str]:
         """Generate actionable recommendations based on analytics."""
         recommendations = []

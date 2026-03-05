@@ -100,7 +100,8 @@ class ContextExtractor:
 
         return context
 
-    def _extract_basic_insights(self, df) -> list[str]:
+    @staticmethod
+    def _extract_basic_insights(df) -> list[str]:
         """Extract basic statistical insights from the data."""
         numeric_cols = df.select_dtypes(include=["number"]).columns
         return [f"{col}: min={df[col].min()}, max={df[col].max()}, mean={df[col].mean():.2f}" for col in numeric_cols]
@@ -208,7 +209,8 @@ Generate the work plan as JSON."""
         except Exception as e:
             return {"success": False, "error": str(e)}
 
-    def _build_context_summary(self, context: dict[str, Any]) -> str:
+    @staticmethod
+    def _build_context_summary(context: dict[str, Any]) -> str:
         """Build a text summary of the extracted context."""
         parts = []
 
