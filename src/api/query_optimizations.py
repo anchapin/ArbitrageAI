@@ -1,5 +1,4 @@
-"""
-Query Optimization Helpers for Issue #38.
+"""Query Optimization Helpers for Issue #38.
 
 Provides optimized query builders with proper indexes and eager loading
 to prevent N+1 query problems and improve database performance.
@@ -19,8 +18,7 @@ from src.api.models import Bid, BidStatus, Task, TaskStatus
 def get_client_tasks_optimized(
     db: Session, client_email: str, limit: int = 100,
 ) -> list[Task]:
-    """
-    Optimized query for client dashboard.
+    """Optimized query for client dashboard.
 
     Uses composite index (client_email, status) and orders by created_at.
     Includes eager loading for Task relationships to prevent N+1 queries.
@@ -63,8 +61,7 @@ def get_client_tasks_optimized(
 
 
 def get_completed_tasks_by_domain_optimized(db: Session) -> list[Task]:
-    """
-    Optimized query for admin metrics by domain.
+    """Optimized query for admin metrics by domain.
 
     Uses composite index (status, created_at) to quickly fetch completed
     tasks grouped by domain.
@@ -84,8 +81,7 @@ def get_completed_tasks_by_domain_optimized(db: Session) -> list[Task]:
 
 
 def get_pending_tasks_optimized(db: Session, limit: int | None = None) -> list[Task]:
-    """
-    Optimized query for pending task fetching.
+    """Optimized query for pending task fetching.
 
     Uses status index for fast filtering.
     Includes eager loading for Task relationships to prevent N+1 queries.
@@ -119,8 +115,7 @@ def get_pending_tasks_optimized(db: Session, limit: int | None = None) -> list[T
 def get_active_bids_optimized(
     db: Session, marketplace: str | None = None,
 ) -> list[Bid]:
-    """
-    Optimized query for active bids.
+    """Optimized query for active bids.
 
     Uses composite index (marketplace, status) for fast filtering
     across multiple marketplaces.
@@ -151,8 +146,7 @@ def get_active_bids_optimized(
 def get_recent_bids_optimized(
     db: Session, marketplace: str, limit: int = 100,
 ) -> list[Bid]:
-    """
-    Optimized query for recent bids on a marketplace.
+    """Optimized query for recent bids on a marketplace.
 
     Uses composite index (marketplace, status) and created_at index
     for efficient time-range queries.
@@ -175,8 +169,7 @@ def get_recent_bids_optimized(
 
 
 def get_bid_dedup_set_optimized(db: Session, statuses: list[BidStatus]) -> set:
-    """
-    Optimized query for bid deduplication.
+    """Optimized query for bid deduplication.
 
     Fetches only the job_title field (avoiding unnecessary column loading)
     using the status index for fast filtering.
@@ -195,8 +188,7 @@ def get_bid_dedup_set_optimized(db: Session, statuses: list[BidStatus]) -> set:
 def get_task_by_client_and_status_optimized(
     db: Session, client_email: str, status: TaskStatus,
 ) -> list[Task]:
-    """
-    Optimized query using composite index (client_email, status).
+    """Optimized query using composite index (client_email, status).
 
     Includes eager loading for Task relationships to prevent N+1 queries.
 
@@ -228,8 +220,7 @@ def get_task_by_client_and_status_optimized(
 
 
 def get_tasks_for_metrics_optimized(db: Session) -> list[Task]:
-    """
-    Optimized query for admin metrics calculations.
+    """Optimized query for admin metrics calculations.
 
     Fetches all tasks ordered by created_at using composite index.
     Uses minimal columns to reduce memory footprint during aggregation.

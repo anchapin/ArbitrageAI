@@ -1,5 +1,4 @@
-"""
-PeoplePerHour Marketplace Adapter.
+"""PeoplePerHour Marketplace Adapter.
 
 Implements marketplace adapter for PeoplePerHour platform.
 Handles project searching, offer placement, and portfolio sync.
@@ -33,8 +32,7 @@ logger = get_logger(__name__)
 
 
 class PeoplePerHourAdapter(MarketplaceAdapter):
-    """
-    PeoplePerHour marketplace adapter.
+    """PeoplePerHour marketplace adapter.
 
     Handles integration with PeoplePerHour API for:
     - Searching projects
@@ -52,8 +50,7 @@ class PeoplePerHourAdapter(MarketplaceAdapter):
         api_key: str | None = None,
         api_secret: str | None = None,
     ):
-        """
-        Initialize PeoplePerHour adapter.
+        """Initialize PeoplePerHour adapter.
 
         Args:
             api_key: PeoplePerHour API key
@@ -64,8 +61,7 @@ class PeoplePerHourAdapter(MarketplaceAdapter):
         self.user_id: str | None = None
 
     async def authenticate(self) -> bool:
-        """
-        Authenticate with PeoplePerHour API.
+        """Authenticate with PeoplePerHour API.
 
         Returns:
             True if authentication successful
@@ -101,8 +97,7 @@ class PeoplePerHourAdapter(MarketplaceAdapter):
             ) from e
 
     async def search(self, query: SearchQuery) -> list[SearchResult]:
-        """
-        Search for projects on PeoplePerHour.
+        """Search for projects on PeoplePerHour.
 
         Args:
             query: Search parameters
@@ -178,8 +173,7 @@ class PeoplePerHourAdapter(MarketplaceAdapter):
             raise MarketplaceError(f"PeoplePerHour search failed: {e!s}") from e
 
     async def get_job_details(self, job_id: str) -> SearchResult:
-        """
-        Get detailed information about a project.
+        """Get detailed information about a project.
 
         Args:
             job_id: Project ID
@@ -230,8 +224,7 @@ class PeoplePerHourAdapter(MarketplaceAdapter):
             raise MarketplaceError(f"Failed to get project details: {e!s}") from e
 
     async def place_bid(self, proposal: BidProposal) -> PlacedBid:
-        """
-        Place an offer on a project.
+        """Place an offer on a project.
 
         Args:
             proposal: Bid proposal
@@ -285,8 +278,7 @@ class PeoplePerHourAdapter(MarketplaceAdapter):
             raise MarketplaceError(f"Failed to place PeoplePerHour offer: {e!s}") from e
 
     async def get_bid_status(self, bid_id: str) -> BidStatusUpdate:
-        """
-        Get status of a placed offer.
+        """Get status of a placed offer.
 
         Args:
             bid_id: Offer ID
@@ -332,8 +324,7 @@ class PeoplePerHourAdapter(MarketplaceAdapter):
             raise MarketplaceError(f"Failed to get offer status: {e!s}") from e
 
     async def withdraw_bid(self, bid_id: str) -> BidStatusUpdate:
-        """
-        Withdraw a placed offer.
+        """Withdraw a placed offer.
 
         Args:
             bid_id: Offer ID
@@ -369,8 +360,7 @@ class PeoplePerHourAdapter(MarketplaceAdapter):
             raise MarketplaceError(f"Failed to withdraw offer: {e!s}") from e
 
     async def check_inbox(self) -> list[InboxMessage]:
-        """
-        Check for new messages in inbox.
+        """Check for new messages in inbox.
 
         Returns:
             List of unread messages
@@ -409,8 +399,7 @@ class PeoplePerHourAdapter(MarketplaceAdapter):
             raise MarketplaceError(f"Failed to check PeoplePerHour inbox: {e!s}") from e
 
     async def mark_message_read(self, message_id: str) -> bool:
-        """
-        Mark a message as read.
+        """Mark a message as read.
 
         Args:
             message_id: ID of the message
@@ -437,8 +426,7 @@ class PeoplePerHourAdapter(MarketplaceAdapter):
             raise MarketplaceError(f"Failed to mark message as read: {e!s}") from e
 
     async def sync_portfolio(self, portfolio_items: list[dict[str, Any]]) -> bool:
-        """
-        Sync portfolio with PeoplePerHour.
+        """Sync portfolio with PeoplePerHour.
 
         Args:
             portfolio_items: List of portfolio items
@@ -486,8 +474,7 @@ class PeoplePerHourAdapter(MarketplaceAdapter):
         url: str,
         **kwargs,
     ) -> dict[str, Any]:
-        """
-        Make HTTP request with automatic retry and error handling.
+        """Make HTTP request with automatic retry and error handling.
 
         Args:
             method: HTTP method

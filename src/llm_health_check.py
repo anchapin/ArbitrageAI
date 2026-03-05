@@ -1,5 +1,4 @@
-"""
-LLM Service Health Check & Circuit Breaker.
+"""LLM Service Health Check & Circuit Breaker.
 
 Implements active health checks and circuit breaker pattern for LLM routing.
 This prevents wasting 90+ seconds on unavailable Ollama instances.
@@ -95,16 +94,14 @@ class ExponentialBackoff:
 
 
 class LLMHealthChecker:
-    """
-    Active health checker for LLM service endpoints.
+    """Active health checker for LLM service endpoints.
 
     Performs periodic health checks to determine if endpoints are available,
     preventing expensive timeout waits.
     """
 
     def __init__(self, check_interval_seconds: int = 30):
-        """
-        Initialize the LLM health checker.
+        """Initialize the LLM health checker.
 
         Args:
             check_interval_seconds: Interval between health checks (default: 30)
@@ -239,8 +236,7 @@ class LLMHealthChecker:
     async def health_check(
         self, endpoint: str, timeout_seconds: int = 5,
     ) -> bool:
-        """
-        Perform health check on Ollama endpoint.
+        """Perform health check on Ollama endpoint.
 
         Checks the /api/health endpoint to verify service availability.
 

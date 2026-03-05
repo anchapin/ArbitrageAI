@@ -1,5 +1,4 @@
-"""
-Market Scanner Module.
+"""Market Scanner Module.
 
 Scans freelance marketplaces for potential tasks using Playwright.
 """

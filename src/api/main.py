@@ -1,5 +1,4 @@
-"""
-FastAPI backend for ArbitrageAI - Main Module.
+"""FastAPI backend for ArbitrageAI - Main Module.
 
 This module has been refactored to import from specialized submodules:
 - files: File upload validation, delivery endpoints, rate limiting
@@ -189,8 +188,7 @@ class TaskSubmission(BaseModel):
     @field_validator("file_content")
     @classmethod
     def validate_file_upload_content(cls, v, info: ValidationInfo):
-        """
-        Validate file upload content against filename and type.
+        """Validate file upload content against filename and type.
 
         Args:
             v: The file content value to validate
@@ -215,8 +213,7 @@ class TaskSubmission(BaseModel):
     @field_validator("filename")
     @classmethod
     def validate_filename_present_with_content(cls, v, info: ValidationInfo):
-        """
-        Validate that filename is present when file_content is provided.
+        """Validate that filename is present when file_content is provided.
 
         Args:
             v: The filename value to validate

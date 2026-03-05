@@ -1,5 +1,4 @@
-"""
-Intelligent Task Routing System.
+"""Intelligent Task Routing System.
 
 This module provides ML-based task classification and automatic routing
 to optimize task distribution and improve success rates.
@@ -24,8 +23,7 @@ class IntelligentRouter:
     """Intelligent task router using ML classification and performance data."""
 
     def __init__(self, db_session=None, model_path: str | None = None):
-        """
-        Initialize the intelligent router.
+        """Initialize the intelligent router.
 
         Args:
             db_session: Database session for performance tracking
@@ -445,8 +443,7 @@ async def route_task_intelligently(
     db_session=None,
     **kwargs,
 ) -> tuple[RouteDecision, dict[str, Any]]:
-    """
-    Convenience function to route a task intelligently.
+    """Convenience function to route a task intelligently.
 
     Args:
         task_profile: The task profile to route

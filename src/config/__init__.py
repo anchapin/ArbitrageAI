@@ -1,5 +1,4 @@
-"""
-Configuration Management.
+"""Configuration Management.
 
 Centralized configuration loading from environment variables with defaults.
 Supports both local development and production deployments.
@@ -14,8 +13,7 @@ Config = ConfigManager
 
 
 def get_redis_url() -> str:
-    """
-    Get Redis connection URL from environment.
+    """Get Redis connection URL from environment.
 
     Priority order:
     1. REDIS_URL env variable (format: redis://host:port/db)
@@ -45,8 +43,7 @@ def get_redis_url() -> str:
 
 
 def get_database_url() -> str:
-    """
-    Get SQLAlchemy database URL from environment.
+    """Get SQLAlchemy database URL from environment.
 
     Default: SQLite at data/tasks.db (local development)
 
@@ -101,8 +98,7 @@ def get_min_bid_amount() -> int:
 
 
 def should_use_redis_locks() -> bool:
-    """
-    Determine if Redis-backed distributed locks should be used.
+    """Determine if Redis-backed distributed locks should be used.
 
     Priority:
     1. USE_REDIS_LOCKS env variable (explicit override)
@@ -135,8 +131,7 @@ def should_use_redis_locks() -> bool:
 
 
 def get_ollama_url() -> str:
-    """
-    Get Ollama local inference server URL from environment via ConfigManager.
+    """Get Ollama local inference server URL from environment via ConfigManager.
 
     Returns:
         Ollama base URL for LLM inference
@@ -145,8 +140,7 @@ def get_ollama_url() -> str:
 
 
 def get_traceloop_url() -> str:
-    """
-    Get Traceloop collector URL from environment via ConfigManager.
+    """Get Traceloop collector URL from environment via ConfigManager.
 
     Returns:
         Traceloop traces endpoint URL
@@ -155,8 +149,7 @@ def get_traceloop_url() -> str:
 
 
 def get_telegram_api_url() -> str:
-    """
-    Get Telegram Bot API base URL from environment via ConfigManager.
+    """Get Telegram Bot API base URL from environment via ConfigManager.
 
     Returns:
         Telegram Bot API base URL
@@ -165,8 +158,7 @@ def get_telegram_api_url() -> str:
 
 
 def validate_urls() -> None:
-    """
-    Validate that all external service URLs are properly configured.
+    """Validate that all external service URLs are properly configured.
 
     Checks that URLs are:
     - Not empty
@@ -197,8 +189,7 @@ def validate_urls() -> None:
 
 
 def validate_critical_env_vars() -> None:
-    """
-    Validate that all critical environment variables are set.
+    """Validate that all critical environment variables are set.
 
     This function checks for required variables that would cause runtime failures
     if missing. Fails loudly on startup rather than silently at runtime.
@@ -292,8 +283,7 @@ def validate_critical_env_vars() -> None:
 
 
 def get_all_configured_env_vars() -> dict:
-    """
-    Get a summary of all environment variables used in the application.
+    """Get a summary of all environment variables used in the application.
 
     Returns:
         Dictionary mapping variable names to their current values (with secrets masked)

@@ -1,5 +1,4 @@
-"""
-Upwork Marketplace Adapter.
+"""Upwork Marketplace Adapter.
 
 Implements marketplace adapter for Upwork platform.
 Handles job searching, proposal placement, and contract management.
@@ -33,8 +32,7 @@ logger = get_logger(__name__)
 
 
 class UpworkAdapter(MarketplaceAdapter):
-    """
-    Upwork marketplace adapter.
+    """Upwork marketplace adapter.
 
     Handles integration with Upwork API for:
     - Searching jobs
@@ -55,8 +53,7 @@ class UpworkAdapter(MarketplaceAdapter):
         access_token: str | None = None,
         access_token_secret: str | None = None,
     ):
-        """
-        Initialize Upwork adapter.
+        """Initialize Upwork adapter.
 
         Args:
             api_key: Upwork client ID
@@ -71,8 +68,7 @@ class UpworkAdapter(MarketplaceAdapter):
         self.user_id: str | None = None
 
     async def authenticate(self) -> bool:
-        """
-        Authenticate with Upwork API.
+        """Authenticate with Upwork API.
 
         Returns:
             True if authentication successful
@@ -107,8 +103,7 @@ class UpworkAdapter(MarketplaceAdapter):
             raise AuthenticationError(f"Upwork authentication failed: {e!s}") from e
 
     async def search(self, query: SearchQuery) -> list[SearchResult]:
-        """
-        Search for jobs on Upwork.
+        """Search for jobs on Upwork.
 
         Args:
             query: Search parameters
@@ -182,8 +177,7 @@ class UpworkAdapter(MarketplaceAdapter):
             raise MarketplaceError(f"Upwork search failed: {e!s}") from e
 
     async def get_job_details(self, job_id: str) -> SearchResult:
-        """
-        Get detailed information about an Upwork job.
+        """Get detailed information about an Upwork job.
 
         Args:
             job_id: Job ID
@@ -233,8 +227,7 @@ class UpworkAdapter(MarketplaceAdapter):
             raise MarketplaceError(f"Failed to get job details: {e!s}") from e
 
     async def place_bid(self, proposal: BidProposal) -> PlacedBid:
-        """
-        Place a proposal on an Upwork job.
+        """Place a proposal on an Upwork job.
 
         Args:
             proposal: Bid proposal
@@ -287,8 +280,7 @@ class UpworkAdapter(MarketplaceAdapter):
             raise MarketplaceError(f"Failed to place Upwork proposal: {e!s}") from e
 
     async def get_bid_status(self, bid_id: str) -> BidStatusUpdate:
-        """
-        Get status of a placed proposal.
+        """Get status of a placed proposal.
 
         Args:
             bid_id: Proposal ID
@@ -336,8 +328,7 @@ class UpworkAdapter(MarketplaceAdapter):
             raise MarketplaceError(f"Failed to get proposal status: {e!s}") from e
 
     async def withdraw_bid(self, bid_id: str) -> BidStatusUpdate:
-        """
-        Withdraw a placed proposal.
+        """Withdraw a placed proposal.
 
         Args:
             bid_id: Proposal ID
@@ -374,8 +365,7 @@ class UpworkAdapter(MarketplaceAdapter):
             raise MarketplaceError(f"Failed to withdraw proposal: {e!s}") from e
 
     async def check_inbox(self) -> list[InboxMessage]:
-        """
-        Check for new messages in Upwork inbox.
+        """Check for new messages in Upwork inbox.
 
         Returns:
             List of unread messages
@@ -414,8 +404,7 @@ class UpworkAdapter(MarketplaceAdapter):
             raise MarketplaceError(f"Failed to check Upwork inbox: {e!s}") from e
 
     async def mark_message_read(self, message_id: str) -> bool:
-        """
-        Mark a message as read.
+        """Mark a message as read.
 
         Args:
             message_id: ID of the message
@@ -443,8 +432,7 @@ class UpworkAdapter(MarketplaceAdapter):
             raise MarketplaceError(f"Failed to mark message as read: {e!s}") from e
 
     async def sync_portfolio(self, portfolio_items: list[dict[str, Any]]) -> bool:
-        """
-        Sync portfolio with Upwork.
+        """Sync portfolio with Upwork.
 
         Args:
             portfolio_items: List of portfolio items
@@ -495,8 +483,7 @@ class UpworkAdapter(MarketplaceAdapter):
         url: str,
         **kwargs,
     ) -> dict[str, Any]:
-        """
-        Make HTTP request with automatic retry and error handling.
+        """Make HTTP request with automatic retry and error handling.
 
         Args:
             method: HTTP method
@@ -536,8 +523,7 @@ class UpworkAdapter(MarketplaceAdapter):
 
     @staticmethod
     def _get_bidding_tier_id(amount: float) -> str:
-        """
-        Get bidding tier ID based on amount.
+        """Get bidding tier ID based on amount.
 
         Upwork has different tier IDs for different price ranges.
         """

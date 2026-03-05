@@ -1,5 +1,4 @@
-"""
-Exponential Backoff Retry Strategy.
+"""Exponential Backoff Retry Strategy.
 
 Implements exponential backoff for retrying failed operations.
 
@@ -19,8 +18,7 @@ T = TypeVar("T")
 
 
 class ExponentialBackoff:
-    """
-    Exponential backoff strategy with jitter.
+    """Exponential backoff strategy with jitter.
 
     Features:
     - Configurable base delay and max delay
@@ -32,8 +30,7 @@ class ExponentialBackoff:
     def __init__(
         self, base_delay: float = 1.0, max_delay: float = 60.0, jitter: bool = True,
     ):
-        """
-        Initialize backoff strategy.
+        """Initialize backoff strategy.
 
         Args:
             base_delay: Initial delay in seconds
@@ -45,8 +42,7 @@ class ExponentialBackoff:
         self.jitter = jitter
 
     async def wait(self, retry_count: int) -> float:
-        """
-        Wait for exponentially increasing delay.
+        """Wait for exponentially increasing delay.
 
         Args:
             retry_count: Current retry attempt (0-based)
@@ -73,8 +69,7 @@ class ExponentialBackoff:
     async def with_retry(
         self, func: Callable[..., Any], *args, max_retries: int = 3, **kwargs,
     ) -> Any:
-        """
-        Execute function with exponential backoff retry.
+        """Execute function with exponential backoff retry.
 
         Args:
             func: Async function to execute
@@ -129,8 +124,7 @@ async def retry_with_backoff(
     base_delay: float = 1.0,
     **kwargs,
 ) -> Any:
-    """
-    Execute function with exponential backoff retry (convenience function).
+    """Execute function with exponential backoff retry (convenience function).
 
     Args:
         func: Async function to execute

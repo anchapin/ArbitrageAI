@@ -1,5 +1,4 @@
-"""
-Market Scanner Models.
+"""Market Scanner Models.
 
 Data classes for market scanning operations.
 """
@@ -35,6 +34,7 @@ class EvaluationResult:
     evaluated_at: datetime | None = None
 
     def __post_init__(self):
+        """Set default evaluation timestamp if not provided."""
         if self.evaluated_at is None:
             self.evaluated_at = datetime.now()
 

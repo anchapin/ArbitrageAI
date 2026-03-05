@@ -1,5 +1,4 @@
-"""
-OAuth 2.0 Manager for Marketplace Integrations.
+"""OAuth 2.0 Manager for Marketplace Integrations.
 
 Handles OAuth authentication flow for marketplace platforms like Upwork.
 Implements OAuth 2.0 three-legged authentication with token refresh.
@@ -31,8 +30,7 @@ class OAuthToken:
         token_type: str = "Bearer",  # noqa: S107 - OAuth token type, not a password
         scope: str | None = None,
     ):
-        """
-        Initialize OAuth token.
+        """Initialize OAuth token.
 
         Args:
             access_token: Access token string
@@ -50,8 +48,7 @@ class OAuthToken:
         self.expires_at = self.created_at + timedelta(seconds=expires_in)
 
     def is_expired(self, buffer_seconds: int = 60) -> bool:
-        """
-        Check if token is expired or about to expire.
+        """Check if token is expired or about to expire.
 
         Args:
             buffer_seconds: Seconds before expiration to consider expired
@@ -93,8 +90,7 @@ class OAuthToken:
 
 
 class OAuthManager:
-    """
-    OAuth 2.0 Manager for marketplace authentication.
+    """OAuth 2.0 Manager for marketplace authentication.
 
     Handles the complete OAuth flow:
     1. Generate authorization URL
@@ -131,8 +127,7 @@ class OAuthManager:
     }
 
     def __init__(self, platform: str, client_id: str, client_secret: str):
-        """
-        Initialize OAuth manager.
+        """Initialize OAuth manager.
 
         Args:
             platform: Marketplace platform name
@@ -156,8 +151,7 @@ class OAuthManager:
         scope: str | None = None,
         state: str | None = None,
     ) -> str:
-        """
-        Generate OAuth authorization URL.
+        """Generate OAuth authorization URL.
 
         Args:
             redirect_uri: Callback URL (uses default if not provided)
@@ -189,8 +183,7 @@ class OAuthManager:
         state: str,
         redirect_uri: str | None = None,
     ) -> OAuthToken:
-        """
-        Exchange authorization code for access token.
+        """Exchange authorization code for access token.
 
         Args:
             authorization_code: Authorization code from callback
@@ -242,8 +235,7 @@ class OAuthManager:
         return self._token
 
     async def refresh_access_token(self) -> OAuthToken:
-        """
-        Refresh access token using refresh token.
+        """Refresh access token using refresh token.
 
         Returns:
             New OAuthToken with refreshed access token
@@ -283,8 +275,7 @@ class OAuthManager:
         return self._token
 
     async def get_valid_token(self) -> OAuthToken:
-        """
-        Get valid access token, refreshing if necessary.
+        """Get valid access token, refreshing if necessary.
 
         Returns:
             Valid OAuthToken
@@ -302,8 +293,7 @@ class OAuthManager:
         return self._token
 
     def set_token(self, token: OAuthToken) -> None:
-        """
-        Set token directly (useful for loading from storage).
+        """Set token directly (useful for loading from storage).
 
         Args:
             token: OAuthToken to set
@@ -312,8 +302,7 @@ class OAuthManager:
         logger.info(f"Set {self.platform} token (expires at {token.expires_at})")
 
     def get_token(self) -> OAuthToken | None:
-        """
-        Get current token.
+        """Get current token.
 
         Returns:
             Current OAuthToken or None
@@ -321,8 +310,7 @@ class OAuthManager:
         return self._token
 
     def get_authorization_header(self) -> str:
-        """
-        Get Authorization header for API requests.
+        """Get Authorization header for API requests.
 
         Returns:
             Authorization header value
@@ -336,8 +324,7 @@ class OAuthManager:
         return f"{self._token.token_type} {self._token.access_token}"
 
     def revoke_token(self) -> bool:
-        """
-        Revoke access and refresh tokens.
+        """Revoke access and refresh tokens.
 
         Returns:
             True if revocation successful
@@ -353,8 +340,7 @@ class OAuthManager:
 
 
 class OAuthTokenStorage:
-    """
-    Secure storage for OAuth tokens.
+    """Secure storage for OAuth tokens.
 
     Provides persistent storage for OAuth tokens with encryption support.
     Tokens are stored in memory by default, but can be persisted to database.
@@ -365,8 +351,7 @@ class OAuthTokenStorage:
         self._tokens: dict[str, OAuthToken] = {}
 
     def store(self, platform: str, token: OAuthToken) -> None:
-        """
-        Store token for platform.
+        """Store token for platform.
 
         Args:
             platform: Platform identifier
@@ -376,8 +361,7 @@ class OAuthTokenStorage:
         logger.debug(f"Stored token for {platform}")
 
     def retrieve(self, platform: str) -> OAuthToken | None:
-        """
-        Retrieve token for platform.
+        """Retrieve token for platform.
 
         Args:
             platform: Platform identifier
@@ -388,8 +372,7 @@ class OAuthTokenStorage:
         return self._tokens.get(platform)
 
     def delete(self, platform: str) -> bool:
-        """
-        Delete token for platform.
+        """Delete token for platform.
 
         Args:
             platform: Platform identifier
@@ -404,8 +387,7 @@ class OAuthTokenStorage:
         return False
 
     def list_platforms(self) -> list:
-        """
-        List all platforms with stored tokens.
+        """List all platforms with stored tokens.
 
         Returns:
             List of platform names
@@ -424,8 +406,7 @@ _oauth_managers: dict[str, OAuthManager] = {}
 
 
 def get_oauth_manager(platform: str) -> OAuthManager | None:
-    """
-    Get OAuth manager for platform.
+    """Get OAuth manager for platform.
 
     Args:
         platform: Marketplace platform name
@@ -441,8 +422,7 @@ def create_oauth_manager(
     client_id: str,
     client_secret: str,
 ) -> OAuthManager:
-    """
-    Create and register OAuth manager for platform.
+    """Create and register OAuth manager for platform.
 
     Args:
         platform: Marketplace platform name
@@ -464,8 +444,7 @@ def get_token_storage() -> OAuthTokenStorage:
 
 
 async def refresh_all_tokens() -> dict[str, bool]:
-    """
-    Refresh all stored tokens that are expiring.
+    """Refresh all stored tokens that are expiring.
 
     Returns:
         Dictionary mapping platform to refresh success

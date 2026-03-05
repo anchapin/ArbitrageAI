@@ -1,5 +1,4 @@
-"""
-Async RAG Service for Decoupled Vector DB.
+"""Async RAG Service for Decoupled Vector DB.
 
 Refactored RAG layer that doesn't block task execution.
 Implements async queries, circuit breaker pattern, and background processing.
@@ -38,8 +37,7 @@ class CircuitBreakerConfig:
 
 
 class AsyncRAGCircuitBreaker:
-    """
-    Circuit breaker for ChromaDB/RAG queries.
+    """Circuit breaker for ChromaDB/RAG queries.
 
     States:
     - CLOSED: Normal operation
@@ -48,8 +46,7 @@ class AsyncRAGCircuitBreaker:
     """
 
     def __init__(self, config: CircuitBreakerConfig = None):
-        """
-        Initialize the circuit breaker.
+        """Initialize the circuit breaker.
 
         Args:
             config: Circuit breaker configuration (default: None)
@@ -141,8 +138,7 @@ class CachedFewShotQuery:
 
 
 class AsyncRAGService:
-    """
-    Async RAG service for non-blocking few-shot example retrieval.
+    """Async RAG service for non-blocking few-shot example retrieval.
 
     Features:
     - Non-blocking async queries
@@ -158,8 +154,7 @@ class AsyncRAGService:
         cache_ttl_minutes: int = 60,
         circuit_breaker_config: CircuitBreakerConfig = None,
     ):
-        """
-        Initialize the async RAG service.
+        """Initialize the async RAG service.
 
         Args:
             vector_db: Vector database for similarity search
@@ -183,8 +178,7 @@ class AsyncRAGService:
     async def get_few_shot_examples(
         self, user_request: str, domain: str, top_k: int = 2,
     ) -> list[FewShotExample]:
-        """
-        Get few-shot examples for a user request.
+        """Get few-shot examples for a user request.
 
         This method is non-blocking. If ChromaDB is unavailable,
         it returns an empty list without raising exceptions.
@@ -268,8 +262,7 @@ class AsyncRAGService:
         domain: str,
         timeout_seconds: float = 2.0,
     ) -> str:
-        """
-        Attempt to enrich system prompt with few-shot examples.
+        """Attempt to enrich system prompt with few-shot examples.
 
         Non-blocking: returns base_prompt immediately if RAG is slow.
 

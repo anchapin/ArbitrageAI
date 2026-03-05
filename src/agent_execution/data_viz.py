@@ -1,5 +1,4 @@
-"""
-Data visualization module.
+"""Data visualization module.
 
 This module contains the core data visualization execution logic.
 """
@@ -21,8 +20,7 @@ def execute_data_visualization(
     few_shot_examples: list[Any] | None = None,
     **kwargs,
 ) -> dict:
-    """
-    Execute data visualization task.
+    """Execute data visualization task.
 
     Args:
         csv_data: CSV data as string

@@ -1,5 +1,4 @@
-"""
-Plan Executor and Reviewer.
+"""Plan Executor and Reviewer.
 
 This module handles plan execution and artifact review.
 """

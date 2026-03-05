@@ -59,8 +59,7 @@ class Bid(Base):
     submitted_at = Column(DateTime, nullable=True)
 
     def to_dict(self):
-        """
-        Convert Bid to dictionary representation.
+        """Convert Bid to dictionary representation.
 
         Returns:
             Dictionary containing bid details, status, and timestamps.
@@ -127,8 +126,7 @@ class ArenaCompetition(Base):
     completed_at = Column(DateTime, nullable=True)
 
     def to_dict(self):
-        """
-        Convert ArenaCompetition to dictionary representation.
+        """Convert ArenaCompetition to dictionary representation.
 
         Returns:
             Dictionary containing competition details, agent stats, and results.
@@ -165,8 +163,7 @@ class DistributedLock(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     def to_dict(self):
-        """
-        Convert DistributedLock to dictionary representation.
+        """Convert DistributedLock to dictionary representation.
 
         Returns:
             Dictionary containing lock key, holder, and timing information.
@@ -204,8 +201,7 @@ class SimulationBid(Base):
     outcome_updated_at = Column(DateTime, nullable=True)
 
     def to_dict(self):
-        """
-        Convert SimulationBid to dictionary representation.
+        """Convert SimulationBid to dictionary representation.
 
         Returns:
             Dictionary containing simulation bid details and outcome data.

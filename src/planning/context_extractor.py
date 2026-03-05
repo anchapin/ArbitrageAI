@@ -1,5 +1,4 @@
-"""
-Context Extractor and Work Plan Generator.
+"""Context Extractor and Work Plan Generator.
 
 This module handles context extraction from files and work plan generation.
 """

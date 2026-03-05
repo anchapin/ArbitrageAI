@@ -1,5 +1,4 @@
-"""
-Disaster Recovery and Backup Strategy.
+"""Disaster Recovery and Backup Strategy.
 
 This module provides comprehensive disaster recovery and backup capabilities
 for the ArbitrageAI platform.

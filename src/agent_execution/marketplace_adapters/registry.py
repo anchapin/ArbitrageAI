@@ -1,5 +1,4 @@
-"""
-Marketplace Registry.
+"""Marketplace Registry.
 
 Factory pattern for registering and creating marketplace adapters.
 Provides a registry to manage different marketplace implementations.
@@ -15,8 +14,7 @@ logger = get_logger(__name__)
 
 
 class MarketplaceRegistry:
-    """
-    Registry for marketplace adapters.
+    """Registry for marketplace adapters.
 
     Implements factory pattern to register and instantiate marketplace adapters.
     Supports dynamic registration of new marketplace implementations.
@@ -28,8 +26,7 @@ class MarketplaceRegistry:
     def register(
         cls, name: str, adapter_class: type[MarketplaceAdapter],
     ) -> None:
-        """
-        Register a new marketplace adapter.
+        """Register a new marketplace adapter.
 
         Args:
             name: Marketplace name (e.g., 'fiverr', 'upwork', 'peoplehour')
@@ -47,8 +44,7 @@ class MarketplaceRegistry:
 
     @classmethod
     def get(cls, name: str) -> type[MarketplaceAdapter] | None:
-        """
-        Get adapter class by marketplace name.
+        """Get adapter class by marketplace name.
 
         Args:
             name: Marketplace name
@@ -62,8 +58,7 @@ class MarketplaceRegistry:
     def create(
         cls, name: str, **kwargs: Any,
     ) -> MarketplaceAdapter:
-        """
-        Create an instance of a registered adapter.
+        """Create an instance of a registered adapter.
 
         Args:
             name: Marketplace name
@@ -85,8 +80,7 @@ class MarketplaceRegistry:
 
     @classmethod
     def list_registered(cls) -> list:
-        """
-        Get list of registered marketplace names.
+        """Get list of registered marketplace names.
 
         Returns:
             List of marketplace names
@@ -95,8 +89,7 @@ class MarketplaceRegistry:
 
     @classmethod
     def is_registered(cls, name: str) -> bool:
-        """
-        Check if marketplace is registered.
+        """Check if marketplace is registered.
 
         Args:
             name: Marketplace name

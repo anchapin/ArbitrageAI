@@ -1,5 +1,4 @@
-"""
-Confidence Tracker Module for Autonomy.
+"""Confidence Tracker Module for Autonomy.
 
 Measures agent's performance and recommends bid thresholds based on
 historical win rates, profit margins, and risk factors.
@@ -27,8 +26,7 @@ ConfidenceEntry = ConfidenceEntryModel
 
 
 class ConfidenceTracker:
-    """
-    Confidence Tracker for Bid Threshold Optimization.
+    """Confidence Tracker for Bid Threshold Optimization.
 
     Calculates confidence scores based on historical performance and
     recommends optimal bid thresholds for maximum profitability.
@@ -77,8 +75,7 @@ class ConfidenceTracker:
         evaluation_confidence: int | None = None,
         strategy_type: str | None = None,
     ) -> ConfidenceEntry:
-        """
-        Record a bid for confidence tracking.
+        """Record a bid for confidence tracking.
 
         Args:
             threshold: Confidence threshold used for bid
@@ -139,8 +136,7 @@ class ConfidenceTracker:
         won: bool,
         profit_cents: int | None = None,
     ) -> bool:
-        """
-        Update bid outcome and recalculate streaks.
+        """Update bid outcome and recalculate streaks.
 
         Args:
             entry_id: ID of the confidence entry to update
@@ -195,8 +191,7 @@ class ConfidenceTracker:
             db.close()
 
     def calculate_confidence_score(self, threshold: int) -> int:
-        """
-        Calculate confidence score for a threshold.
+        """Calculate confidence score for a threshold.
 
         Factors:
         - Historical win rate at this threshold
@@ -274,8 +269,7 @@ class ConfidenceTracker:
         return sum((p - mean) ** 2 for p in profits) / len(profits)
 
     def get_recommended_threshold(self) -> dict[str, Any]:
-        """
-        Get recommended bid threshold based on performance.
+        """Get recommended bid threshold based on performance.
 
         Analyzes historical performance to recommend optimal threshold
         for maximizing profitability.
@@ -379,8 +373,7 @@ class ConfidenceTracker:
             db.close()
 
     def get_threshold_summary(self, threshold: int) -> dict[str, Any]:
-        """
-        Get detailed summary for a specific threshold.
+        """Get detailed summary for a specific threshold.
 
         Args:
             threshold: Threshold to analyze
@@ -444,8 +437,7 @@ class ConfidenceTracker:
         limit: int = 50,
         threshold: int | None = None,
     ) -> list[dict[str, Any]]:
-        """
-        Get recent confidence tracking history.
+        """Get recent confidence tracking history.
 
         Args:
             limit: Maximum number of entries to return

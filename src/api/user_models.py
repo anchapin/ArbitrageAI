@@ -51,8 +51,7 @@ class ClientProfile(Base):
     last_task_at = Column(DateTime, nullable=True, index=True)
 
     def to_dict(self):
-        """
-        Convert ClientProfile to dictionary.
+        """Convert ClientProfile to dictionary.
 
         Returns:
             Dictionary containing client preferences and task statistics.
@@ -76,8 +75,7 @@ class ClientProfile(Base):
         }
 
     def get_preferences_summary(self) -> str:
-        """
-        Get a human-readable summary of client preferences.
+        """Get a human-readable summary of client preferences.
 
         Returns:
             String summarizing preferred colors, fonts, chart types, and formats.
@@ -123,8 +121,7 @@ class UserQuota(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     def to_dict(self):
-        """
-        Convert UserQuota to dictionary representation.
+        """Convert UserQuota to dictionary representation.
 
         Returns:
             Dictionary containing user quota limits, tier, and billing cycle.
@@ -168,8 +165,7 @@ class QuotaUsage(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     def to_dict(self):
-        """
-        Convert QuotaUsage to dictionary representation.
+        """Convert QuotaUsage to dictionary representation.
 
         Returns:
             Dictionary containing monthly quota usage and alert timestamps.
@@ -207,8 +203,7 @@ class RateLimitLog(Base):
     timestamp = Column(DateTime, default=datetime.utcnow)
 
     def to_dict(self):
-        """
-        Convert RateLimitLog to dictionary representation.
+        """Convert RateLimitLog to dictionary representation.
 
         Returns:
             Dictionary containing rate limit violation details and timestamps.

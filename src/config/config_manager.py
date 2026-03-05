@@ -1,5 +1,4 @@
-"""
-Centralized Configuration Manager for ArbitrageAI.
+"""Centralized Configuration Manager for ArbitrageAI.
 
 Combines and replaces legacy configuration management.
 Provides validation and audit logging for configuration changes.
@@ -28,8 +27,7 @@ class ValidationError(Exception):
 
 
 class ConfigManager:
-    """
-    Manages application configuration, replacing hardcoded magic numbers.
+    """Manages application configuration, replacing hardcoded magic numbers.
 
     Loads from environment variables with safe defaults and validation.
     """
@@ -162,8 +160,7 @@ class ConfigManager:
 
     @staticmethod
     def _load_secure_secrets():
-        """
-        Load secure secrets from secure storage or environment variables.
+        """Load secure secrets from secure storage or environment variables.
 
         This method:
         1. Attempts to load secrets from secure file storage
@@ -273,8 +270,7 @@ class ConfigManager:
 
     @staticmethod
     def validate_production_configuration() -> None:
-        """
-        Validate production configuration and fail fast on insecure defaults.
+        """Validate production configuration and fail fast on insecure defaults.
 
         This function should be called during application startup,
         before any sensitive operations are performed.

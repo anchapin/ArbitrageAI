@@ -1,5 +1,4 @@
-"""
-Closed-Loop Learning System.
+"""Closed-Loop Learning System.
 
 Implements continuous learning from completed job results.
 After each job completion:
@@ -49,8 +48,7 @@ class StrategyAdjustmentType(PyEnum):
 
 
 class ClosedLoopLearningSystem:
-    """
-    Closed-Loop Learning System.
+    """Closed-Loop Learning System.
 
     Continuously learns from completed jobs to improve bidding strategy:
 
@@ -92,8 +90,7 @@ class ClosedLoopLearningSystem:
         strategy_type: str | None = None,
         metadata: dict[str, Any] | None = None,
     ) -> LearningEntry:
-        """
-        Record job completion and calculate learning metrics.
+        """Record job completion and calculate learning metrics.
 
         Args:
             task_id: Task identifier
@@ -193,8 +190,7 @@ class ClosedLoopLearningSystem:
         strategy_type: str | None = None,
         limit: int = 100,
     ) -> dict[str, Any]:
-        """
-        Calculate prediction accuracy metrics.
+        """Calculate prediction accuracy metrics.
 
         Args:
             marketplace: Filter by marketplace
@@ -275,8 +271,7 @@ class ClosedLoopLearningSystem:
         marketplace: str | None = None,
         strategy_type: str | None = None,
     ) -> dict[str, Any]:
-        """
-        Generate learning insights and recommendations.
+        """Generate learning insights and recommendations.
 
         Args:
             marketplace: Filter by marketplace
@@ -346,8 +341,7 @@ class ClosedLoopLearningSystem:
         }
 
     def perform_weekly_review(self) -> dict[str, Any]:
-        """
-        Perform weekly strategy review.
+        """Perform weekly strategy review.
 
         Analyzes past week's performance and generates strategic recommendations.
 
@@ -501,8 +495,7 @@ class ClosedLoopLearningSystem:
         marketplace: str,
         strategy_type: str | None,
     ) -> None:
-        """
-        Adjust strategy if enough data has been collected.
+        """Adjust strategy if enough data has been collected.
 
         Args:
             marketplace: Marketplace platform
@@ -575,8 +568,7 @@ class ClosedLoopLearningSystem:
         event_type: LearningEventType | None = None,
         marketplace: str | None = None,
     ) -> list[LearningEntry]:
-        """
-        Get learning history.
+        """Get learning history.
 
         Args:
             limit: Maximum entries to return

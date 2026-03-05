@@ -1,3 +1,9 @@
+"""Experience Logger module.
+
+This module provides functionality to log successful AI executions
+to build a fine-tuning dataset.
+"""
+
 from datetime import datetime, timezone
 import json
 import logging
@@ -9,16 +15,14 @@ logger = logging.getLogger("ExperienceLogger")
 
 
 class ExperienceLogger:
-    """
-    Logs successful AI executions to build a fine-tuning dataset.
+    """Logs successful AI executions to build a fine-tuning dataset.
 
     Formats data into standard instruction/response JSONL format
     suitable for Unsloth / Hugging Face training.
     """
 
     def __init__(self, dataset_path: str = "data/experience_dataset.jsonl"):
-        """
-        Initialize the experience logger.
+        """Initialize the experience logger.
 
         Args:
             dataset_path: Path to the JSONL dataset file (default: "data/experience_dataset.jsonl")
@@ -29,8 +33,7 @@ class ExperienceLogger:
         Path(self.dataset_path).parent.mkdir(parents=True, exist_ok=True)
 
     def log_success(self, task) -> bool:
-        """
-        Extracts successful planning and execution data from a completed task.
+        """Extracts successful planning and execution data from a completed task.
 
         Appends the data to the dataset after stripping PII.
 

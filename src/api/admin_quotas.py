@@ -1,5 +1,4 @@
-"""
-Admin endpoints for quota management and monitoring.
+"""Admin endpoints for quota management and monitoring.
 
 Issue #45: API Rate Limiting, Quotas, and Usage Analytics
 
@@ -260,8 +259,7 @@ def get_rate_limit_logs(
 def get_usage_analytics(
     db: Session = Depends(get_db),  # noqa: B008
 ):
-    """
-    Get overall usage analytics.
+    """Get overall usage analytics.
 
     Uses batched queries to prevent N+1 query problems.
     Instead of querying UserQuota for each usage record in a loop,

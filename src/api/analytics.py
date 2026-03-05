@@ -1,5 +1,4 @@
-"""
-Advanced Analytics Dashboard with Predictive Insights.
+"""Advanced Analytics Dashboard with Predictive Insights.
 
 This module provides comprehensive analytics and predictive insights for the ArbitrageAI platform.
 It includes real-time metrics, trend analysis, predictive modeling, and business intelligence features.
@@ -140,8 +139,7 @@ class AnalyticsEngine:
     """Core analytics engine for processing and analyzing platform data."""
 
     def __init__(self, db: Session):
-        """
-        Initialize the analytics engine.
+        """Initialize the analytics engine.
 
         Args:
             db: Database session
@@ -227,8 +225,7 @@ class KPIAnalytics(AnalyticsEngine):
 
     @task(name="calculate_kpis")
     def calculate_kpis(self, time_range: str = "24h") -> KPIResponse:
-        """
-        Calculate key performance indicators.
+        """Calculate key performance indicators.
 
         Args:
             time_range: Time range for calculation ("24h", "7d", "30d", "all")
@@ -332,8 +329,7 @@ class PredictiveAnalytics(AnalyticsEngine):
     def generate_predictions(
         self, metric: str, horizon_hours: int = 24,
     ) -> PredictionResult:
-        """
-        Generate predictions for a specific metric.
+        """Generate predictions for a specific metric.
 
         Args:
             metric: Metric to predict ("revenue", "tasks", "success_rate")
@@ -513,8 +509,7 @@ class AnomalyDetection(AnalyticsEngine):
     def detect_anomalies(
         self, metric: str, time_range: str = "24h",
     ) -> list[AnomalyAlert]:
-        """
-        Detect anomalies in a specific metric.
+        """Detect anomalies in a specific metric.
 
         Args:
             metric: Metric to analyze ("revenue", "tasks", "success_rate")
@@ -652,8 +647,7 @@ class PerformanceAnalytics(AnalyticsEngine):
 
     @task(name="analyze_performance")
     def analyze_performance(self) -> list[PerformanceMetric]:
-        """
-        Analyze system performance and generate metrics.
+        """Analyze system performance and generate metrics.
 
         Returns:
             List of performance metrics
@@ -821,8 +815,7 @@ class AnalyticsAPI:
     """Main analytics API class combining all analytics engines."""
 
     def __init__(self, db: Session):
-        """
-        Initialize the analytics API.
+        """Initialize the analytics API.
 
         Args:
             db: Database session
@@ -834,8 +827,7 @@ class AnalyticsAPI:
 
     @task(name="get_analytics_summary")
     def get_analytics_summary(self, time_range: str = "24h") -> AnalyticsSummary:
-        """
-        Get comprehensive analytics summary.
+        """Get comprehensive analytics summary.
 
         Args:
             time_range: Time range for analysis
@@ -963,8 +955,7 @@ async def get_kpis(
     time_range: str = Query("24h", description="Time range: 24h, 7d, 30d, all"),
     db: Session = Depends(get_db),  # noqa: B008
 ):
-    """
-    Get key performance indicators.
+    """Get key performance indicators.
 
     Args:
         time_range: Time range for KPI calculation
@@ -988,8 +979,7 @@ async def get_predictions(
     horizon_hours: int = Query(24, description="Prediction horizon in hours"),
     db: Session = Depends(get_db),  # noqa: B008
 ):
-    """
-    Get predictions for a specific metric.
+    """Get predictions for a specific metric.
 
     Args:
         metric: Metric to predict (revenue, tasks, success_rate)
@@ -1014,8 +1004,7 @@ async def get_anomalies(
     time_range: str = Query("24h", description="Time range for anomaly detection"),
     db: Session = Depends(get_db),  # noqa: B008
 ):
-    """
-    Get anomalies for a specific metric.
+    """Get anomalies for a specific metric.
 
     Args:
         metric: Metric to analyze (revenue, tasks, success_rate)
@@ -1036,8 +1025,7 @@ async def get_anomalies(
 @router.get("/performance", response_model=list[PerformanceMetric])
 @task(name="get_performance_endpoint")
 async def get_performance(db: Session = Depends(get_db)):  # noqa: B008
-    """
-    Get performance metrics.
+    """Get performance metrics.
 
     Args:
         db: Database session
@@ -1059,8 +1047,7 @@ async def get_analytics_summary(
     time_range: str = Query("24h", description="Time range for analysis"),
     db: Session = Depends(get_db),  # noqa: B008
 ):
-    """
-    Get comprehensive analytics summary.
+    """Get comprehensive analytics summary.
 
     Args:
         time_range: Time range for analysis
@@ -1080,8 +1067,7 @@ async def get_analytics_summary(
 @router.get("/recommendations", response_model=list[str])
 @task(name="get_recommendations_endpoint")
 async def get_recommendations(db: Session = Depends(get_db)):  # noqa: B008
-    """
-    Get actionable recommendations based on analytics.
+    """Get actionable recommendations based on analytics.
 
     Args:
         db: Database session
@@ -1101,8 +1087,7 @@ async def get_recommendations(db: Session = Depends(get_db)):  # noqa: B008
 @router.get("/widgets", response_model=list[DashboardWidget])
 @task(name="get_dashboard_widgets_endpoint")
 async def get_dashboard_widgets(db: Session = Depends(get_db)):  # noqa: B008
-    """
-    Get configured dashboard widgets.
+    """Get configured dashboard widgets.
 
     Args:
         db: Database session

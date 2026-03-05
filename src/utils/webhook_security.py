@@ -1,5 +1,4 @@
-"""
-Comprehensive webhook security module for Stripe webhook verification.
+"""Comprehensive webhook security module for Stripe webhook verification.
 
 Features:
 - HMAC-SHA256 signature verification
@@ -40,8 +39,7 @@ def verify_webhook_signature(
     secret: str,
     timestamp_seconds: int = 300,
 ) -> dict[str, any]:
-    """
-    Comprehensive webhook signature verification with replay attack prevention.
+    """Comprehensive webhook signature verification with replay attack prevention.
 
     This function:
     1. Validates required headers are present
@@ -188,8 +186,7 @@ def should_replay_webhook(
     recent_webhooks: dict[str, int],
     dedup_window_seconds: int = 30,
 ) -> bool:
-    """
-    Check if a webhook might be a replay of a recently processed webhook.
+    """Check if a webhook might be a replay of a recently processed webhook.
 
     This provides an additional layer of protection against replays by tracking
     recently processed webhook IDs within a deduplication window.
@@ -239,8 +236,7 @@ def log_webhook_verification_attempt(
     event_id: str | None = None,
     additional_context: dict | None = None,
 ) -> None:
-    """
-    Log webhook verification attempt with structured context.
+    """Log webhook verification attempt with structured context.
 
     Args:
         success: Whether verification succeeded

@@ -1,5 +1,4 @@
-"""
-Distillation Data Collector.
+"""Distillation Data Collector.
 
 This module captures successful outputs from cloud models (GPT-4o) for use
 in fine-tuning local models. It stores prompt-response pairs with metadata
@@ -40,8 +39,7 @@ MIN_EXAMPLES_FOR_TRAINING = 500
 
 
 class DistillationDataCollector:
-    """
-    Captures successful cloud model outputs for distillation.
+    """Captures successful cloud model outputs for distillation.
 
     This collector should be called whenever:
     - A task completes successfully using GPT-4o (cloud model)
@@ -56,8 +54,7 @@ class DistillationDataCollector:
         teacher_file: str | None = None,
         curated_file: str | None = None,
     ):
-        """
-        Initialize the data collector.
+        """Initialize the data collector.
 
         Args:
             output_dir: Base directory for dataset storage
@@ -91,8 +88,7 @@ class DistillationDataCollector:
         metadata: dict[str, Any] | None = None,
         model_used: str = "gpt-4o",
     ) -> str:
-        """
-        Capture a successful task completion for distillation.
+        """Capture a successful task completion for distillation.
 
         This should be called when:
         - A task completes successfully using a cloud model
@@ -141,8 +137,7 @@ class DistillationDataCollector:
         task_request: dict[str, Any],
         model_used: str = "gpt-4o",
     ) -> str | None:
-        """
-        Capture a task completion result for distillation.
+        """Capture a task completion result for distillation.
 
         This is a convenience method that extracts relevant information
         from a task result dictionary.
@@ -206,8 +201,7 @@ class DistillationDataCollector:
 
     @staticmethod
     def _append_to_jsonl(filepath: str, record: dict[str, Any]) -> None:
-        """
-        Append a record to a JSONL file with atomic write semantics.
+        """Append a record to a JSONL file with atomic write semantics.
 
         Args:
             filepath: Path to the JSONL file
@@ -244,8 +238,7 @@ class DistillationDataCollector:
             raise OSError(f"Failed to write to {filepath}: {e}") from e
 
     def get_dataset_stats(self) -> dict[str, Any]:
-        """
-        Get statistics about the collected dataset.
+        """Get statistics about the collected dataset.
 
         Returns:
             Dictionary with dataset statistics
@@ -299,8 +292,7 @@ class DistillationDataCollector:
         min_rating: int = MIN_CURATION_RATING,
         limit: int | None = None,
     ) -> list[dict[str, Any]]:
-        """
-        Get curated examples from the dataset.
+        """Get curated examples from the dataset.
 
         Args:
             domain: Optional domain filter
@@ -339,8 +331,7 @@ class DistillationDataCollector:
     def export_for_training(
         self, output_path: str | None = None, format: str = "alpaca",
     ) -> str:
-        """
-        Export the curated dataset in a specific format for training.
+        """Export the curated dataset in a specific format for training.
 
         Args:
             output_path: Path for the exported file
@@ -392,8 +383,7 @@ class DistillationDataCollector:
 def capture_cloud_success(
     prompt: str, response: str, domain: str, task_type: str, **kwargs,
 ) -> str:
-    """
-    Convenience function to capture a successful cloud model output.
+    """Convenience function to capture a successful cloud model output.
 
     Args:
         prompt: The input prompt
@@ -417,8 +407,7 @@ def capture_cloud_success(
 
 
 def get_distillation_status() -> dict[str, Any]:
-    """
-    Get the current status of the distillation dataset.
+    """Get the current status of the distillation dataset.
 
     Returns:
         Dictionary with dataset statistics

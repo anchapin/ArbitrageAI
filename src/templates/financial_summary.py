@@ -1,5 +1,4 @@
-"""
-Financial Summary Template.
+"""Financial Summary Template.
 
 This template provides a pre-tested Python script for generating financial documents
 such as financial summaries, reports, and accounting documents.
@@ -21,8 +20,7 @@ import pandas as pd
 
 
 class FinancialSummaryTemplate:
-    """
-    Template for generating financial summaries and reports.
+    """Template for generating financial summaries and reports.
 
     This template provides proper financial document formatting including:
     - Executive summary
@@ -53,8 +51,7 @@ class FinancialSummaryTemplate:
         output_format: str = "docx",
         **kwargs,
     ) -> dict:
-        """
-        Generate a financial document from JSON content and CSV data.
+        """Generate a financial document from JSON content and CSV data.
 
         Args:
             content_json: Structured JSON content from LLM

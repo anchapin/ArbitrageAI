@@ -1,5 +1,4 @@
-"""
-Payment processing and pricing endpoints for ArbitrageAI.
+"""Payment processing and pricing endpoints for ArbitrageAI.
 
 Handles:
 - Stripe checkout session creation
@@ -80,8 +79,7 @@ def calculate_task_price(
     complexity: str = "medium",
     urgency: str = "standard",
 ) -> int:
-    """
-    Calculate task price using the Task Price Formula.
+    """Calculate task price using the Task Price Formula.
 
     Price = Base Rate × Complexity × Urgency.
 
@@ -132,8 +130,7 @@ def calculate_task_price(
 
 
 async def create_checkout_session(task_data, db: Session = Depends(get_db)):  # noqa: B008
-    """
-    Create a Stripe checkout session based on task submission.
+    """Create a Stripe checkout session based on task submission.
 
     Calculates price using the Task Price Formula (Pillar 1.4):
     Price = Base Rate × Complexity × Urgency
@@ -293,8 +290,7 @@ async def stripe_webhook(
     db: Session = Depends(get_db),  # noqa: B008
     stripe_signature: str | None = None,
 ):
-    """
-    Stripe webhook endpoint to handle checkout events.
+    """Stripe webhook endpoint to handle checkout events.
 
     Listens for checkout.session.completed events and updates task status to PAID.
     When a task is marked as PAID, a background task is added to process the task asynchronously.
@@ -394,8 +390,7 @@ async def stripe_webhook(
 
 
 async def get_domains():
-    """
-    Get available domains and their pricing configuration.
+    """Get available domains and their pricing configuration.
 
     Returns:
         Dictionary with domains, complexity levels, and urgency levels
@@ -425,8 +420,7 @@ async def get_price_estimate(
     complexity: str = "medium",
     urgency: str = "standard",
 ):
-    """
-    Calculate a price estimate based on domain, complexity, and urgency.
+    """Calculate a price estimate based on domain, complexity, and urgency.
 
     Args:
         domain: The task domain (accounting, legal, data_analysis)
