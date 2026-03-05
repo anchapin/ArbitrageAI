@@ -5,6 +5,7 @@ Provides centralized logging with:
 - Console handler for development
 - Timestamps and severity levels
 - Module-specific loggers
+- Optional Sentry integration for error tracking (Issue #230)
 
 Usage:
     from src.utils.logger import get_logger
@@ -15,8 +16,24 @@ Usage:
 """
 
 import logging
+from contextlib import suppress
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
+
+# Import error tracking for automatic error capture in logs (Issue #230)
+try:
+    from src.utils.error_tracking import (
+        SENTRY_AVAILABLE,
+        add_breadcrumb,
+        capture_exception,
+        capture_message,
+    )
+except ImportError:
+    SENTRY_AVAILABLE = False
+    # Mock functions when error_tracking is not available
+    def add_breadcrumb(*args, **kwargs): pass
+    def capture_exception(*args, **kwargs): return None
+    def capture_message(*args, **kwargs): return None
 
 
 def setup_logging(
@@ -97,6 +114,66 @@ def get_logger(name: str) -> logging.Logger:
         setup_logging()
 
     return logging.getLogger(name)
+
+
+class SentryLoggingHandler(logging.Handler):
+    """Custom logging handler that sends ERROR and CRITICAL logs to Sentry.
+
+    This handler captures log records at ERROR and CRITICAL levels and sends
+    them to Sentry as breadcrumbs and events, providing better error context
+    in the Sentry dashboard.
+    """
+
+    def emit(self, record: logging.LogRecord) -> None:
+        """Emit a log record to Sentry.
+
+        Args:
+            record: The log record to emit
+        """
+        if not SENTRY_AVAILABLE:
+            return
+
+        # Only capture ERROR and CRITICAL levels
+        if record.levelno < logging.ERROR:
+            return
+
+        # Add breadcrumb for context
+        with suppress(Exception):
+            add_breadcrumb(
+                message=record.getMessage(),
+                category=record.name,
+                level=record.levelname.lower(),
+            )
+
+        # For CRITICAL level, also capture as event
+        if record.levelno >= logging.CRITICAL:
+            with suppress(Exception):
+                capture_message(
+                    message=record.getMessage(),
+                    level="critical",
+                    extra={
+                        "logger": record.name,
+                        "module": record.module,
+                        "function": record.funcName,
+                        "line": record.lineno,
+                    },
+                )
+
+
+# Create and add Sentry handler if available
+def _setup_sentry_logging() -> None:
+    """Configure Sentry logging handler if Sentry is available."""
+    if not SENTRY_AVAILABLE:
+        return
+
+    with suppress(Exception):
+        handler = SentryLoggingHandler()
+        handler.setLevel(logging.ERROR)
+        logging.root.addHandler(handler)
+
+
+# Setup Sentry logging integration
+_setup_sentry_logging()
 
 
 # Initialize logging on module import
