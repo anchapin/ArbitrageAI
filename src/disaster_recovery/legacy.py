@@ -16,9 +16,9 @@ from traceloop.sdk.decorators import workflow
 from src.config import Config
 from src.utils.logger import get_logger
 
-from .backup_manager import BackupManager
-from .models import BackupType, RecoveryStatus
-from .recovery_manager import RecoveryManager
+from src.disaster_recovery import BackupManager
+from src.disaster_recovery.models import BackupType, RecoveryStatus
+from src.disaster_recovery import RecoveryManager
 
 logger = get_logger(__name__)
 
