@@ -1,48 +1,68 @@
-# CODEOWNERS - Code Ownership Rules
-# https://help.github.com/articles/about-codeowners/
+# Code Owners
+# https://help.github.com/articles/about-code-owners/
 
-# Default owner for all files (fallback)
+# Default owner for everything not matched below
 * @anchapin
 
-# Core API & Backend
-/src/api/ @anchapin
+# Agent execution module
+src/agent_execution/ @anchapin
 
-# Agent Execution Engine
-/src/agent_execution/ @anchapin
+# API endpoints
+src/api/ @anchapin
 
-# Frontend / Client Portal
-/src/client_portal/ @anchapin
+# Client portal
+src/client_portal/ @anchapin
 
-# LLM & AI Services
-/src/llm_service.py @anchapin
-/src/llm_health_check.py @anchapin
-/src/async_rag_service.py @anchapin
+# Configuration management
+src/config/ @anchapin
 
-# Fine-tuning & Model Training
-/src/fine_tuning/ @anchapin
-/src/distillation/ @anchapin
+# Analytics module
+src/analytics/ @anchapin
 
-# Analytics & Reporting
-/src/analytics/ @anchapin
-src/analytics.py @anchapin
+# LLM services
+src/llm_service.py @anchapin
+src/llm_health_check.py @anchapin
 
-# Utilities & Infrastructure
-/src/utils/ @anchapin
-/src/config/ @anchapin
+# Fine-tuning and distillation
+src/fine_tuning/ @anchapin
+src/distillation/ @anchapin
 
-# Disaster Recovery
-/src/disaster_recovery/ @anchapin
+# Disaster recovery
+src/disaster_recovery/ @anchapin
 
-# Database Migrations
-/alembic/ @anchapin
+# Market scanner
+src/market_scanner/ @anchapin
 
-# Docker & Deployment
-/docker/ @anchapin
+# Planning and orchestration
+src/planning/ @anchapin
+src/planning.py @anchapin
+
+# WebSocket and real-time
+src/websocket/ @anchapin
+src/websocket_manager.py @anchapin
+
+# Background jobs
+src/background_job_queue.py @anchapin
+
+# Database migrations
+alembic/ @anchapin
+
+# Tests
+tests/ @anchapin
+
+# GitHub configuration
+.github/ @anchapin
+.github/workflows/ @anchapin
+
+# Documentation
+docs/ @anchapin
+
+# Docker configuration
+docker/ @anchapin
+Dockerfile @anchapin
+Dockerfile.sandbox @anchapin
 docker-compose*.yml @anchapin
-Dockerfile* @anchapin
 
-# Scripts & Automation
-/scripts/ @anchapin
-
-# Testing
-/tests/ @anchapin
+# CI/CD and pre-commit
+.github/dependabot.yml @anchapin
+.pre-commit-config.yaml @anchapin
