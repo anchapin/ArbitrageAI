@@ -16,6 +16,7 @@ Usage:
 """
 
 import logging
+from contextlib import suppress
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 
@@ -137,18 +138,16 @@ class SentryLoggingHandler(logging.Handler):
             return
 
         # Add breadcrumb for context
-        try:
+        with suppress(Exception):
             add_breadcrumb(
                 message=record.getMessage(),
                 category=record.name,
                 level=record.levelname.lower(),
             )
-        except Exception:
-            pass  # Don't let logging handler errors break the app
 
         # For CRITICAL level, also capture as event
         if record.levelno >= logging.CRITICAL:
-            try:
+            with suppress(Exception):
                 capture_message(
                     message=record.getMessage(),
                     level="critical",
@@ -159,8 +158,6 @@ class SentryLoggingHandler(logging.Handler):
                         "line": record.lineno,
                     },
                 )
-            except Exception:
-                pass
 
 
 # Create and add Sentry handler if available
@@ -169,12 +166,10 @@ def _setup_sentry_logging() -> None:
     if not SENTRY_AVAILABLE:
         return
 
-    try:
+    with suppress(Exception):
         handler = SentryLoggingHandler()
         handler.setLevel(logging.ERROR)
         logging.root.addHandler(handler)
-    except Exception:
-        pass  # Don't let Sentry setup break logging
 
 
 # Setup Sentry logging integration

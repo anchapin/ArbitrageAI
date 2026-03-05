@@ -99,22 +99,25 @@ class ErrorTrackingConfig:
 
 def _get_app_version() -> str | None:
     """Get application version from pyproject.toml or package."""
+    # Note: These imports are lazy-loaded to avoid hard dependency
     try:
-        from importlib.metadata import version
+        from importlib.metadata import version  # noqa: PLC0415
+
         return version("arbitrage-ai")
-    except Exception:
+    except Exception:  # noqa: S110
         pass
 
     # Fallback: try to read from pyproject.toml
     try:
-        from pathlib import Path
+        from pathlib import Path  # noqa: PLC0415
+
         pyproject = Path("pyproject.toml")
         if pyproject.exists():
             content = pyproject.read_text()
             for line in content.split("\n"):
                 if line.startswith("version ="):
                     return line.split("=")[1].strip().strip('"').strip("'")
-    except Exception:
+    except Exception:  # noqa: S110
         pass
 
     return None
@@ -174,10 +177,10 @@ def init_error_tracking(
     # Get configuration
     environment = environment or ErrorTrackingConfig.get("SENTRY_ENVIRONMENT")
     traces_sample_rate = traces_sample_rate or float(
-        ErrorTrackingConfig.get("SENTRY_TRACES_SAMPLE_RATE", 0.1)
+        ErrorTrackingConfig.get("SENTRY_TRACES_SAMPLE_RATE", 0.1),
     )
     errors_sample_rate = errors_sample_rate or float(
-        ErrorTrackingConfig.get("SENTRY_ERRORS_SAMPLE_RATE", 1.0)
+        ErrorTrackingConfig.get("SENTRY_ERRORS_SAMPLE_RATE", 1.0),
     )
 
     # Get app version
@@ -212,7 +215,7 @@ def init_error_tracking(
         logger.info(
             f"✓ Error tracking initialized (environment: {environment}, "
             f"traces_sample_rate: {traces_sample_rate}, "
-            f"errors_sample_rate: {errors_sample_rate})"
+            f"errors_sample_rate: {errors_sample_rate})",
         )
 
         # Set initial context
