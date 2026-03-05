@@ -185,9 +185,11 @@ class TestCostEntryModel:
     """Test suite for CostEntry database model."""
 
     def test_cost_entry_creation(self, db_session):
-        """Test creating a CostEntry record."""
+        """Test creating a CostEntry record - verifies model structure."""
+        # Use unique ID to avoid conflicts with existing data
+        import uuid
         entry = CostEntry(
-            id="cost-1",
+            id=f"cost-{uuid.uuid4().hex[:8]}",
             cost_type="llm",
             cost_cents=500,
             cost_dollars=5.0,
@@ -200,8 +202,8 @@ class TestCostEntryModel:
         db_session.add(entry)
         db_session.commit()
 
-        # Verify it was saved
-        saved_entry = db_session.query(CostEntry).filter_by(id="cost-1").first()
+        # Verify it was saved - query by the generated ID
+        saved_entry = db_session.query(CostEntry).filter_by(id=entry.id).first()
         assert saved_entry is not None
         assert saved_entry.cost_type == "llm"
 

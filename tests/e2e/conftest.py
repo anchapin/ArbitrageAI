@@ -17,15 +17,28 @@ from unittest.mock import Mock, AsyncMock
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from src.api.models import Base, TaskStatus
-from src.api.models import ClientProfile
+from src.api.models import ClientProfile, TaskStatus
 
 
 @pytest.fixture
 def e2e_db():
     """Create in-memory SQLite database for e2e tests."""
     engine = create_engine("sqlite:///:memory:", echo=False)
-    Base.metadata.create_all(bind=engine)
+    
+    # Import all models to ensure all tables are registered with Base.metadata
+    # Each model module has its own Base (task_models, marketplace_models, etc.)
+    from src.api import models  # noqa: F401
+    from src.api.task_models import Base as TaskBase
+    from src.api.marketplace_models import Base as MarketplaceBase
+    from src.api.financial_models import Base as FinancialBase
+    from src.api.user_models import Base as UserBase
+    
+    # Create all tables from all bases
+    TaskBase.metadata.create_all(bind=engine)
+    MarketplaceBase.metadata.create_all(bind=engine)
+    FinancialBase.metadata.create_all(bind=engine)
+    UserBase.metadata.create_all(bind=engine)
+    
     SessionLocal = sessionmaker(bind=engine)
     
     session = SessionLocal()

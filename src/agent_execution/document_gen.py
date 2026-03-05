@@ -189,6 +189,7 @@ Generate Python code to create a {self.report_type} report document."""
                             "file_url": f"data:application/vnd.openxmlformats-officedocument.wordprocessingml.document;base64,{base64.b64encode(artifact.data).decode('utf-8')}",
                             "file_name": artifact.name,
                             "output_format": "docx",
+                            "report_type": self.report_type,
                             "message": f"{self.report_type.title()} report generated successfully",
                         }
 

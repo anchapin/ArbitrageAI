@@ -11,6 +11,7 @@ After each job completion:
 Issue #106: [PHASE 5.3] CLOSED-LOOP LEARNING SYSTEM
 """
 
+import uuid
 from datetime import datetime, timedelta, timezone
 from enum import Enum as PyEnum
 from typing import Any
@@ -531,7 +532,7 @@ class ClosedLoopLearningSystem:
 
                     # Record adjustment
                     entry = LearningEntry(
-                        id=str(id),
+                        id=f"adjustment_{marketplace}_{datetime.now(timezone.utc).strftime('%Y-%m-%d_%H%M%S')}_{uuid.uuid4().hex[:8]}",
                         task_id=f"adjustment_{marketplace}_{datetime.now(timezone.utc).strftime('%Y-%m-%d')}",
                         event_type=LearningEventType.STRATEGY_ADJUSTED.value,
                         marketplace=marketplace,

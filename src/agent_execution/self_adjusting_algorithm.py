@@ -29,6 +29,7 @@ class AdjustmentReason(Enum):
 
     WIN_STREAK = "win_streak"
     LOSS_STREAK = "loss_streak"
+    POOR_PERFORMANCE = "poor_performance"
     PROFIT_DECLINE = "profit_decline"
     PROFIT_INCREASE = "profit_increase"
     HIGH_VARIANCE = "high_variance"
