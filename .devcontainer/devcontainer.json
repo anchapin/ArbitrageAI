@@ -1,7 +1,15 @@
 {
   "name": "ArbitrageAI Development",
-  "image": "mcr.microsoft.com/devcontainers/python:3.10",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": ".",
+    "target": "development"
+  },
   "features": {
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "20",
+      "nvmPackageManager": "npm"
+    },
     "ghcr.io/devcontainers/features/github-cli:1": {}
   },
   "customizations": {
@@ -20,7 +28,9 @@
         "humao.rest-client",
         "redhat.vscode-yaml",
         "tamasfe.even-better-toml",
-        "ms-vsliveshare.vsliveshare"
+        "ms-vsliveshare.vsliveshare",
+        "esbenp.prettier-vscode",
+        "dbaeumer.vscode-eslint"
       ],
       "settings": {
         "python.defaultInterpreterPath": "/usr/local/bin/python",
@@ -77,22 +87,27 @@
     "16686": {"label": "Jaeger UI", "protocol": "http"},
     "9090": {"label": "Prometheus", "protocol": "http"}
   },
-  "onCreateCommand": "pip install --upgrade pip && pip install -e .[dev,tests]",
-  "updateContentCommand": "pip install --upgrade pip && pip install -e .[dev,tests]",
-  "postCreateCommand": "python -m playwright install --with-deps chromium && ruff check --fix . || true",
-  "postStartCommand": "if [ -f .env ]; then echo 'Environment file exists'; else cp .env.example .env; fi",
   "containerEnv": {
     "PYTHONUNBUFFERED": "1",
     "ENVIRONMENT": "development"
   },
   "workspaceMount": "source=${localWorkspaceFolder},target=/workspaces/ArbitrageAI,type=bind,consistency=cached",
   "workspaceFolder": "/workspaces/ArbitrageAI",
-  "remoteUser": "vscode",
-  "runArgs": ["--cap-add=SYS_PTRACE", "--security-opt", "seccomp=unconfined"],
+  "remoteUser": "developer",
+  "runArgs": [
+    "--cap-add=SYS_PTRACE",
+    "--security-opt",
+    "seccomp=unconfined",
+    "-e",
+    "GIT_EDITOR=code --wait"
+  ],
   "hostRequirements": {
     "cpus": 4,
     "memory": "8gb",
     "gpu": "optional"
   },
-  "overrideFeatureInstallOrder": ["ghcr.io/devcontainers/features/github-cli:1"]
+  "overrideFeatureInstallOrder": [
+    "ghcr.io/devcontainers/features/node:1",
+    "ghcr.io/devcontainers/features/github-cli:1"
+  ]
 }
