@@ -270,7 +270,9 @@ preview = true
 # RUF067 is excluded because __init__ modules often need to import adapters/handlers for convenience
 "**/__init__.py" = ["F401", "F403", "D104", "PLC0415", "PLR6301", "RUF067"]
 # Disaster recovery code uses pathlib in async contexts - this is acceptable
-"src/api/disaster_recovery.py" = ["ASYNC240"]
+# Also has unused db arguments
+"src/api/disaster_recovery.py" = ["ASYNC240", "ARG001"]
+"src/disaster_recovery/recovery_manager.py" = ["ASYNC240"]
 # Conftest can have unused fixtures and imports
 "**/conftest.py" = ["F401", "F403", "ARG", "D100", "D103"]
 # Scripts can use print statements
@@ -314,7 +316,7 @@ preview = true
 "src/disaster_recovery.py" = ["PLC0415"]
 "src/llm_health_check.py" = ["PLC0415"]
 # Additional lazy imports
-"src/disaster_recovery/backup_manager.py" = ["PLC0415"]
+"src/disaster_recovery/backup_manager.py" = ["PLC0415", "ASYNC240"]
 "src/api/learning.py" = ["PLC0415"]
 "src/api/auth.py" = ["PLC0415", "RUF029", "ARG001"]
 "src/api/versioning.py" = ["PLC0415"]
@@ -326,7 +328,7 @@ preview = true
 "src/agent_execution/closed_loop_learning.py" = ["PLC0415"]
 "src/agent_execution/cost_tracker.py" = ["PLC0415", "PLW0603"]
 "src/agent_execution/confidence_tracker.py" = ["PLC0415"]
-"src/utils/apm.py" = ["PLC0415"]
+"src/utils/apm.py" = ["PLC0415", "PYI034"]
 "src/planning/executor.py" = ["PLC0415"]
 "src/fine_tuning/dataset_builder.py" = ["PLC0415"]
 "src/fine_tuning/ab_testing.py" = ["PLC0415"]
@@ -341,8 +343,6 @@ preview = true
 "src/agent_execution/simulation_engine.py" = ["RUF029", "PLR6301"]
 # Analytics background tasks
 "src/api/analytics.py" = ["RUF029"]
-# Disaster recovery API has unused db arguments
-"src/api/disaster_recovery.py" = ["ARG001"]
 # Rate limit middleware has interface methods
 "src/api/rate_limit_middleware.py" = ["PLR6301"]
 # Redis rate limiter has global statements, interface methods, and mutable class attributes
