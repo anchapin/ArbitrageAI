@@ -181,8 +181,7 @@ class ClosedLoopLearningSystem:
             logger.error(f"Failed to record job completion: {e}")
             db.rollback()
             raise
-        finally:
-            db.close()
+        finally:            db.close()
 
     @staticmethod
     def calculate_prediction_accuracy(
@@ -280,7 +279,7 @@ class ClosedLoopLearningSystem:
         Returns:
             Dictionary with insights and recommendations
         """
-        accuracy = self.calculate_prediction_accuracy(
+        accuracy = ClosedLoopLearningSystem.calculate_prediction_accuracy(
             marketplace=marketplace, strategy_type=strategy_type,
         )
 
@@ -515,7 +514,7 @@ class ClosedLoopLearningSystem:
 
             if count >= self.MIN_SAMPLES_FOR_ADJUSTMENT:
                 # Get recent accuracy
-                accuracy = self.calculate_prediction_accuracy(
+                accuracy = ClosedLoopLearningSystem.calculate_prediction_accuracy(
                     marketplace=marketplace, limit=50,
                 )
 

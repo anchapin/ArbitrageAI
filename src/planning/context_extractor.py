@@ -87,7 +87,7 @@ class ContextExtractor:
                 context["extraction_success"] = True
 
                 if not df.select_dtypes(include=["number"]).empty:
-                    context["key_insights"] = self._extract_basic_insights(df)
+                    context["key_insights"] = ContextExtractor._extract_basic_insights(df)
 
             except Exception as e:
                 context["error"] = str(e)

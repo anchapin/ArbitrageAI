@@ -120,11 +120,11 @@ class IntelligentRouter:
             "classification": classification,
             "performance_recommendations": performance_recommendations,
             "execution_result": result,
-            "task_profile": self._profile_to_dict(task_profile),
+            "task_profile": IntelligentRouter._profile_to_dict(task_profile),
         }
 
+    @staticmethod
     def _create_task_profile(
-        self,
         domain: str,
         user_request: str,
         csv_data: str,
@@ -137,9 +137,9 @@ class IntelligentRouter:
         first_line = csv_data.strip().split("\n")[0]
         csv_headers = [h.strip() for h in first_line.split(",")]
 
-        complexity = self._calculate_complexity_score(user_request, csv_headers, domain)
-        estimated_time = self._estimate_execution_time(complexity, output_format)
-        success_rate = self._calculate_success_rate(domain, task_type, output_format)
+        complexity = IntelligentRouter._calculate_complexity_score(user_request, csv_headers, domain)
+        estimated_time = IntelligentRouter._estimate_execution_time(complexity, output_format)
+        success_rate = IntelligentRouter._calculate_success_rate(domain, task_type, output_format)
 
         task_router = TaskRouter()
 

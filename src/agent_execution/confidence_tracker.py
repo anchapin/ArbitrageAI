@@ -241,7 +241,7 @@ class ConfidenceTracker:
                 streak_factor = -min(self.current_streak_losses / 10, 0.2)
 
             # Risk adjustment (variance in outcomes)
-            variance = self._calculate_variance(entries)
+            variance = ConfidenceTracker._calculate_variance(entries)
             risk_factor = max(0, 1 - variance / 10000)  # Penalize high variance
 
             # Calculate final score (0-100)
@@ -254,8 +254,7 @@ class ConfidenceTracker:
 
             return int(max(0, min(100, score)))
 
-        finally:
-            db.close()
+        finally:            db.close()
 
     @staticmethod
     def _calculate_variance(entries: list[ConfidenceEntry]) -> float:
@@ -429,8 +428,7 @@ class ConfidenceTracker:
                 "confidence_score": confidence_score,
             }
 
-        finally:
-            db.close()
+        finally:            db.close()
 
     @staticmethod
     def get_recent_history(

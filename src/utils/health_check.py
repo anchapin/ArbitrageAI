@@ -210,7 +210,7 @@ class HealthMonitor:
                 message=f"Database connection failed: {e!s}",
             )
 
-    async def check_redis(self) -> HealthCheckResult:
+    async def check_redis(self) -> HealthCheckResult:  # noqa: PLR6301
         """Check Redis connectivity and performance."""
         start = time.time()
         try:

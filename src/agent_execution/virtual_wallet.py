@@ -107,7 +107,7 @@ class VirtualWalletManager:
                 return False
 
             # Check budget
-            self._reset_budget_if_needed(db, wallet)
+            VirtualWallet._reset_budget_if_needed(db, wallet)
 
             available_budget = wallet.budget_cap_cents - wallet.budget_spent_cents
             available_balance = wallet.balance_cents
@@ -137,7 +137,7 @@ class VirtualWalletManager:
             )
 
             # Check if we need to send alerts
-            self._check_budget_alerts(db, wallet)
+            VirtualWallet._check_budget_alerts(db, wallet)
 
             return True
 
@@ -202,7 +202,7 @@ class VirtualWalletManager:
             if not wallet:
                 return {"error": "Wallet not found"}
 
-            self._reset_budget_if_needed(db, wallet)
+            VirtualWallet._reset_budget_if_needed(db, wallet)
 
             return {
                 "budget_cap_cents": wallet.budget_cap_cents,
@@ -242,7 +242,7 @@ class VirtualWalletManager:
             if not wallet:
                 return {"error": "Wallet not found"}
 
-            self._reset_budget_if_needed(db, wallet)
+            VirtualWallet._reset_budget_if_needed(db, wallet)
 
             return wallet.to_dict()
 

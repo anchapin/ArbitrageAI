@@ -521,7 +521,7 @@ class ContextExtractor:
 
                 # Generate basic statistics for numeric columns
                 if not df.select_dtypes(include=["number"]).empty:
-                    context["key_insights"] = self._extract_basic_insights(df)
+                    context["key_insights"] = PlanBuilder._extract_basic_insights(df)
 
             except Exception as e:
                 context["error"] = str(e)
@@ -649,7 +649,7 @@ class WorkPlanGenerator:
             Dictionary containing the work plan
         """
         # Build context summary for the prompt
-        context_summary = self._build_context_summary(extracted_context)
+        context_summary = PlanBuilder._build_context_summary(extracted_context)
 
         # Build client preferences section (Pillar 2.5 Gap)
         preferences_instruction = ""
@@ -714,7 +714,7 @@ Generate the work plan as JSON."""
 
             # Parse JSON response
             content = result.get("content", "")
-            plan = self._parse_plan_json(content)
+            plan = PlanBuilder._parse_plan_json(content)
 
             if plan:
                 plan["generated_at"] = datetime.now(timezone.utc).isoformat()
@@ -822,7 +822,7 @@ class PlanExecutor:
         from src.agent_execution.executor import TaskRouter, execute_data_visualization
 
         user_request = work_plan.get("user_request", "")
-        task_type = self._infer_task_type(work_plan)
+        task_type = PlanBuilder._infer_task_type(work_plan)
         output_format = work_plan.get("output_format") or self._infer_output_format(
             work_plan,
         )

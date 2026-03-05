@@ -152,7 +152,7 @@ class SelfAdjustingConfidenceAlgorithm:
                         break
 
             # Calculate variance
-            variance = self._calculate_profit_variance(profitable_wins)
+            variance = SelfAdjustingConfidenceAlgorithm._calculate_profit_variance(profitable_wins)
 
             # Compare with baseline if available
             improvement = None

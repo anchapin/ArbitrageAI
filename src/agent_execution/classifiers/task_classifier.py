@@ -202,10 +202,10 @@ class TaskClassifier:
 
         except (ValueError, TypeError, KeyError, IndexError) as e:
             logger.warning(f"ML classification error: {e}, falling back to rule-based", exc_info=True)
-            return self._rule_based_classification(task_profile)
+            return TaskClassifier._rule_based_classification(task_profile)
         except Exception as e:
             logger.warning(f"ML classification failed: {e}, falling back to rule-based", exc_info=True)
-            return self._rule_based_classification(task_profile)
+            return TaskClassifier._rule_based_classification(task_profile)
 
     @staticmethod
     def _rule_based_classification(task_profile: TaskProfile) -> dict[str, Any]:

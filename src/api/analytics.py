@@ -233,13 +233,13 @@ class KPIAnalytics(AnalyticsEngine):
         Returns:
             KPI response with calculated metrics
         """
-        cache_key = self._get_cache_key("kpis", {"time_range": time_range})
+        cache_key = AnalyticsEngine._get_cache_key("kpis", {"time_range": time_range})
         cached_result = self._get_cached_result(cache_key)
         if cached_result:
             return cached_result
 
         # Calculate time filter
-        time_filter = self._get_time_filter(time_range)
+        time_filter = KPIAnalytics._get_time_filter(time_range)
 
         # Calculate metrics
         total_revenue = self._calculate_revenue(time_filter)
@@ -338,7 +338,7 @@ class PredictiveAnalytics(AnalyticsEngine):
         Returns:
             Prediction result with confidence intervals
         """
-        cache_key = self._get_cache_key(
+        cache_key = AnalyticsEngine._get_cache_key(
             "prediction", {"metric": metric, "horizon": horizon_hours},
         )
         cached_result = self._get_cached_result(cache_key)
@@ -360,13 +360,13 @@ class PredictiveAnalytics(AnalyticsEngine):
             )
 
         # Train prediction model
-        model, accuracy = self._train_prediction_model(historical_data)
+        model, accuracy = PredictiveAnalytics._train_prediction_model(historical_data)
 
         # Generate prediction
-        prediction = self._make_prediction(model, horizon_hours)
+        prediction = PredictiveAnalytics._make_prediction(model, horizon_hours)
 
         # Calculate confidence intervals
-        confidence_interval = self._calculate_confidence_interval(
+        confidence_interval = PredictiveAnalytics._calculate_confidence_interval(
             model, historical_data, prediction,
         )
 
@@ -518,7 +518,7 @@ class AnomalyDetection(AnalyticsEngine):
         Returns:
             List of anomaly alerts
         """
-        cache_key = self._get_cache_key(
+        cache_key = AnalyticsEngine._get_cache_key(
             "anomalies", {"metric": metric, "time_range": time_range},
         )
         cached_result = self._get_cached_result(cache_key)
@@ -526,14 +526,14 @@ class AnomalyDetection(AnalyticsEngine):
             return cached_result
 
         # Get recent data
-        time_filter = self._get_time_filter(time_range)
+        time_filter = KPIAnalytics._get_time_filter(time_range)
         recent_data = self._get_recent_data(metric, time_filter)
 
         if len(recent_data) < 20:  # Need sufficient data for anomaly detection
             return []
 
         # Detect anomalies using Isolation Forest
-        anomalies = self._detect_isolation_forest_anomalies(recent_data)
+        anomalies = AnomalyDetection._detect_isolation_forest_anomalies(recent_data)
 
         # Convert to alerts
         alerts = []
@@ -652,7 +652,7 @@ class PerformanceAnalytics(AnalyticsEngine):
         Returns:
             List of performance metrics
         """
-        cache_key = self._get_cache_key("performance", {})
+        cache_key = AnalyticsEngine._get_cache_key("performance", {})
         cached_result = self._get_cached_result(cache_key)
         if cached_result:
             return cached_result
@@ -664,11 +664,11 @@ class PerformanceAnalytics(AnalyticsEngine):
         metrics.extend(task_metrics)
 
         # System resource utilization
-        resource_metrics = self._analyze_resource_utilization()
+        resource_metrics = PerformanceAnalytics._analyze_resource_utilization()
         metrics.extend(resource_metrics)
 
         # User experience metrics
-        ux_metrics = self._analyze_user_experience()
+        ux_metrics = PerformanceAnalytics._analyze_user_experience()
         metrics.extend(ux_metrics)
 
         self._cache_result(cache_key, metrics)
@@ -718,12 +718,13 @@ class PerformanceAnalytics(AnalyticsEngine):
 
         return metrics
 
-    def _analyze_resource_utilization(self) -> list[PerformanceMetric]:
+    @staticmethod
+    def _analyze_resource_utilization() -> list[PerformanceMetric]:
         """Analyze system resource utilization."""
         metrics = []
 
         # Database query performance
-        avg_query_time = self._calculate_avg_query_time()
+        avg_query_time = PerformanceAnalytics._calculate_avg_query_time()
         metrics.append(
             PerformanceMetric(
                 name="avg_query_time",
@@ -735,7 +736,7 @@ class PerformanceAnalytics(AnalyticsEngine):
         )
 
         # API response time
-        avg_response_time = self._calculate_avg_response_time()
+        avg_response_time = PerformanceAnalytics._calculate_avg_response_time()
         metrics.append(
             PerformanceMetric(
                 name="avg_response_time",
@@ -748,12 +749,13 @@ class PerformanceAnalytics(AnalyticsEngine):
 
         return metrics
 
-    def _analyze_user_experience(self) -> list[PerformanceMetric]:
+    @staticmethod
+    def _analyze_user_experience() -> list[PerformanceMetric]:
         """Analyze user experience metrics."""
         metrics = []
 
         # User satisfaction (based on task completion and time)
-        satisfaction_score = self._calculate_user_satisfaction()
+        satisfaction_score = PerformanceAnalytics._calculate_user_satisfaction()
         metrics.append(
             PerformanceMetric(
                 name="user_satisfaction",
@@ -765,7 +767,7 @@ class PerformanceAnalytics(AnalyticsEngine):
         )
 
         # Dashboard load time
-        dashboard_load_time = self._calculate_dashboard_load_time()
+        dashboard_load_time = PerformanceAnalytics._calculate_dashboard_load_time()
         metrics.append(
             PerformanceMetric(
                 name="dashboard_load_time",
@@ -848,7 +850,7 @@ class AnalyticsAPI:
         performance_metrics = self.performance_analytics.analyze_performance()
 
         # Generate recommendations
-        recommendations = self._generate_recommendations(kpis, performance_metrics)
+        recommendations = AnalyticsAPI._generate_recommendations(kpis, performance_metrics)
 
         return AnalyticsSummary(
             kpis=kpis,

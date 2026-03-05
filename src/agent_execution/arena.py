@@ -489,7 +489,7 @@ class ArenaRouter:
         )
 
         # Determine winner
-        winner, win_reason = self._determine_winner(
+        winner, win_reason = _determine_winner(
             result_a, result_b, profit_a, profit_b,
         )
 
@@ -639,7 +639,7 @@ class ArenaLearningLogger:
                 "model": winner_data["config"]["model"],
                 "system_prompt_style": winner_data["config"]["system_prompt_style"],
                 "max_retries": winner_data["config"]["max_retries"],
-                "generated_code": self._extract_code(winner_result),
+                "generated_code": _extract_code(winner_result),
                 "success": winner_result.get("success", False),
             },
             # Rejected (loser) - what NOT to do
@@ -647,7 +647,7 @@ class ArenaLearningLogger:
                 "model": loser_data["config"]["model"],
                 "system_prompt_style": loser_data["config"]["system_prompt_style"],
                 "max_retries": loser_data["config"]["max_retries"],
-                "generated_code": self._extract_code(loser_result),
+                "generated_code": _extract_code(loser_result),
                 "failure_reason": loser_result.get("error")
                 or loser_result.get("feedback", ""),
                 "success": loser_result.get("success", False),

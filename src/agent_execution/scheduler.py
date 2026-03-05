@@ -146,7 +146,7 @@ class IntelligentScheduler:
         self, base_time: datetime, schedule: ScheduledTask,
     ) -> datetime:
         """Calculate optimal execution time avoiding peak hours."""
-        if not self.should_avoid_peak_hours(schedule):
+        if not IntelligentScheduler.should_avoid_peak_hours(schedule):
             return base_time
 
         # Check if it's a weekend (Saturday=5, Sunday=6 in Python's weekday)

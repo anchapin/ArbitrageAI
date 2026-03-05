@@ -526,15 +526,15 @@ class QuotaManager:
         now = datetime.now(timezone.utc)
         return now.strftime("%Y-%m")
 
+    @staticmethod
     def get_or_create_usage(
-        self,
         db: Session,
         user_id: str,
         billing_month: str | None = None,
     ) -> QuotaUsage:
         """Get or create QuotaUsage record for user and month."""
         if billing_month is None:
-            billing_month = self.get_current_billing_month()
+            billing_month = QuotaManager.get_current_billing_month()
 
         usage = db.query(QuotaUsage).filter(
             QuotaUsage.user_id == user_id,

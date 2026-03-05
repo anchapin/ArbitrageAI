@@ -213,9 +213,9 @@ class PredictiveAnalytics(AnalyticsEngine):
                 confidence=0.0, model_accuracy=0.0,
             )
 
-        model, accuracy = self._train_prediction_model(historical_data)
-        prediction = self._make_prediction(model, horizon_hours)
-        confidence_interval = self._calculate_confidence_interval(model, historical_data, prediction)
+        model, accuracy = PredictiveAnalytics._train_prediction_model(historical_data)
+        prediction = PredictiveAnalytics._make_prediction(model, horizon_hours)
+        confidence_interval = PredictiveAnalytics._calculate_confidence_interval(model, historical_data, prediction)
 
         result = PredictionResult(
             prediction=prediction,
@@ -347,7 +347,7 @@ class AnomalyDetection(AnalyticsEngine):
         if len(recent_data) < 20:
             return []
 
-        anomalies = self._detect_isolation_forest_anomalies(recent_data)
+        anomalies = AnomalyDetection._detect_isolation_forest_anomalies(recent_data)
 
         alerts = []
         for anomaly in anomalies:
@@ -450,8 +450,8 @@ class PerformanceAnalytics(AnalyticsEngine):
 
         metrics = []
         metrics.extend(self._analyze_task_performance())
-        metrics.extend(self._analyze_resource_utilization())
-        metrics.extend(self._analyze_user_experience())
+        metrics.extend(PerformanceAnalytics._analyze_resource_utilization())
+        metrics.extend(PerformanceAnalytics._analyze_user_experience())
 
         self._cache_result(cache_key, metrics)
         return metrics
