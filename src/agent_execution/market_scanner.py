@@ -1,5 +1,4 @@
-"""
-Market Scanner Module.
+"""Market Scanner Module.
 
 This module provides functionality to scan freelance marketplaces for potential tasks.
 It uses Playwright to navigate to marketplace URLs and evaluates job postings
@@ -143,6 +142,7 @@ class JobPosting:
     client_spend: str | None = None
 
     def __post_init__(self):
+        """Initialize default values after dataclass initialization."""
         if self.skills is None:
             self.skills = []
 
@@ -159,6 +159,7 @@ class EvaluationResult:
     evaluated_at: datetime | None = None
 
     def __post_init__(self):
+        """Set default evaluation timestamp if not provided."""
         if self.evaluated_at is None:
             self.evaluated_at = datetime.now()
 
@@ -182,8 +183,7 @@ class EvaluationResult:
 
 
 class MarketScanner:
-    """
-    Scans freelance marketplaces for potential tasks using Playwright.
+    """Scans freelance marketplaces for potential tasks using Playwright.
 
     This scanner:
     1. Loads marketplace URLs from configuration (data/marketplaces.json)
@@ -200,8 +200,7 @@ class MarketScanner:
         headless: bool = True,
         timeout: int = PAGE_LOAD_TIMEOUT,
     ):
-        """
-        Initialize the MarketScanner.
+        """Initialize the MarketScanner.
 
         Args:
             marketplace_url: URL of the freelance marketplace to scan (overrides config)
@@ -292,8 +291,8 @@ class MarketScanner:
         return False  # Don't suppress exceptions
 
     async def start(self):
-        """
-        Start the Playwright browser.
+        """Start the Playwright browser.
+
         Now uses BrowserPool to prevent resource leaks (Issue #4).
         """
         if not PLAYWRIGHT_AVAILABLE:
@@ -335,8 +334,8 @@ class MarketScanner:
             raise
 
     async def stop(self):
-        """
-        Stop the Playwright browser and cleanup all resources.
+        """Stop the Playwright browser and cleanup all resources.
+
         Now releases browser back to pool (Issue #4).
         """
         try:
@@ -368,8 +367,7 @@ class MarketScanner:
     async def fetch_job_postings(
         self, max_posts: int = 10, marketplace_url: str | None = None,
     ) -> list[JobPosting]:
-        """
-        Fetch job postings from the marketplace.
+        """Fetch job postings from the marketplace.
 
         Creates and properly closes a page for each fetch operation to prevent leaks.
 
@@ -476,9 +474,9 @@ class MarketScanner:
 
         return job_postings
 
-    async def _extract_job_posting(self, element, index: int) -> JobPosting | None:
-        """
-        Extract job posting data from a page element.
+    @staticmethod
+    async def _extract_job_posting(element, index: int) -> JobPosting | None:
+        """Extract job posting data from a page element.
 
         Args:
             element: Playwright element handle
@@ -536,9 +534,9 @@ class MarketScanner:
             logger.warning(f"Failed to extract job posting: {e}", exc_info=True)
             return None
 
-    def _get_mock_job_postings(self, max_posts: int) -> list[JobPosting]:
-        """
-        Get mock job postings for testing or when marketplace is unavailable.
+    @staticmethod
+    def _get_mock_job_postings(max_posts: int) -> list[JobPosting]:
+        """Get mock job postings for testing or when marketplace is unavailable.
 
         Args:
             max_posts: Maximum number of mock postings
@@ -582,8 +580,7 @@ class MarketScanner:
         return mock_postings[:max_posts]
 
     async def evaluate_post(self, title: str, description: str) -> EvaluationResult:
-        """
-        Evaluate a job posting for suitability using LLM.
+        """Evaluate a job posting for suitability using LLM.
 
         Args:
             title: Job title
@@ -607,8 +604,7 @@ class MarketScanner:
     async def _evaluate_with_llm(
         self, title: str, description: str, task_id: str,
     ) -> EvaluationResult:
-        """
-        Evaluate job posting using local LLM (Ollama).
+        """Evaluate job posting using local LLM (Ollama).
 
         Args:
             title: Job title
@@ -697,11 +693,11 @@ Evaluate this job posting and return JSON."""
             logger.error(f"LLM evaluation failed: {e}", exc_info=True)
             return self._evaluate_fallback(title, description, task_id)
 
+    @staticmethod
     def _evaluate_fallback(
-        self, title: str, description: str, task_id: str,
+        title: str, description: str, task_id: str,
     ) -> EvaluationResult:
-        """
-        Fallback rule-based evaluation when LLM is unavailable.
+        """Fallback rule-based evaluation when LLM is unavailable.
 
         Args:
             title: Job title
@@ -801,8 +797,7 @@ Evaluate this job posting and return JSON."""
         min_bid_threshold: int = 30,
         marketplace_url: str | None = None,
     ) -> dict[str, Any]:
-        """
-        Scan marketplace and evaluate all job postings.
+        """Scan marketplace and evaluate all job postings.
 
         Args:
             max_posts: Maximum number of postings to fetch
@@ -930,8 +925,7 @@ Evaluate this job posting and return JSON."""
     async def scan_all_marketplaces(
         self, max_posts: int = 10, min_bid_threshold: int = 30,
     ) -> dict[str, Any]:
-        """
-        Scan all configured marketplaces and evaluate all job postings.
+        """Scan all configured marketplaces and evaluate all job postings.
 
         Deduplicates jobs across marketplaces based on title and description.
 
@@ -1064,8 +1058,7 @@ Evaluate this job posting and return JSON."""
 async def run_single_scan(
     marketplace_url: str | None = None, max_posts: int = 10,
 ) -> dict[str, Any]:
-    """
-    Run a single market scan.
+    """Run a single market scan.
 
     Args:
         marketplace_url: Optional override for marketplace URL
@@ -1084,8 +1077,7 @@ async def run_continuous_scan(
     max_posts: int = 10,
     max_iterations: int | None = None,
 ):
-    """
-    Run continuous market scanning at regular intervals.
+    """Run continuous market scanning at regular intervals.
 
     Args:
         interval: Seconds between scans
@@ -1157,8 +1149,7 @@ def _extract_marketplace_id_helper(url: str) -> str:
 async def place_bid_on_posting(
     self, marketplace_id: str, posting: Any, evaluation: Any,
 ) -> bool:
-    """
-    Atomic bid placement with distributed lock and deduplication.
+    """Atomic bid placement with distributed lock and deduplication.
 
     If TRAINING_MODE is enabled, places a simulated bid instead of submitting
     to the actual marketplace. This is the core integration for Issue #19 and Issue #88.

@@ -1,5 +1,4 @@
-"""
-Health Check and Monitoring System (Issue #101).
+"""Health Check and Monitoring System (Issue #101).
 
 Provides comprehensive health monitoring for all system components including:
 - Database connectivity
@@ -66,6 +65,7 @@ class HealthCheckResult:
     timestamp: str = ""
 
     def __post_init__(self):
+        """Set default timestamp if not provided."""
         if not self.timestamp:
             self.timestamp = datetime.now(timezone.utc).isoformat()
 
@@ -82,8 +82,7 @@ class SystemHealth:
 
 
 class HealthMonitor:
-    """
-    Comprehensive health monitoring system.
+    """Comprehensive health monitoring system.
 
     Features:
     - Multi-service health checking
@@ -101,6 +100,15 @@ class HealthMonitor:
         openai_url: str = "https://api.openai.com/v1",
         timeout_seconds: float = 5.0,
     ):
+        """Initialize the health checker.
+
+        Args:
+            database_url: Database connection URL (default: None)
+            redis_url: Redis connection URL (default: None)
+            ollama_url: Ollama service URL (default: "http://localhost:11434")
+            openai_url: OpenAI API URL (default: "https://api.openai.com/v1")
+            timeout_seconds: Health check timeout in seconds (default: 5.0)
+        """
         self.database_url = database_url
         self.redis_url = redis_url
         self.ollama_url = ollama_url
@@ -110,8 +118,7 @@ class HealthMonitor:
         self._redis_client = None
 
     async def check_all(self) -> SystemHealth:
-        """
-        Perform comprehensive health check on all services.
+        """Perform comprehensive health check on all services.
 
         Returns:
             SystemHealth: Overall system health status
@@ -158,7 +165,8 @@ class HealthMonitor:
             uptime_seconds=time.time() - self.start_time,
         )
 
-    async def check_database(self) -> HealthCheckResult:
+    @staticmethod
+    async def check_database() -> HealthCheckResult:
         """Check database connectivity and performance."""
         start = time.time()
         try:
@@ -202,7 +210,7 @@ class HealthMonitor:
                 message=f"Database connection failed: {e!s}",
             )
 
-    async def check_redis(self) -> HealthCheckResult:
+    async def check_redis(self) -> HealthCheckResult:  # noqa: PLR6301
         """Check Redis connectivity and performance."""
         start = time.time()
         try:
@@ -303,7 +311,8 @@ class HealthMonitor:
                 message=f"Ollama health check failed: {e!s}",
             )
 
-    async def check_llm_cloud(self) -> HealthCheckResult:
+    @staticmethod
+    async def check_llm_cloud() -> HealthCheckResult:
         """Check cloud LLM (OpenAI) health."""
         start = time.time()
         try:
@@ -356,7 +365,8 @@ class HealthMonitor:
                 message=f"OpenAI API health check failed: {e!s}",
             )
 
-    async def check_vector_db(self) -> HealthCheckResult:
+    @staticmethod
+    async def check_vector_db() -> HealthCheckResult:
         """Check ChromaDB vector database health."""
         start = time.time()
         try:
@@ -390,7 +400,8 @@ class HealthMonitor:
                 message=f"ChromaDB health check failed: {e!s}",
             )
 
-    async def check_scheduler(self) -> HealthCheckResult:
+    @staticmethod
+    async def check_scheduler() -> HealthCheckResult:
         """Check scheduler service health."""
         try:
             from src.agent_execution.scheduler import TaskScheduler
@@ -435,7 +446,8 @@ class HealthMonitor:
                 message=f"Scheduler health check failed: {e!s}",
             )
 
-    async def check_worker(self) -> HealthCheckResult:
+    @staticmethod
+    async def check_worker() -> HealthCheckResult:
         """Check background worker health."""
         try:
             # Check if worker process is running
@@ -480,7 +492,8 @@ class HealthMonitor:
                 message=f"Worker health check failed: {e!s}",
             )
 
-    def _get_system_metrics(self) -> dict[str, Any]:
+    @staticmethod
+    def _get_system_metrics() -> dict[str, Any]:
         """Get current system resource metrics."""
         try:
             cpu_percent = psutil.cpu_percent(interval=1)
@@ -501,12 +514,11 @@ class HealthMonitor:
             logger.error(f"Failed to get system metrics: {e}", exc_info=True)
             return {}
 
+    @staticmethod
     def _calculate_overall_status(
-        self,
         checks: list[HealthCheckResult],
     ) -> HealthStatus:
-        """
-        Calculate overall system health status.
+        """Calculate overall system health status.
 
         Rules:
         - If any critical service is UNHEALTHY -> UNHEALTHY
@@ -538,8 +550,7 @@ class HealthMonitor:
         return HealthStatus.HEALTHY
 
     async def get_status_page(self) -> str:
-        """
-        Generate HTML status page.
+        """Generate HTML status page.
 
         Returns:
             str: HTML status page

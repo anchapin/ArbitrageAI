@@ -1,3 +1,8 @@
+"""Audit logging utilities.
+
+This module provides functionality for creating and managing audit logs
+in the database.
+"""
 
 from sqlalchemy.orm import Session
 

@@ -1,5 +1,4 @@
-"""
-Legal Contract Template.
+"""Legal Contract Template.
 
 This template provides a pre-tested Python script for generating legal documents
 such as contracts, agreements, and legal correspondence.
@@ -21,8 +20,7 @@ import pandas as pd
 
 
 class LegalContractTemplate:
-    """
-    Template for generating legal contracts and agreements.
+    """Template for generating legal contracts and agreements.
 
     This template provides proper legal document formatting including:
     - Professional heading and title
@@ -66,8 +64,7 @@ class LegalContractTemplate:
         output_format: str = "docx",
         **kwargs,
     ) -> dict:
-        """
-        Generate a legal document from JSON content and CSV data.
+        """Generate a legal document from JSON content and CSV data.
 
         Args:
             content_json: Structured JSON content from LLM
@@ -492,7 +489,8 @@ class LegalContractTemplate:
 
                 self.document.add_paragraph()
 
-    def _generate_result(self, filename: str, output_format: str) -> dict:
+    @staticmethod
+    def _generate_result(filename: str, output_format: str) -> dict:
         """Generate the result dictionary."""
         try:
             with open(filename, "rb") as f:

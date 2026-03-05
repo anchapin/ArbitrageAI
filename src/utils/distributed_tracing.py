@@ -1,5 +1,4 @@
-"""
-Distributed Tracing with W3C Trace Context support.
+"""Distributed Tracing with W3C Trace Context support.
 
 Provides:
 - W3C standard trace ID generation and propagation
@@ -51,8 +50,7 @@ _trace_flags_context: contextvars.ContextVar[str] = contextvars.ContextVar(
 
 
 def generate_trace_id() -> str:
-    """
-    Generate a W3C-compliant trace ID (128-bit, 32 hex characters).
+    """Generate a W3C-compliant trace ID (128-bit, 32 hex characters).
 
     Returns:
         A 32-character hexadecimal string (128-bit random value)
@@ -62,8 +60,7 @@ def generate_trace_id() -> str:
 
 
 def generate_span_id() -> str:
-    """
-    Generate a W3C-compliant span ID (64-bit, 16 hex characters).
+    """Generate a W3C-compliant span ID (64-bit, 16 hex characters).
 
     Returns:
         A 16-character hexadecimal string (64-bit random value)
@@ -76,8 +73,7 @@ def generate_span_id() -> str:
 def init_trace_context(
     trace_id: str | None = None, span_id: str | None = None,
 ) -> str:
-    """
-    Initialize a new trace context for the current async task.
+    """Initialize a new trace context for the current async task.
 
     This should be called at the start of request handling to establish
     a distributed trace ID that will be propagated across async boundaries.
@@ -102,8 +98,7 @@ def init_trace_context(
 
 
 def get_trace_id() -> str | None:
-    """
-    Get the current trace ID for the async context.
+    """Get the current trace ID for the async context.
 
     This is automatically propagated across async boundaries via contextvars.
     If no trace context has been initialized, returns None.
@@ -125,8 +120,7 @@ def get_trace_flags() -> str:
 
 
 def propagate_trace_context() -> str:
-    """
-    Generate a W3C traceparent header value from the current context.
+    """Generate a W3C traceparent header value from the current context.
 
     Format: traceparent = version-trace_id-span_id-trace_flags
     Example: "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
@@ -148,8 +142,7 @@ def propagate_trace_context() -> str:
 
 
 def extract_trace_context_from_headers(headers: dict[str, str]) -> dict[str, str]:
-    """
-    Extract trace context from request headers (W3C traceparent format).
+    """Extract trace context from request headers (W3C traceparent format).
 
     Args:
         headers: Dictionary of HTTP headers
@@ -185,8 +178,7 @@ def extract_trace_context_from_headers(headers: dict[str, str]) -> dict[str, str
 
 
 def init_trace_from_headers(headers: dict[str, str]) -> str:
-    """
-    Initialize trace context from request headers (for propagating from upstream services).
+    """Initialize trace context from request headers (for propagating from upstream services).
 
     Args:
         headers: Dictionary of HTTP headers
@@ -219,8 +211,7 @@ def clear_trace_context() -> None:
 
 
 class TraceContextFilter(logging.Filter):
-    """
-    Logging filter that adds trace ID and span ID to all log records.
+    """Logging filter that adds trace ID and span ID to all log records.
 
     This filter automatically injects the current distributed trace context
     into all log messages, enabling correlation of logs across service boundaries.
@@ -230,9 +221,9 @@ class TraceContextFilter(logging.Filter):
         logger.addFilter(TraceContextFilter())
     """
 
-    def filter(self, record: logging.LogRecord) -> bool:
-        """
-        Add trace context to log record.
+    @staticmethod
+    def filter(record: logging.LogRecord) -> bool:
+        """Add trace context to log record.
 
         Args:
             record: The log record to filter
@@ -253,8 +244,7 @@ class TraceContextFilter(logging.Filter):
 def setup_trace_logging(
     logger: logging.Logger, pattern: str = "[%(trace_id)s] [%(span_id)s]",
 ) -> None:
-    """
-    Setup a logger with trace context logging.
+    """Setup a logger with trace context logging.
 
     Adds the TraceContextFilter and updates the formatter to include trace IDs.
 
@@ -279,8 +269,7 @@ def setup_trace_logging(
 
 
 class DistributedTraceContext:
-    """
-    Context manager for managing distributed trace scope.
+    """Context manager for managing distributed trace scope.
 
     Useful for explicit trace context management in sync-to-async transitions.
 
@@ -292,8 +281,7 @@ class DistributedTraceContext:
     """
 
     def __init__(self, trace_id: str | None = None, span_id: str | None = None):
-        """
-        Initialize trace context.
+        """Initialize trace context.
 
         Args:
             trace_id: Optional pre-generated trace ID
@@ -327,8 +315,7 @@ class DistributedTraceContext:
 
 
 def get_trace_context_dict() -> dict[str, Any]:
-    """
-    Get the current trace context as a dictionary.
+    """Get the current trace context as a dictionary.
 
     Useful for logging, debugging, or passing context to other systems.
 

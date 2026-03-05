@@ -27,7 +27,6 @@ from src.api.disaster_recovery import (
 from src.disaster_recovery import (
     BackupManager,
     RecoveryManager,
-    DisasterRecoveryOrchestrator,
     BackupType,
     RecoveryStatus,
     BackupStatus,
@@ -35,6 +34,7 @@ from src.disaster_recovery import (
     RecoveryPlan,
     RecoveryOperation,
 )
+from src.disaster_recovery.legacy import DisasterRecoveryOrchestrator
 from src.config import Config
 
 

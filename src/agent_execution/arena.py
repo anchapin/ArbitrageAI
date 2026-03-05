@@ -1,5 +1,4 @@
-"""
-Agent Arena Module.
+"""Agent Arena Module.
 
 This module implements the Agent Arena competition system where two agent variants
 compete on the same task. The winner is determined by:
@@ -80,8 +79,7 @@ class AgentConfig:
         max_retries: int = 2,
         planning_time_multiplier: float = 1.0,
     ):
-        """
-        Initialize arena agent configuration.
+        """Initialize arena agent configuration.
 
         Args:
             name: Agent identifier name
@@ -97,6 +95,11 @@ class AgentConfig:
         self.planning_time_multiplier = planning_time_multiplier
 
     def to_dict(self) -> dict:
+        """Convert AgentConfig to dictionary representation.
+
+        Returns:
+            Dictionary containing agent configuration parameters.
+        """
         return {
             "name": self.name,
             "model": self.llm_service.get_model(),
@@ -116,8 +119,7 @@ class ProfitCalculator:
     """Calculates profit score for arena agents."""
 
     def __init__(self, cost_config: CostConfig = None):
-        """
-        Initialize profit calculator.
+        """Initialize profit calculator.
 
         Args:
             cost_config: Cost configuration object (uses default if not provided)
@@ -127,8 +129,7 @@ class ProfitCalculator:
     def calculate_profit_score(
         self, agent_config: AgentConfig, agent_result: dict[str, Any], task_revenue: int,
     ) -> dict[str, Any]:
-        """
-        Calculate profit score for an agent.
+        """Calculate profit score for an agent.
 
         Profit = Task Revenue - (LLM Cost + E2B Compute Cost)
 
@@ -221,8 +222,7 @@ class ArenaAgent:
     """A single agent competitor in the arena."""
 
     def __init__(self, config: AgentConfig, domain: str, max_retries: int = 2):
-        """
-        Initialize arena agent.
+        """Initialize arena agent.
 
         Args:
             config: Agent configuration with LLM service
@@ -252,8 +252,7 @@ class ArenaAgent:
         task_type: str | None = None,
         output_format: str | None = None,
     ) -> dict[str, Any]:
-        """
-        Execute the task as this agent.
+        """Execute the task as this agent.
 
         Returns:
             Dictionary with execution results including timing and usage
@@ -313,8 +312,7 @@ class ArenaAgent:
 
 
 class ArenaRouter:
-    """
-    Main orchestrator for Agent Arena competitions.
+    """Main orchestrator for Agent Arena competitions.
 
     Runs two agent variants in parallel and determines the winner
     based on quality + profit score.
@@ -325,8 +323,7 @@ class ArenaRouter:
         competition_type: CompetitionType = CompetitionType.MODEL,
         cost_config: CostConfig = None,
     ):
-        """
-        Initialize arena battle system.
+        """Initialize arena battle system.
 
         Args:
             competition_type: Type of competition (model/prompt/tooling)
@@ -410,8 +407,7 @@ class ArenaRouter:
         output_format: str | None = None,
         task_revenue: int | None = None,
     ) -> dict[str, Any]:
-        """
-        Run the arena competition.
+        """Run the arena competition.
 
         Args:
             user_request: The user's task request
@@ -493,7 +489,7 @@ class ArenaRouter:
         )
 
         # Determine winner
-        winner, win_reason = self._determine_winner(
+        winner, win_reason = _determine_winner(
             result_a, result_b, profit_a, profit_b,
         )
 
@@ -523,15 +519,14 @@ class ArenaRouter:
 
         return arena_result
 
+    @staticmethod
     def _determine_winner(
-        self,
         result_a: dict[str, Any],
         result_b: dict[str, Any],
         profit_a: dict[str, Any],
         profit_b: dict[str, Any],
     ) -> tuple:
-        """
-        Determine the winner based on quality + profit.
+        """Determine the winner based on quality + profit.
 
         Rules:
         - If one passes and other fails: passer wins
@@ -575,8 +570,7 @@ class ArenaRouter:
 
 
 class ArenaLearningLogger:
-    """
-    Logs arena results for learning.
+    """Logs arena results for learning.
 
     - Winner → ExperienceVectorDB + DistillationDataCollector
     - Loser → DPO Dataset
@@ -645,7 +639,7 @@ class ArenaLearningLogger:
                 "model": winner_data["config"]["model"],
                 "system_prompt_style": winner_data["config"]["system_prompt_style"],
                 "max_retries": winner_data["config"]["max_retries"],
-                "generated_code": self._extract_code(winner_result),
+                "generated_code": _extract_code(winner_result),
                 "success": winner_result.get("success", False),
             },
             # Rejected (loser) - what NOT to do
@@ -653,7 +647,7 @@ class ArenaLearningLogger:
                 "model": loser_data["config"]["model"],
                 "system_prompt_style": loser_data["config"]["system_prompt_style"],
                 "max_retries": loser_data["config"]["max_retries"],
-                "generated_code": self._extract_code(loser_result),
+                "generated_code": _extract_code(loser_result),
                 "failure_reason": loser_result.get("error")
                 or loser_result.get("feedback", ""),
                 "success": loser_result.get("success", False),
@@ -675,7 +669,8 @@ class ArenaLearningLogger:
         except Exception as e:
             self.logger.warning(f"Failed to log to DPO dataset: {e}")
 
-    def _extract_code(self, result: dict[str, Any]) -> str:
+    @staticmethod
+    def _extract_code(result: dict[str, Any]) -> str:
         """Extract generated code from agent result."""
         # Try various paths where code might be stored
         steps = result.get("steps", {})
@@ -713,8 +708,7 @@ async def run_agent_arena(
     enable_learning: bool = True,
     task_data: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    """
-    Convenience function to run an arena competition.
+    """Convenience function to run an arena competition.
 
     Args:
         user_request: User's task request
@@ -764,6 +758,7 @@ if __name__ == "__main__":
     logger = get_logger("arena_example")
 
     async def example():
+        """Example usage of the agent arena."""
         # Run a model competition
         result = await run_agent_arena(
             user_request="Create a bar chart showing monthly sales data",

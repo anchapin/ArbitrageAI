@@ -1,5 +1,4 @@
-"""
-Research & Planning Module.
+"""Research & Planning Module.
 
 This module implements the "Research & Plan" step for the autonomy workflow:
 1. Agent analyzes uploaded files (PDF/Excel) to extract context
@@ -40,8 +39,7 @@ from traceloop.sdk.decorators import task, workflow  # noqa: E402
 def get_client_preferences_from_tasks(
     client_email: str, db_session=None,
 ) -> dict[str, Any]:
-    """
-    Query the Task table for previous review_feedback from the same client_email.
+    """Query the Task table for previous review_feedback from the same client_email.
 
     This is the core function for Client Preference Memory (Pillar 2.5 Gap).
     It extracts preferences from past review feedback to help the agent
@@ -150,8 +148,7 @@ def get_client_preferences_from_tasks(
 
 
 def _extract_preferences_from_feedback(feedback: str) -> dict[str, Any]:
-    """
-    Extract specific preferences from review feedback text.
+    """Extract specific preferences from review feedback text.
 
     Args:
         feedback: The review feedback text
@@ -316,8 +313,7 @@ def save_client_preferences(
     domain: str,
     db_session=None,
 ):
-    """
-    Save or update client preferences based on task review feedback.
+    """Save or update client preferences based on task review feedback.
 
     This function is called after each task is processed to store
     the client's preferences for future tasks.
@@ -422,16 +418,14 @@ def save_client_preferences(
 
 
 class ContextExtractor:
-    """
-    Step 1: Analyzes uploaded files (PDF/Excel) to extract context.
+    """Step 1: Analyzes uploaded files (PDF/Excel) to extract context.
 
     This class extracts meaningful context from various file types
     to inform the work plan generation.
     """
 
     def __init__(self, llm_service: LLMService | None = None):
-        """
-        Initialize the context extractor.
+        """Initialize the context extractor.
 
         Args:
             llm_service: Optional LLMService instance for enhanced extraction
@@ -446,8 +440,7 @@ class ContextExtractor:
         file_type: str | None = None,
         domain: str | None = None,
     ) -> dict[str, Any]:
-        """
-        Extract context from uploaded files.
+        """Extract context from uploaded files.
 
         Args:
             file_content: Base64-encoded file content (for Excel/PDF)
@@ -528,7 +521,7 @@ class ContextExtractor:
 
                 # Generate basic statistics for numeric columns
                 if not df.select_dtypes(include=["number"]).empty:
-                    context["key_insights"] = self._extract_basic_insights(df)
+                    context["key_insights"] = PlanBuilder._extract_basic_insights(df)
 
             except Exception as e:
                 context["error"] = str(e)
@@ -547,7 +540,8 @@ class ContextExtractor:
 
         return context
 
-    def _extract_basic_insights(self, df) -> list[str]:
+    @staticmethod
+    def _extract_basic_insights(df) -> list[str]:
         """Extract basic statistical insights from the data."""
         # Numeric column statistics
         numeric_cols = df.select_dtypes(include=["number"]).columns
@@ -556,8 +550,7 @@ class ContextExtractor:
     def _enhance_with_llm(
         self, context: dict[str, Any], domain: str | None,
     ) -> dict[str, Any]:
-        """
-        Use LLM to enhance context understanding.
+        """Use LLM to enhance context understanding.
 
         Args:
             context: Basic extracted context
@@ -610,8 +603,7 @@ that would inform a work plan. Return JSON with keys: analysis, key_insights."""
 
 
 class WorkPlanGenerator:
-    """
-    Step 2: Creates a work plan based on extracted context and user requirements.
+    """Step 2: Creates a work plan based on extracted context and user requirements.
 
     The work plan includes:
     - Analysis of the input data
@@ -626,8 +618,7 @@ class WorkPlanGenerator:
     """
 
     def __init__(self, llm_service: LLMService | None = None):
-        """
-        Initialize the work plan generator.
+        """Initialize the work plan generator.
 
         Args:
             llm_service: Optional LLMService instance for plan generation
@@ -644,8 +635,7 @@ class WorkPlanGenerator:
         output_format: str | None = None,
         client_preferences: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
-        """
-        Create a comprehensive work plan based on context and requirements.
+        """Create a comprehensive work plan based on context and requirements.
 
         Args:
             user_request: The user's original request
@@ -659,7 +649,7 @@ class WorkPlanGenerator:
             Dictionary containing the work plan
         """
         # Build context summary for the prompt
-        context_summary = self._build_context_summary(extracted_context)
+        context_summary = PlanBuilder._build_context_summary(extracted_context)
 
         # Build client preferences section (Pillar 2.5 Gap)
         preferences_instruction = ""
@@ -724,7 +714,7 @@ Generate the work plan as JSON."""
 
             # Parse JSON response
             content = result.get("content", "")
-            plan = self._parse_plan_json(content)
+            plan = PlanBuilder._parse_plan_json(content)
 
             if plan:
                 plan["generated_at"] = datetime.now(timezone.utc).isoformat()
@@ -737,7 +727,8 @@ Generate the work plan as JSON."""
         except Exception as e:
             return {"success": False, "error": str(e)}
 
-    def _build_context_summary(self, context: dict[str, Any]) -> str:
+    @staticmethod
+    def _build_context_summary(context: dict[str, Any]) -> str:
         """Build a text summary of the extracted context."""
         parts = []
 
@@ -771,7 +762,8 @@ Generate the work plan as JSON."""
 
         return "\n".join(parts) if parts else "No context available"
 
-    def _parse_plan_json(self, content: str) -> dict[str, Any] | None:
+    @staticmethod
+    def _parse_plan_json(content: str) -> dict[str, Any] | None:
         """Parse JSON plan from LLM response."""
         # Try to find JSON in the response
         try:
@@ -792,16 +784,14 @@ Generate the work plan as JSON."""
 
 
 class PlanExecutor:
-    """
-    Step 3: Executes the work plan in the E2B sandbox.
+    """Step 3: Executes the work plan in the E2B sandbox.
 
     This class takes the work plan and executes each step,
     generating the final artifact.
     """
 
     def __init__(self, llm_service: LLMService | None = None):
-        """
-        Initialize the plan executor.
+        """Initialize the plan executor.
 
         Args:
             llm_service: Optional LLMService instance
@@ -816,8 +806,7 @@ class PlanExecutor:
         api_key: str | None = None,
         sandbox_timeout: int = 120,
     ) -> dict[str, Any]:
-        """
-        Execute the work plan to generate the artifact.
+        """Execute the work plan to generate the artifact.
 
         Args:
             work_plan: The work plan dictionary
@@ -833,7 +822,7 @@ class PlanExecutor:
         from src.agent_execution.executor import TaskRouter, execute_data_visualization
 
         user_request = work_plan.get("user_request", "")
-        task_type = self._infer_task_type(work_plan)
+        task_type = PlanBuilder._infer_task_type(work_plan)
         output_format = work_plan.get("output_format") or self._infer_output_format(
             work_plan,
         )
@@ -898,7 +887,8 @@ class PlanExecutor:
 
             return {"success": False, "error": str(e), "execution_log": execution_log}
 
-    def _infer_task_type(self, plan: dict[str, Any]) -> str:
+    @staticmethod
+    def _infer_task_type(plan: dict[str, Any]) -> str:
         """Infer task type from work plan."""
         recommended = plan.get("recommended_chart_type", "")
         if recommended in {"bar", "line", "pie", "scatter", "histogram"}:
@@ -909,7 +899,8 @@ class PlanExecutor:
             return "document"
         return "auto"
 
-    def _infer_output_format(self, plan: dict[str, Any]) -> str:
+    @staticmethod
+    def _infer_output_format(plan: dict[str, Any]) -> str:
         """Infer output format from work plan."""
         output_format = plan.get("output_format", "")
         if output_format in {"image", "docx", "xlsx", "pdf"}:
@@ -918,16 +909,14 @@ class PlanExecutor:
 
 
 class PlanReviewer:
-    """
-    Step 4: ArtifactReviewer checks the final document against the plan.
+    """Step 4: ArtifactReviewer checks the final document against the plan.
 
     This enhanced reviewer validates that the generated artifact
     matches both the original user request AND the work plan.
     """
 
     def __init__(self, llm_service: LLMService | None = None):
-        """
-        Initialize the plan reviewer.
+        """Initialize the plan reviewer.
 
         Args:
             llm_service: Optional LLMService instance
@@ -942,8 +931,7 @@ class PlanReviewer:
         domain: str,
         execution_result: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
-        """
-        Review the generated artifact against the work plan.
+        """Review the generated artifact against the work plan.
 
         Args:
             artifact_url: URL of the generated artifact (base64 or file URL)
@@ -1043,8 +1031,7 @@ Return your review in JSON format."""
         csv_data: str,
         domain: str,
     ) -> dict[str, Any]:
-        """
-        Regenerate artifact based on review feedback.
+        """Regenerate artifact based on review feedback.
 
         Args:
             work_plan: Original work plan
@@ -1107,8 +1094,7 @@ Please revise the approach to address the review feedback. Return JSON."""
 
 
 def _get_llm_for_task(domain: str | None) -> LLMService:
-    """
-    Get the appropriate LLMService based on task domain for cost optimization.
+    """Get the appropriate LLMService based on task domain for cost optimization.
 
     Strategy:
     - Legal & Accounting domains: Use cloud models (GPT-4o) for high accuracy
@@ -1138,8 +1124,7 @@ def _get_llm_for_task(domain: str | None) -> LLMService:
 
 
 class ResearchAndPlanOrchestrator:
-    """
-    Main orchestrator for the Research & Plan workflow.
+    """Main orchestrator for the Research & Plan workflow.
 
     This class coordinates all four steps:
     1. Context Extraction
@@ -1155,8 +1140,7 @@ class ResearchAndPlanOrchestrator:
     def __init__(
         self, llm_service: LLMService | None = None, domain: str | None = None,
     ):
-        """
-        Initialize the orchestrator.
+        """Initialize the orchestrator.
 
         Args:
             llm_service: Optional LLMService instance
@@ -1189,8 +1173,7 @@ class ResearchAndPlanOrchestrator:
         output_format: str | None = None,
         max_review_attempts: int = 2,
     ) -> dict[str, Any]:
-        """
-        Execute the complete Research & Plan workflow.
+        """Execute the complete Research & Plan workflow.
 
         Args:
             user_request: User's request
@@ -1358,8 +1341,7 @@ def create_research_plan_workflow(
     api_key: str | None = None,
     **kwargs,
 ) -> dict[str, Any]:
-    """
-    Convenience function to execute the Research & Plan workflow.
+    """Convenience function to execute the Research & Plan workflow.
 
     Args:
         user_request: User's request

@@ -1,6 +1,4 @@
-"""
-Task-related database models.
-"""
+"""Task-related database models."""
 
 from datetime import datetime
 import logging
@@ -30,8 +28,7 @@ Base = declarative_base()
 
 
 class Task(Base):
-    """
-    Core Task model - reduced to essential fields only.
+    """Core Task model - reduced to essential fields only.
 
     Contains only the essential information needed for task tracking,
     client management, and billing. All other concerns are delegated to
@@ -116,6 +113,7 @@ class Task(Base):
     # Hybrid properties for backward compatibility (Issue #5)
     @hybrid_property
     def work_plan(self):
+        """Return the work plan content from planning entity."""
         return self.planning.plan_content if self.planning else None
 
     @work_plan.setter
@@ -126,6 +124,7 @@ class Task(Base):
 
     @hybrid_property
     def plan_status(self):
+        """Return the planning status from planning entity."""
         return self.planning.status if self.planning else None
 
     @plan_status.setter
@@ -143,6 +142,7 @@ class Task(Base):
 
     @hybrid_property
     def file_content(self):
+        """Return the file content from planning entity."""
         return self.planning.file_content if self.planning else None
 
     @file_content.setter
@@ -153,6 +153,7 @@ class Task(Base):
 
     @hybrid_property
     def filename(self):
+        """Return the filename from planning entity."""
         return self.planning.filename if self.planning else None
 
     @filename.setter
@@ -163,6 +164,7 @@ class Task(Base):
 
     @hybrid_property
     def file_type(self):
+        """Return the file type from planning entity."""
         return self.planning.file_type if self.planning else None
 
     @file_type.setter
@@ -173,6 +175,7 @@ class Task(Base):
 
     @hybrid_property
     def csv_data(self):
+        """Return CSV data if file type is CSV, otherwise None."""
         return (
             self.planning.file_content
             if self.planning and self.planning.file_type == "csv"
@@ -188,6 +191,7 @@ class Task(Base):
 
     @hybrid_property
     def retry_count(self):
+        """Return the retry count from execution entity."""
         return self.execution.retry_count if self.execution else 0
 
     @retry_count.setter
@@ -198,6 +202,7 @@ class Task(Base):
 
     @hybrid_property
     def execution_log(self):
+        """Return the execution logs from execution entity."""
         return self.execution.execution_logs if self.execution else None
 
     @execution_log.setter
@@ -208,6 +213,7 @@ class Task(Base):
 
     @hybrid_property
     def review_feedback(self):
+        """Return the review feedback from review entity."""
         return self.review.review_feedback if self.review else None
 
     @review_feedback.setter
@@ -218,6 +224,7 @@ class Task(Base):
 
     @hybrid_property
     def review_approved(self):
+        """Return whether the task was approved by review."""
         return self.review.approved if self.review else False
 
     @review_approved.setter
@@ -228,6 +235,7 @@ class Task(Base):
 
     @hybrid_property
     def review_attempts(self):
+        """Return the number of review attempts from review entity."""
         return self.review.review_attempts if self.review else 0
 
     @review_attempts.setter
@@ -238,6 +246,7 @@ class Task(Base):
 
     @hybrid_property
     def escalation_reason(self):
+        """Return the escalation reason from review entity."""
         return self.review.escalation_reason if self.review else None
 
     @escalation_reason.setter
@@ -248,6 +257,7 @@ class Task(Base):
 
     @hybrid_property
     def escalated_at(self):
+        """Return the escalation timestamp from review entity."""
         return self.review.escalated_at if self.review else None
 
     @escalated_at.setter
@@ -258,6 +268,7 @@ class Task(Base):
 
     @hybrid_property
     def last_error(self):
+        """Return the last error from review entity."""
         return (
             self.review.last_error if self.review else None
         )  # Actually could be in execution or review
@@ -270,6 +281,7 @@ class Task(Base):
 
     @hybrid_property
     def review_status(self):
+        """Return the review status from review entity."""
         return self.review.status if self.review else None
 
     @review_status.setter
@@ -286,6 +298,7 @@ class Task(Base):
 
     @hybrid_property
     def extracted_context(self):
+        """Return the extracted context from planning entity."""
         return self.planning.extracted_context if self.planning else None
 
     @extracted_context.setter
@@ -296,6 +309,7 @@ class Task(Base):
 
     @hybrid_property
     def result_image_url(self):
+        """Return the image output URL if available."""
         if not hasattr(self, "outputs") or not self.outputs:
             return None
         try:
@@ -325,6 +339,7 @@ class Task(Base):
 
     @hybrid_property
     def result_document_url(self):
+        """Return the document or PDF output URL if available."""
         if not hasattr(self, "outputs") or not self.outputs:
             return None
         try:
@@ -362,6 +377,7 @@ class Task(Base):
 
     @hybrid_property
     def result_spreadsheet_url(self):
+        """Return the spreadsheet output URL if available."""
         if not hasattr(self, "outputs") or not self.outputs:
             return None
         try:
@@ -390,6 +406,12 @@ class Task(Base):
             )
 
     def __init__(self, **kwargs):
+        """Initialize the Task model.
+
+        Args:
+            **kwargs: Keyword arguments for task initialization.
+                Hybrid fields are extracted and set after initialization.
+        """
         # List of hybrid properties that should be handled manually
         hybrid_fields = [
             "work_plan",
@@ -418,6 +440,12 @@ class Task(Base):
             setattr(self, k, v)
 
     def to_dict(self):
+        """Convert the Task model to a dictionary representation.
+
+        Returns:
+            Dictionary containing task data including flattened hybrid properties
+            and nested entity structures.
+        """
         data = {
             "id": self.id,
             "title": self.title,
@@ -511,6 +539,11 @@ class TaskExecution(Base):
     task = relationship("Task", back_populates="execution")
 
     def to_dict(self):
+        """Convert TaskExecution to dictionary.
+
+        Returns:
+            Dictionary containing execution status, retry count, and timestamps.
+        """
         return {
             "status": self.status.value
             if isinstance(self.status, ExecutionStatus)
@@ -553,6 +586,11 @@ class TaskPlanning(Base):
     task = relationship("Task", back_populates="planning")
 
     def to_dict(self):
+        """Convert TaskPlanning to dictionary.
+
+        Returns:
+            Dictionary containing planning status, content, and timestamps.
+        """
         return {
             "status": self.status.value
             if isinstance(self.status, PlanningStatus)
@@ -596,6 +634,11 @@ class TaskReview(Base):
     task = relationship("Task", back_populates="review")
 
     def to_dict(self):
+        """Convert TaskReview to dictionary.
+
+        Returns:
+            Dictionary containing review status, approval, and feedback.
+        """
         return {
             "status": self.status.value
             if isinstance(self.status, ReviewStatus)
@@ -627,6 +670,11 @@ class TaskArena(Base):
     task = relationship("Task", back_populates="arena")
 
     def to_dict(self):
+        """Convert TaskArena to dictionary.
+
+        Returns:
+            Dictionary containing arena competition results and scores.
+        """
         return {
             "winning_model": self.winning_model,
             "local_score": self.local_score,
@@ -655,6 +703,11 @@ class TaskOutput(Base):
     task = relationship("Task", back_populates="outputs")
 
     def to_dict(self):
+        """Convert TaskOutput to dictionary.
+
+        Returns:
+            Dictionary containing output type and URL.
+        """
         return {
             "output_type": self.output_type.value
             if isinstance(self.output_type, OutputType)

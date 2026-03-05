@@ -1,5 +1,4 @@
-"""
-Migration: Add Performance Indexes and Optimize Queries (Issue #38).
+"""Migration: Add Performance Indexes and Optimize Queries (Issue #38).
 
 This migration adds strategic database indexes to improve query performance
 and prevent N+1 query problems in the ArbitrageAI application.

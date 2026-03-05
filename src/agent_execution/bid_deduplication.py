@@ -1,5 +1,4 @@
-"""
-Bid Deduplication and Placement Logic.
+"""Bid Deduplication and Placement Logic.
 
 This module implements deduplication checks to prevent placing bids on
 marketplace postings where we've already placed bids.
@@ -33,8 +32,7 @@ async def should_bid(
     marketplace_id: str,
     ttl_hours: int = DEFAULT_POSTING_TTL_HOURS,
 ) -> bool:
-    """
-    Check if we should place a bid on a posting.
+    """Check if we should place a bid on a posting.
 
     Returns False if:
     1. An ACTIVE bid already exists for this posting
@@ -111,8 +109,7 @@ async def should_bid(
 
 
 async def mark_bid_withdrawn(db_session: Session, bid_id: str, reason: str) -> bool:
-    """
-    Mark a bid as withdrawn using atomic transaction.
+    """Mark a bid as withdrawn using atomic transaction.
 
     Uses SQLAlchemy transaction to ensure atomicity and prevent race conditions.
     Records atomic event ID for idempotency and debugging.
@@ -191,8 +188,7 @@ async def mark_bid_withdrawn(db_session: Session, bid_id: str, reason: str) -> b
 def get_active_bids_for_posting(
     db_session: Session, posting_id: str, marketplace_id: str,
 ) -> list[Bid]:
-    """
-    Get all ACTIVE bids for a posting.
+    """Get all ACTIVE bids for a posting.
 
     Args:
         db_session: SQLAlchemy database session
@@ -224,8 +220,7 @@ def get_active_bids_for_posting(
 def get_bids_by_status(
     db_session: Session, marketplace_id: str, status: BidStatus,
 ) -> list[Bid]:
-    """
-    Get all bids for a marketplace with a specific status.
+    """Get all bids for a marketplace with a specific status.
 
     Args:
         db_session: SQLAlchemy database session
@@ -262,8 +257,7 @@ async def create_bid_atomically(
     evaluation_confidence: int | None = None,
     skills_matched: list | None = None,
 ) -> Bid | None:
-    """
-    Atomically create a bid, preventing duplicates via the unique constraint.
+    """Atomically create a bid, preventing duplicates via the unique constraint.
 
     If another process already inserted an ACTIVE bid for the same
     (marketplace, job_id, status), the IntegrityError is caught and None

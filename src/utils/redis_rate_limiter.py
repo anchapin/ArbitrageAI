@@ -1,5 +1,4 @@
-"""
-Redis-backed distributed rate limiter for ArbitrageAI.
+"""Redis-backed distributed rate limiter for ArbitrageAI.
 
 Issue QAQC-009: Replace In-Memory Rate Limiting with Redis
 Issue #45: API Rate Limiting, Quotas, and Usage Analytics
@@ -92,8 +91,7 @@ end
 
 
 class RedisRateLimiter:
-    """
-    Distributed rate limiter using Redis.
+    """Distributed rate limiter using Redis.
 
     Supports two algorithms:
     1. Sliding window (using sorted sets) - accurate, recommended for fine-grained limiting
@@ -119,8 +117,7 @@ class RedisRateLimiter:
         default_ttl: int = 2,
         key_prefix: str = "ratelimit",
     ):
-        """
-        Initialize Redis rate limiter.
+        """Initialize Redis rate limiter.
 
         Args:
             redis_url: Complete Redis URL (takes priority)
@@ -217,8 +214,7 @@ class RedisRateLimiter:
         window_seconds: int,
         algorithm: str = "sliding",
     ) -> tuple[bool, dict[str, Any]]:
-        """
-        Check if request is within rate limit.
+        """Check if request is within rate limit.
 
         Args:
             key: Unique identifier (e.g., "delivery:task:123" or "delivery:ip:192.168.1.1")
@@ -242,8 +238,7 @@ class RedisRateLimiter:
         max_requests: int,
         window_seconds: int,
     ) -> tuple[bool, dict[str, Any]]:
-        """
-        Check rate limit using sliding window algorithm with sorted sets.
+        """Check rate limit using sliding window algorithm with sorted sets.
 
         This is the most accurate algorithm for distributed rate limiting.
         """
@@ -331,8 +326,7 @@ class RedisRateLimiter:
         max_requests: int,
         window_seconds: int,
     ) -> tuple[bool, dict[str, Any]]:
-        """
-        Check rate limit using fixed window algorithm with INCR.
+        """Check rate limit using fixed window algorithm with INCR.
 
         This is faster but less accurate than sliding window.
         Good for coarse-grained rate limiting.
@@ -399,8 +393,7 @@ class RedisRateLimiter:
         max_requests: int,
         window_seconds: int,
     ) -> tuple[bool, dict[str, Any]]:
-        """
-        Check rate limit using in-memory window (fallback).
+        """Check rate limit using in-memory window (fallback).
 
         This is used when Redis is unavailable. Note that this does NOT
         provide distributed rate limiting across workers.
@@ -444,8 +437,7 @@ class RedisRateLimiter:
             del self._in_memory_windows[k]
 
     def reset(self, key: str) -> bool:
-        """
-        Reset rate limit counters for a key.
+        """Reset rate limit counters for a key.
 
         Args:
             key: The rate limit key to reset
@@ -468,8 +460,7 @@ class RedisRateLimiter:
             return False
 
     def get_usage(self, key: str, window_seconds: int) -> dict[str, Any]:
-        """
-        Get current rate limit usage for a key.
+        """Get current rate limit usage for a key.
 
         Args:
             key: The rate limit key
@@ -504,8 +495,7 @@ class RedisRateLimiter:
         key: str,
         event_type: str = "request",
     ) -> None:
-        """
-        Record an event without checking the limit.
+        """Record an event without checking the limit.
 
         Useful for tracking failures or other events separately.
 
@@ -537,8 +527,7 @@ def get_rate_limiter(
     redis_url: str | None = None,
     key_prefix: str = "ratelimit",
 ) -> RedisRateLimiter:
-    """
-    Get or create global rate limiter instance.
+    """Get or create global rate limiter instance.
 
     Args:
         redis_url: Optional Redis URL override
@@ -567,8 +556,7 @@ def check_delivery_rate_limit(
     max_attempts: int = 5,
     window_seconds: int = 3600,
 ) -> tuple[bool, dict[str, Any]]:
-    """
-    Check delivery rate limit for a task.
+    """Check delivery rate limit for a task.
 
     Args:
         task_id: The task UUID
@@ -588,8 +576,7 @@ def check_ip_rate_limit(
     max_attempts: int = 20,
     window_seconds: int = 3600,
 ) -> tuple[bool, dict[str, Any]]:
-    """
-    Check delivery rate limit for an IP address.
+    """Check delivery rate limit for an IP address.
 
     Args:
         ip: The client IP address
@@ -608,8 +595,7 @@ def record_delivery_failure(
     task_id: str,
     ip: str | None = None,
 ) -> None:
-    """
-    Record a delivery failure for rate limiting.
+    """Record a delivery failure for rate limiting.
 
     Args:
         task_id: The task UUID

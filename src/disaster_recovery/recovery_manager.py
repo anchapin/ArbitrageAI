@@ -1,5 +1,4 @@
-"""
-Recovery Manager Module.
+"""Recovery Manager Module.
 
 Manages recovery operations for the platform including database,
 configuration, and file restoration.
@@ -34,9 +33,10 @@ class RecoveryManager:
         self.backup_manager = backup_manager
         self.recovery_dir = Path(config.RECOVERY_DIR)
         self.recovery_dir.mkdir(parents=True, exist_ok=True)
-        self.recovery_plans = self._load_recovery_plans()
+        self.recovery_plans = RecoveryManager._load_recovery_plans()
 
-    def _load_recovery_plans(self) -> dict[str, RecoveryPlan]:
+    @staticmethod
+    def _load_recovery_plans() -> dict[str, RecoveryPlan]:
         """Load recovery plans from configuration."""
         plans = {}
 
@@ -153,17 +153,17 @@ class RecoveryManager:
                 if step == "validate_backup":
                     await self._validate_backup_for_recovery(recovery_op, backup_metadata)
                 elif step == "prepare_target_environment":
-                    await self._prepare_target_environment(recovery_op, plan)
+                    await RecoveryManager._prepare_target_environment(recovery_op, plan)
                 elif step == "restore_database":
                     await self._restore_database(recovery_op, backup_metadata)
                 elif step == "restore_configuration":
-                    await self._restore_configuration(recovery_op, backup_metadata)
+                    await RecoveryManager._restore_configuration(recovery_op, backup_metadata)
                 elif step == "restore_files":
-                    await self._restore_files(recovery_op, backup_metadata)
+                    await RecoveryManager._restore_files(recovery_op, backup_metadata)
                 elif step == "validate_recovery":
                     await self._validate_recovery(recovery_op)
                 elif step == "update_system_configuration":
-                    await self._update_system_configuration(recovery_op)
+                    await RecoveryManager._update_system_configuration(recovery_op)
 
                 recovery_op.steps_completed.append(step)
                 logger.info(f"Completed recovery step: {step}")
@@ -183,13 +183,14 @@ class RecoveryManager:
         if not validation_results["valid"]:
             raise HTTPException(status_code=400, detail=f"Backup validation failed: {validation_results}")
 
+    @staticmethod
     async def _prepare_target_environment(
-        self, recovery_op: RecoveryOperation, plan: RecoveryPlan,
+        recovery_op: RecoveryOperation, plan: RecoveryPlan,
     ):
         """Prepare target environment for recovery."""
         target_path = Path(recovery_op.target_location)
         target_path.mkdir(parents=True, exist_ok=True)
-        await self._stop_services()
+        await RecoveryManager._stop_services()
 
         current_state_path = target_path / "current_state_backup"
         if target_path.exists() and any(target_path.iterdir()):
@@ -218,8 +219,9 @@ class RecoveryManager:
             logger.error(f"Database restoration failed: {e}")
             raise
 
+    @staticmethod
     async def _restore_configuration(
-        self, recovery_op: RecoveryOperation, backup_metadata: RecoveryOperation,
+        recovery_op: RecoveryOperation, backup_metadata: RecoveryOperation,
     ):
         """Restore configuration from backup."""
         try:
@@ -239,8 +241,9 @@ class RecoveryManager:
             logger.error(f"Configuration restoration failed: {e}")
             raise
 
+    @staticmethod
     async def _restore_files(
-        self, recovery_op: RecoveryOperation, backup_metadata: RecoveryOperation,
+        recovery_op: RecoveryOperation, backup_metadata: RecoveryOperation,
     ):
         """Restore files from backup."""
         try:
@@ -289,11 +292,13 @@ class RecoveryManager:
             recovery_op.validation_results["database_validation"] = False
             raise
 
-    async def _update_system_configuration(self, recovery_op: RecoveryOperation):
+    @staticmethod
+    async def _update_system_configuration(recovery_op: RecoveryOperation):
         """Update system configuration after recovery."""
         logger.info("System configuration updated")
 
-    async def _stop_services(self):
+    @staticmethod
+    async def _stop_services():
         """Stop running services before recovery."""
         logger.info("Services stopped for recovery")
 
@@ -345,6 +350,7 @@ class RecoveryManager:
             logger.error(f"Recovery plan test failed: {e}")
             return {"success": False, "error": str(e)}
 
-    async def get_recovery_status(self, operation_id: str) -> RecoveryOperation | None:
+    @staticmethod
+    async def get_recovery_status(operation_id: str) -> RecoveryOperation | None:
         """Get status of a recovery operation."""
         return None

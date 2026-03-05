@@ -13,7 +13,6 @@ Issue: QAQC-003 - Production Validation for Insecure Defaults
 """
 
 import os
-import secrets  # For dynamic secret generation in tests
 import pytest
 from unittest.mock import patch, MagicMock
 
@@ -261,17 +260,16 @@ class TestProductionValidation:
         """Test that production mode passes with secure secrets."""
         import logging
         caplog.set_level(logging.INFO)
-        
+
         monkeypatch.setenv("ENVIRONMENT", "production")
         monkeypatch.setenv("JWT_SECRET_KEY", generate_secure_secret())
         monkeypatch.setenv("CLIENT_AUTH_SECRET", generate_secure_secret())
-        # Use dynamically generated secure values that don't match insecure patterns
-        # Stripe live keys are 24+ chars after sk_live_ prefix
-        stripe_key = "sk_live_" + secrets.token_hex(16)  # 24 chars total
-        webhook_secret = "whsec_" + secrets.token_hex(16)  # 36 chars total
-        monkeypatch.setenv("STRIPE_SECRET_KEY", stripe_key)
-        monkeypatch.setenv("STRIPE_WEBHOOK_SECRET", webhook_secret)
-        monkeypatch.setenv("DATABASE_URL", "postgresql://user:pass @localhost/db")
+        # Use secure values that don't match insecure patterns (must be >= 32 chars)
+        # Use generic secure format instead of Stripe patterns to avoid secret scanning
+        monkeypatch.setenv("STRIPE_SECRET_KEY", generate_secure_secret())
+        # Use a webhook secret without whsec_test pattern (must be >= 32 chars)
+        monkeypatch.setenv("STRIPE_WEBHOOK_SECRET", generate_secure_secret())
+        monkeypatch.setenv("DATABASE_URL", "postgresql://user:pass@localhost/db")
 
         # Should not raise
         validate_production_configuration()
@@ -515,11 +513,11 @@ class TestLoggingAndOutput:
         """Test that critical security issues use CRITICAL log level."""
         import logging
         caplog.set_level(logging.CRITICAL)
-        
+
         monkeypatch.setenv("ENVIRONMENT", "production")
         monkeypatch.setenv("JWT_SECRET_KEY", "CHANGE_ME_IN_PRODUCTION")
         monkeypatch.setenv("CLIENT_AUTH_SECRET", generate_secure_secret())
-        monkeypatch.setenv("STRIPE_SECRET_KEY", "[STRIPE_SECRET_KEY_PLACEHOLDER]")
+        monkeypatch.setenv("STRIPE_SECRET_KEY", "a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0")
         monkeypatch.setenv("STRIPE_WEBHOOK_SECRET", "9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d3e2f1a0b1c2d")
 
         with pytest.raises(SystemExit):
@@ -533,11 +531,11 @@ class TestLoggingAndOutput:
         """Test that warnings use WARNING log level."""
         import logging
         caplog.set_level(logging.WARNING)
-        
+
         monkeypatch.setenv("ENVIRONMENT", "production")
         monkeypatch.setenv("JWT_SECRET_KEY", generate_secure_secret())
         monkeypatch.setenv("CLIENT_AUTH_SECRET", generate_secure_secret())
-        monkeypatch.setenv("STRIPE_SECRET_KEY", "[STRIPE_SECRET_KEY_PLACEHOLDER]")
+        monkeypatch.setenv("STRIPE_SECRET_KEY", "a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0")
         monkeypatch.setenv("STRIPE_WEBHOOK_SECRET", "9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d3e2f1a0b1c2d")
         # Don't set DATABASE_URL to trigger warning
         monkeypatch.delenv("DATABASE_URL", raising=False)
@@ -558,13 +556,14 @@ class TestLoggingAndOutput:
         """Test that success logs at INFO level."""
         import logging
         caplog.set_level(logging.INFO)
-        
+
         monkeypatch.setenv("ENVIRONMENT", "production")
         monkeypatch.setenv("JWT_SECRET_KEY", generate_secure_secret())
         monkeypatch.setenv("CLIENT_AUTH_SECRET", generate_secure_secret())
-        monkeypatch.setenv("STRIPE_SECRET_KEY", "[STRIPE_SECRET_KEY_PLACEHOLDER]")
-        monkeypatch.setenv("STRIPE_WEBHOOK_SECRET", "9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d3e2f1a0b1c2d")
-        monkeypatch.setenv("DATABASE_URL", "postgresql://user:pass @localhost/db")
+        # Use genuinely secure values (32+ chars, no insecure patterns)
+        monkeypatch.setenv("STRIPE_SECRET_KEY", generate_secure_secret())
+        monkeypatch.setenv("STRIPE_WEBHOOK_SECRET", generate_secure_secret())
+        monkeypatch.setenv("DATABASE_URL", "postgresql://user:pass@localhost/db")
 
         validate_production_configuration()
 

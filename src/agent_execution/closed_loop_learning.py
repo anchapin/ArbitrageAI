@@ -1,5 +1,4 @@
-"""
-Closed-Loop Learning System.
+"""Closed-Loop Learning System.
 
 Implements continuous learning from completed job results.
 After each job completion:
@@ -50,8 +49,7 @@ class StrategyAdjustmentType(PyEnum):
 
 
 class ClosedLoopLearningSystem:
-    """
-    Closed-Loop Learning System.
+    """Closed-Loop Learning System.
 
     Continuously learns from completed jobs to improve bidding strategy:
 
@@ -93,8 +91,7 @@ class ClosedLoopLearningSystem:
         strategy_type: str | None = None,
         metadata: dict[str, Any] | None = None,
     ) -> LearningEntry:
-        """
-        Record job completion and calculate learning metrics.
+        """Record job completion and calculate learning metrics.
 
         Args:
             task_id: Task identifier
@@ -185,17 +182,15 @@ class ClosedLoopLearningSystem:
             logger.error(f"Failed to record job completion: {e}")
             db.rollback()
             raise
-        finally:
-            db.close()
+        finally:            db.close()
 
+    @staticmethod
     def calculate_prediction_accuracy(
-        self,
         marketplace: str | None = None,
         strategy_type: str | None = None,
         limit: int = 100,
     ) -> dict[str, Any]:
-        """
-        Calculate prediction accuracy metrics.
+        """Calculate prediction accuracy metrics.
 
         Args:
             marketplace: Filter by marketplace
@@ -276,8 +271,7 @@ class ClosedLoopLearningSystem:
         marketplace: str | None = None,
         strategy_type: str | None = None,
     ) -> dict[str, Any]:
-        """
-        Generate learning insights and recommendations.
+        """Generate learning insights and recommendations.
 
         Args:
             marketplace: Filter by marketplace
@@ -286,7 +280,7 @@ class ClosedLoopLearningSystem:
         Returns:
             Dictionary with insights and recommendations
         """
-        accuracy = self.calculate_prediction_accuracy(
+        accuracy = ClosedLoopLearningSystem.calculate_prediction_accuracy(
             marketplace=marketplace, strategy_type=strategy_type,
         )
 
@@ -347,8 +341,7 @@ class ClosedLoopLearningSystem:
         }
 
     def perform_weekly_review(self) -> dict[str, Any]:
-        """
-        Perform weekly strategy review.
+        """Perform weekly strategy review.
 
         Analyzes past week's performance and generates strategic recommendations.
 
@@ -502,8 +495,7 @@ class ClosedLoopLearningSystem:
         marketplace: str,
         strategy_type: str | None,
     ) -> None:
-        """
-        Adjust strategy if enough data has been collected.
+        """Adjust strategy if enough data has been collected.
 
         Args:
             marketplace: Marketplace platform
@@ -523,7 +515,7 @@ class ClosedLoopLearningSystem:
 
             if count >= self.MIN_SAMPLES_FOR_ADJUSTMENT:
                 # Get recent accuracy
-                accuracy = self.calculate_prediction_accuracy(
+                accuracy = ClosedLoopLearningSystem.calculate_prediction_accuracy(
                     marketplace=marketplace, limit=50,
                 )
 
@@ -570,14 +562,13 @@ class ClosedLoopLearningSystem:
             logger.info("Triggering weekly review")
             self.perform_weekly_review()
 
+    @staticmethod
     def get_learning_history(
-        self,
         limit: int = 100,
         event_type: LearningEventType | None = None,
         marketplace: str | None = None,
     ) -> list[LearningEntry]:
-        """
-        Get learning history.
+        """Get learning history.
 
         Args:
             limit: Maximum entries to return

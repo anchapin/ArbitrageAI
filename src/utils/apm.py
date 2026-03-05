@@ -1,5 +1,4 @@
-"""
-APM (Application Performance Monitoring) and OpenTelemetry Integration.
+"""APM (Application Performance Monitoring) and OpenTelemetry Integration.
 
 This module provides comprehensive APM instrumentation for production monitoring
 using OpenTelemetry for vendor-neutral observability. It instruments critical paths:
@@ -73,6 +72,7 @@ try:
 except ImportError:
 
     def inject_context(x):
+        """Inject context (no-op fallback)."""
         return x
 
 
@@ -104,6 +104,11 @@ class APMManager:
     _initialized: bool = False
 
     def __new__(cls) -> "APMManager":
+        """Create or return the singleton APMManager instance.
+
+        Returns:
+            The singleton APMManager instance
+        """
         if cls._instance is None:
             cls._instance = super().__new__(cls)
         return cls._instance
@@ -345,7 +350,8 @@ class APMManager:
 
         logger.info("✓ Created 11 metrics instruments")
 
-    def _setup_instrumentation(self) -> None:
+    @staticmethod
+    def _setup_instrumentation() -> None:
         """Auto-instrument framework libraries."""
         try:
             # FastAPI instrumentation
@@ -373,7 +379,8 @@ class APMManager:
         except Exception as e:
             logger.debug(f"Failed to instrument HTTP clients: {e}")
 
-    def _setup_propagators(self) -> None:
+    @staticmethod
+    def _setup_propagators() -> None:
         """Setup context propagators for distributed tracing."""
         # Build list of available propagators
         propagators = []
@@ -415,8 +422,7 @@ def init_apm() -> None:
 
 
 def create_span(name: str, attributes: dict[str, Any] | None = None) -> Any:
-    """
-    Create a new span with optional attributes.
+    """Create a new span with optional attributes.
 
     Args:
         name: Span name
@@ -454,8 +460,7 @@ def instrument_function(
     span_name: str | None = None,
     record_result: bool = True,
 ):
-    """
-    Decorator to instrument a function with span creation and metric recording.
+    """Decorator to instrument a function with span creation and metric recording.
 
     Args:
         span_name: Custom span name (defaults to function name)
@@ -500,8 +505,7 @@ def record_metric(
     value: float,
     attributes: dict[str, Any] | None = None,
 ) -> None:
-    """
-    Record a metric value.
+    """Record a metric value.
 
     Args:
         metric_name: Metric name (must exist in APM manager)
@@ -528,8 +532,7 @@ def record_metric(
 def add_trace_context_to_headers(
     headers: dict[str, str] | None = None,
 ) -> dict[str, str]:
-    """
-    Add trace context to headers for distributed tracing.
+    """Add trace context to headers for distributed tracing.
 
     Args:
         headers: Optional existing headers dict
@@ -553,8 +556,7 @@ def add_trace_context_to_headers(
 
 @contextmanager
 def measure_execution(name: str, attributes: dict[str, Any] | None = None):
-    """
-    Context manager to measure execution time and create a span.
+    """Context manager to measure execution time and create a span.
 
     Args:
         name: Span/metric name

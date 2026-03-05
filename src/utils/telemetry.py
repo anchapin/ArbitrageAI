@@ -1,3 +1,9 @@
+"""Telemetry and distributed tracing utilities.
+
+This module provides OpenTelemetry-based tracing and APM functionality
+for monitoring application performance.
+"""
+
 import logging
 import os
 
@@ -29,8 +35,7 @@ logger = get_logger(__name__)
 
 
 def get_tracer(name: str) -> trace.Tracer:
-    """
-    Get an OpenTelemetry tracer.
+    """Get an OpenTelemetry tracer.
 
     Args:
         name: Name of the tracer (usually __name__)
@@ -42,8 +47,8 @@ def get_tracer(name: str) -> trace.Tracer:
 
 
 def init_observability():
-    """
-    Initializes comprehensive observability stack:
+    """Initializes comprehensive observability stack.
+
     1. APM infrastructure for production monitoring (Issue #42)
     2. Local tracing via Arize Phoenix and Traceloop
     3. OpenTelemetry context propagation for distributed tracing

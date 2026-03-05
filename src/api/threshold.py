@@ -1,5 +1,4 @@
-"""
-Threshold and escalation module.
+"""Threshold and escalation module.
 
 This module contains escalation logic, human-in-the-loop (HITL)
 functionality, and threshold petition handling.
@@ -26,8 +25,7 @@ MAX_RETRY_ATTEMPTS = ConfigManager.get("MAX_RETRY_ATTEMPTS")
 def _should_escalate_task(
     task, retry_count: int, error_message: str | None = None,
 ) -> tuple:
-    """
-    Determine if a task should be escalated to human review.
+    """Determine if a task should be escalated to human review.
 
     Escalation criteria (Pillar 1.7):
     1. Agent failed after MAX_RETRY_ATTEMPTS (3 retries)
@@ -60,8 +58,7 @@ def _should_escalate_task(
 async def _escalate_task(
     db: Session, task, reason: str, error_message: str | None = None,
 ):
-    """
-    Escalate a task to human review with idempotent notification.
+    """Escalate a task to human review with idempotent notification.
 
     Uses a database transaction (savepoint) to atomically update the task
     status and create the EscalationLog entry.

@@ -1,5 +1,4 @@
-"""
-Telegram Notifications Module.
+"""Telegram Notifications Module.
 
 Provides Telegram notification functionality for urgent alerts and human-in-the-loop requests.
 Uses httpx for async HTTP requests to the Telegram Bot API.
@@ -33,8 +32,7 @@ BACKOFF_MULTIPLIER = 2.0
 
 
 class TelegramNotifier:
-    """
-    Telegram notification client for sending urgent messages and human help requests.
+    """Telegram notification client for sending urgent messages and human help requests.
 
     Uses the Telegram Bot API to send messages to a configured chat.
     Includes retry logic with exponential backoff for reliability.
@@ -63,8 +61,7 @@ class TelegramNotifier:
         return f"{api_url}/bot{self.bot_token}/{method}"
 
     async def _send_message(self, text: str, parse_mode: str = "Markdown") -> bool:
-        """
-        Send a message via Telegram API with retry and exponential backoff.
+        """Send a message via Telegram API with retry and exponential backoff.
 
         Args:
             text: Message text to send
@@ -121,8 +118,7 @@ class TelegramNotifier:
         return False
 
     async def send_urgent_message(self, message: str) -> bool:
-        """
-        Send an urgent message notification via Telegram.
+        """Send an urgent message notification via Telegram.
 
         Formats the message with an urgent emoji prefix and sends it.
 
@@ -143,8 +139,7 @@ class TelegramNotifier:
         domain: str | None = None,
         client_email: str | None = None,
     ) -> bool:
-        """
-        Request human assistance for an escalated task.
+        """Request human assistance for an escalated task.
 
         Sends a formatted message with task details to alert human reviewers.
 
@@ -200,8 +195,7 @@ _notifier: TelegramNotifier | None = None
 
 
 def get_notifier() -> TelegramNotifier:
-    """
-    Get the singleton TelegramNotifier instance.
+    """Get the singleton TelegramNotifier instance.
 
     Returns:
         The TelegramNotifier instance

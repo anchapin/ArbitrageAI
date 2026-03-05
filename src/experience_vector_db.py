@@ -1,5 +1,4 @@
-"""
-Experience Vector Database (RAG for Few-Shot Learning).
+"""Experience Vector Database (RAG for Few-Shot Learning).
 
 This module provides a vector database for storing and retrieving successful task experiences.
 When a task is marked as COMPLETED and approved, the user_request and final successful code
@@ -66,8 +65,7 @@ DEFAULT_TOP_K = 2
 
 @dataclass
 class TaskExperience:
-    """
-    Represents a single task experience stored in the vector database.
+    """Represents a single task experience stored in the vector database.
 
     Attributes:
         task_id: Unique identifier for the task
@@ -90,8 +88,7 @@ class TaskExperience:
 
 @dataclass
 class FewShotExample:
-    """
-    Represents a few-shot example for LLM prompting.
+    """Represents a few-shot example for LLM prompting.
 
     Attributes:
         user_request: The similar task's user request
@@ -110,8 +107,7 @@ class FewShotExample:
 
 
 class ExperienceVectorDB:
-    """
-    Vector database for storing and retrieving successful task experiences.
+    """Vector database for storing and retrieving successful task experiences.
 
     This class provides:
     - Storage of successful task experiences with embeddings
@@ -147,8 +143,7 @@ class ExperienceVectorDB:
         embedding_model: str = DEFAULT_EMBEDDING_MODEL,
         top_k: int = DEFAULT_TOP_K,
     ):
-        """
-        Initialize the Experience Vector Database.
+        """Initialize the Experience Vector Database.
 
         Args:
             persist_directory: Directory to persist ChromaDB data
@@ -229,8 +224,7 @@ class ExperienceVectorDB:
             self._embedding_model = None
 
     def _get_embedding(self, text: str) -> list[float]:
-        """
-        Get embedding vector for text using sentence-transformers.
+        """Get embedding vector for text using sentence-transformers.
 
         Args:
             text: Text to embed
@@ -255,8 +249,7 @@ class ExperienceVectorDB:
         output_format: str = "image",
         csv_headers: list[str] | None = None,
     ) -> bool:
-        """
-        Store a successful task experience in the vector database.
+        """Store a successful task experience in the vector database.
 
         This should be called when a task is marked as COMPLETED and approved.
         The user_request and generated_code are stored with embeddings for
@@ -321,8 +314,7 @@ class ExperienceVectorDB:
         task_type: str | None = None,
         top_k: int | None = None,
     ) -> list[FewShotExample]:
-        """
-        Query for similar past tasks based on user request.
+        """Query for similar past tasks based on user request.
 
         Uses semantic similarity search to find the most relevant past tasks
         that can be used as few-shot examples for the LLM.
@@ -398,8 +390,7 @@ class ExperienceVectorDB:
         domain: str | None = None,
         top_k: int | None = None,
     ) -> str:
-        """
-        Build a system prompt with few-shot examples.
+        """Build a system prompt with few-shot examples.
 
         This method either uses provided examples or automatically queries
         for similar tasks based on the user request and domain.
@@ -448,8 +439,7 @@ class ExperienceVectorDB:
         return base_system_prompt + few_shot_section
 
     def get_experience_stats(self) -> dict[str, Any]:
-        """
-        Get statistics about the experience database.
+        """Get statistics about the experience database.
 
         Returns:
             Dictionary with stats about stored experiences
@@ -475,8 +465,7 @@ class ExperienceVectorDB:
             return {"available": False, "error": str(e)}
 
     def clear_all(self) -> bool:
-        """
-        Clear all experiences from the database.
+        """Clear all experiences from the database.
 
         WARNING: This deletes all stored experiences. Use with caution.
 
@@ -507,8 +496,7 @@ _experience_db: ExperienceVectorDB | None = None
 
 
 def get_experience_db() -> ExperienceVectorDB:
-    """
-    Get the global ExperienceVectorDB instance.
+    """Get the global ExperienceVectorDB instance.
 
     Creates the instance if it doesn't exist (singleton pattern).
 
@@ -537,8 +525,7 @@ def store_successful_task(
     output_format: str = "image",
     csv_headers: list[str] | None = None,
 ) -> bool:
-    """
-    Convenience function to store a successful task.
+    """Convenience function to store a successful task.
 
     Args:
         task_id: Unique identifier for the task
@@ -574,8 +561,7 @@ def query_similar_tasks(
     task_type: str | None = None,
     top_k: int = DEFAULT_TOP_K,
 ) -> list[FewShotExample]:
-    """
-    Convenience function to query similar tasks.
+    """Convenience function to query similar tasks.
 
     Args:
         user_request: The new task's user request
@@ -602,8 +588,7 @@ def build_few_shot_system_prompt(
     domain: str | None = None,
     top_k: int = DEFAULT_TOP_K,
 ) -> str:
-    """
-    Convenience function to build a system prompt with few-shot examples.
+    """Convenience function to build a system prompt with few-shot examples.
 
     Args:
         base_system_prompt: The base system prompt

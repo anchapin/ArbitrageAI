@@ -1,5 +1,4 @@
-"""
-Dataset Builder for Fine-Tuning.
+"""Dataset Builder for Fine-Tuning.
 
 Prepares training data from task history and distillation data.
 Supports multiple formats and quality filtering.
@@ -15,8 +14,7 @@ logger = logging.getLogger(__name__)
 
 
 class DatasetBuilder:
-    """
-    Builds fine-tuning datasets from task history and distillation data.
+    """Builds fine-tuning datasets from task history and distillation data.
 
     Features:
     - Load examples from distillation collector
@@ -27,8 +25,7 @@ class DatasetBuilder:
     """
 
     def __init__(self, output_dir: str | None = None):
-        """
-        Initialize the dataset builder.
+        """Initialize the dataset builder.
 
         Args:
             output_dir: Directory to save datasets
@@ -38,15 +35,14 @@ class DatasetBuilder:
         )
         Path(self.output_dir).mkdir(parents=True, exist_ok=True)
 
+    @staticmethod
     def build_from_distillation(
-        self,
         min_rating: int = 4,
         domain: str | None = None,
         task_type: str | None = None,
         limit: int | None = None,
     ) -> list[dict[str, Any]]:
-        """
-        Build dataset from distillation data collector.
+        """Build dataset from distillation data collector.
 
         Args:
             min_rating: Minimum rating (1-5) to include
@@ -78,9 +74,9 @@ class DatasetBuilder:
             logger.error(f"Failed to load distillation data: {e}")
             return []
 
-    def validate_examples(self, examples: list[dict[str, Any]]) -> dict[str, Any]:
-        """
-        Validate dataset examples for completeness and quality.
+    @staticmethod
+    def validate_examples(examples: list[dict[str, Any]]) -> dict[str, Any]:
+        """Validate dataset examples for completeness and quality.
 
         Args:
             examples: List of examples to validate
@@ -119,9 +115,9 @@ class DatasetBuilder:
             "validation_rate": len(valid_examples) / len(examples) if examples else 0,
         }
 
-    def to_openai_format(self, examples: list[dict[str, Any]]) -> list[dict[str, Any]]:
-        """
-        Convert examples to OpenAI fine-tuning format.
+    @staticmethod
+    def to_openai_format(examples: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        """Convert examples to OpenAI fine-tuning format.
 
         Args:
             examples: List of examples
@@ -136,9 +132,9 @@ class DatasetBuilder:
                     ],
                 } for ex in examples]
 
-    def to_alpaca_format(self, examples: list[dict[str, Any]]) -> list[dict[str, Any]]:
-        """
-        Convert examples to Alpaca fine-tuning format.
+    @staticmethod
+    def to_alpaca_format(examples: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        """Convert examples to Alpaca fine-tuning format.
 
         Args:
             examples: List of examples
@@ -151,9 +147,9 @@ class DatasetBuilder:
             for ex in examples
         ]
 
-    def to_jsonl_format(self, examples: list[dict[str, Any]]) -> str:
-        """
-        Convert examples to JSONL format.
+    @staticmethod
+    def to_jsonl_format(examples: list[dict[str, Any]]) -> str:
+        """Convert examples to JSONL format.
 
         Args:
             examples: List of examples
@@ -164,11 +160,11 @@ class DatasetBuilder:
         lines = [json.dumps(ex) for ex in examples]
         return "\n".join(lines)
 
+    @staticmethod
     def split_train_test(
-        self, examples: list[dict[str, Any]], train_ratio: float = 0.8,
+        examples: list[dict[str, Any]], train_ratio: float = 0.8,
     ) -> tuple:
-        """
-        Split examples into train and test sets.
+        """Split examples into train and test sets.
 
         Args:
             examples: List of examples
@@ -186,8 +182,7 @@ class DatasetBuilder:
         filename: str,
         format: str = "openai",
     ) -> str:
-        """
-        Save dataset to file in specified format.
+        """Save dataset to file in specified format.
 
         Args:
             examples: List of examples
@@ -222,9 +217,9 @@ class DatasetBuilder:
         logger.info(f"Saved {len(examples)} examples to {filepath}")
         return filepath
 
-    def get_dataset_stats(self, examples: list[dict[str, Any]]) -> dict[str, Any]:
-        """
-        Get statistics about the dataset.
+    @staticmethod
+    def get_dataset_stats(examples: list[dict[str, Any]]) -> dict[str, Any]:
+        """Get statistics about the dataset.
 
         Args:
             examples: List of examples
@@ -274,8 +269,7 @@ def prepare_fine_tuning_dataset(
     min_rating: int = 4,
     domain: str | None = None,
 ) -> str:
-    """
-    Convenience function to prepare a complete fine-tuning dataset.
+    """Convenience function to prepare a complete fine-tuning dataset.
 
     Args:
         output_dir: Directory to save dataset

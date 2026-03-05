@@ -1,5 +1,4 @@
-"""
-Backup Manager Module.
+"""Backup Manager Module.
 
 Manages backup operations for the platform including full, incremental,
 and point-in-time backups.
@@ -91,13 +90,13 @@ class BackupManager:
                 temp_path = Path(temp_dir)
 
                 await self._backup_database(temp_path / "database.sqlite")
-                await self._backup_configuration(temp_path / "config")
-                await self._backup_logs(temp_path / "logs")
-                await self._backup_uploads(temp_path / "uploads")
+                await BackupManager._backup_configuration(temp_path / "config")
+                await BackupManager._backup_logs(temp_path / "logs")
+                await BackupManager._backup_uploads(temp_path / "uploads")
 
-                await self._create_archive(temp_path, backup_path)
+                await BackupManager._create_archive(temp_path, backup_path)
 
-                metadata.checksum = await self._calculate_checksum(backup_path)
+                metadata.checksum = await BackupManager._calculate_checksum(backup_path)
                 metadata.size = backup_path.stat().st_size
 
                 if self.s3_client and self.config.AWS_S3_BACKUP_BUCKET:
@@ -147,9 +146,9 @@ class BackupManager:
             with tempfile.TemporaryDirectory() as temp_dir:
                 temp_path = Path(temp_dir)
                 await self._backup_incremental_data(temp_path, last_full_backup.timestamp)
-                await self._create_archive(temp_path, backup_path)
+                await BackupManager._create_archive(temp_path, backup_path)
 
-                metadata.checksum = await self._calculate_checksum(backup_path)
+                metadata.checksum = await BackupManager._calculate_checksum(backup_path)
                 metadata.size = backup_path.stat().st_size
                 metadata.status = BackupStatus.COMPLETED
                 await self._store_backup_metadata(metadata)
@@ -193,9 +192,9 @@ class BackupManager:
             with tempfile.TemporaryDirectory() as temp_dir:
                 temp_path = Path(temp_dir)
                 await self._create_point_in_time_snapshot(temp_path, timestamp)
-                await self._create_archive(temp_path, backup_path)
+                await BackupManager._create_archive(temp_path, backup_path)
 
-                metadata.checksum = await self._calculate_checksum(backup_path)
+                metadata.checksum = await BackupManager._calculate_checksum(backup_path)
                 metadata.size = backup_path.stat().st_size
                 metadata.status = BackupStatus.COMPLETED
                 await self._store_backup_metadata(metadata)
@@ -223,7 +222,8 @@ class BackupManager:
             logger.error(f"Database backup failed: {e}")
             raise
 
-    async def _backup_configuration(self, backup_dir: Path):
+    @staticmethod
+    async def _backup_configuration(backup_dir: Path):
         """Backup configuration files."""
         try:
             backup_dir.mkdir(parents=True, exist_ok=True)
@@ -243,7 +243,8 @@ class BackupManager:
             logger.error(f"Configuration backup failed: {e}")
             raise
 
-    async def _backup_logs(self, backup_dir: Path):
+    @staticmethod
+    async def _backup_logs(backup_dir: Path):
         """Backup log files."""
         try:
             backup_dir.mkdir(parents=True, exist_ok=True)
@@ -257,7 +258,8 @@ class BackupManager:
             logger.error(f"Log backup failed: {e}")
             raise
 
-    async def _backup_uploads(self, backup_dir: Path):
+    @staticmethod
+    async def _backup_uploads(backup_dir: Path):
         """Backup user uploads."""
         try:
             backup_dir.mkdir(parents=True, exist_ok=True)
@@ -273,7 +275,7 @@ class BackupManager:
         """Backup only data changed since the specified time."""
         try:
             await self._backup_database_changes(backup_dir / "database_changes.sqlite", since)
-            await self._backup_new_files(backup_dir / "new_files", since)
+            await BackupManager._backup_new_files(backup_dir / "new_files", since)
             logger.info("Incremental data backup completed")
         except Exception as e:
             logger.error(f"Incremental data backup failed: {e}")
@@ -283,7 +285,8 @@ class BackupManager:
         """Backup database changes since timestamp."""
         await self._backup_database(backup_path)
 
-    async def _backup_new_files(self, backup_dir: Path, since: datetime):
+    @staticmethod
+    async def _backup_new_files(backup_dir: Path, since: datetime):
         """Backup files modified since timestamp."""
         try:
             backup_dir.mkdir(parents=True, exist_ok=True)
@@ -328,7 +331,8 @@ class BackupManager:
             logger.error(f"Transaction logs backup failed: {e}")
             raise
 
-    async def _create_archive(self, source_dir: Path, archive_path: Path):
+    @staticmethod
+    async def _create_archive(source_dir: Path, archive_path: Path):
         """Create compressed archive of backup data."""
         try:
             with tarfile.open(archive_path, "w:gz") as tar:
@@ -338,7 +342,8 @@ class BackupManager:
             logger.error(f"Archive creation failed: {e}")
             raise
 
-    async def _calculate_checksum(self, file_path: Path) -> str:
+    @staticmethod
+    async def _calculate_checksum(file_path: Path) -> str:
         """Calculate SHA256 checksum of file."""
         try:
             sha256_hash = hashlib.sha256()
@@ -513,7 +518,7 @@ class BackupManager:
             file_size = backup_file.stat().st_size
             results["checks"]["file_size"] = file_size == metadata.size
 
-            calculated_checksum = await self._calculate_checksum(backup_file)
+            calculated_checksum = await BackupManager._calculate_checksum(backup_file)
             results["checks"]["checksum"] = calculated_checksum == metadata.checksum
 
             try:

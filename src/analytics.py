@@ -1,5 +1,4 @@
-"""
-Advanced Analytics Dashboard with Predictive Insights.
+"""Advanced Analytics Dashboard with Predictive Insights.
 
 This module provides comprehensive analytics and predictive insights
 for the ArbitrageAI platform.
@@ -52,7 +51,7 @@ class AnalyticsAPI:
         predictive_insights = self._generate_predictive_insights()
         anomalies = self._get_anomalies_summary()
         performance_metrics = self.performance_analytics.analyze_performance()
-        recommendations = self._generate_recommendations(kpis, performance_metrics)
+        recommendations = AnalyticsAPI._generate_recommendations(kpis, performance_metrics)
 
         return AnalyticsSummary(
             kpis=kpis,
@@ -98,8 +97,9 @@ class AnalyticsAPI:
         anomalies.extend(task_anomalies)
         return anomalies
 
+    @staticmethod
     def _generate_recommendations(
-        self, kpis: KPIResponse, performance_metrics: list[PerformanceMetric],
+        kpis: KPIResponse, performance_metrics: list[PerformanceMetric],
     ) -> list[str]:
         """Generate actionable recommendations based on analytics."""
         recommendations = []

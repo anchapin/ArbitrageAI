@@ -1,5 +1,4 @@
-"""
-Research & Planning Module.
+"""Research & Planning Module.
 
 This module implements the "Research & Plan" step for the autonomy workflow.
 """

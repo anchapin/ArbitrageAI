@@ -1,5 +1,4 @@
-"""
-Task management endpoints for ArbitrageAI.
+"""Task management endpoints for ArbitrageAI.
 
 Handles:
 - Task retrieval and status
@@ -117,8 +116,7 @@ def _reset_redis_rate_limiter() -> None:
 
 
 def _check_delivery_rate_limit(task_id: str) -> bool:
-    """
-    Check if a task_id is rate-limited for delivery attempts.
+    """Check if a task_id is rate-limited for delivery attempts.
 
     Uses Redis for distributed rate limiting (QAQC-009).
     Falls back to in-memory limiting when Redis unavailable.
@@ -155,8 +153,7 @@ def _check_delivery_rate_limit(task_id: str) -> bool:
 
 
 def _record_delivery_failure(task_id: str, ip: str | None = None) -> None:
-    """
-    Record a failed delivery attempt for rate limiting.
+    """Record a failed delivery attempt for rate limiting.
 
     Uses Redis for distributed tracking (QAQC-009).
     Also updates in-memory dict for backward compatibility.
@@ -182,8 +179,7 @@ def _record_delivery_failure(task_id: str, ip: str | None = None) -> None:
 
 
 def _check_delivery_ip_rate_limit(ip: str) -> bool:
-    """
-    Check if an IP is rate-limited for delivery attempts.
+    """Check if an IP is rate-limited for delivery attempts.
 
     Uses in-memory dict first for consistent test behavior,
     then Redis for distributed rate limiting (QAQC-009).
@@ -221,8 +217,7 @@ def _check_delivery_ip_rate_limit(ip: str) -> bool:
 
 
 def _record_ip_delivery_attempt(ip: str) -> None:
-    """
-    Record a delivery attempt for IP rate limiting.
+    """Record a delivery attempt for IP rate limiting.
 
     Uses Redis for distributed tracking (QAQC-009).
     Also updates in-memory dict for backward compatibility.
@@ -250,8 +245,7 @@ def _should_escalate_task(
     retry_count: int,
     error_message: str | None = None,
 ) -> tuple:
-    """
-    Determine if a task should be escalated to human review.
+    """Determine if a task should be escalated to human review.
 
     Escalation criteria (Pillar 1.7):
     1. Agent failed after MAX_RETRY_ATTEMPTS (3 retries)
@@ -290,8 +284,7 @@ async def _escalate_task(
     reason: str,
     error_message: str | None = None,
 ):
-    """
-    Escalate a task to human review with idempotent notification.
+    """Escalate a task to human review with idempotent notification.
 
     Uses a database transaction (savepoint) to atomically update the task
     status and create the EscalationLog entry.
@@ -435,8 +428,7 @@ async def _escalate_task(
 
 @router.get("/{task_id}", response_model=dict)
 async def get_task(task_id: str, db: Session = Depends(get_db)):  # noqa: B008
-    """
-    Get task by ID.
+    """Get task by ID.
 
     Uses eager loading to prevent N+1 queries on relationships.
 
@@ -471,8 +463,7 @@ async def get_task_by_session(
     session_id: str,
     db: Session = Depends(get_db),  # noqa: B008
 ):
-    """
-    Get task ID and authentication token by Stripe checkout session ID.
+    """Get task ID and authentication token by Stripe checkout session ID.
 
     Uses eager loading to prevent N+1 queries on relationships.
 
@@ -520,8 +511,7 @@ async def get_secure_delivery(
     request: Request,
     db: Session = Depends(get_db),  # noqa: B008
 ):
-    """
-    Secure delivery endpoint with token validation and rate limiting.
+    """Secure delivery endpoint with token validation and rate limiting.
 
     Args:
         task_id: Task ID
@@ -642,8 +632,7 @@ async def run_arena_competition(
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),  # noqa: B008
 ):
-    """
-    Run an arena competition for a task.
+    """Run an arena competition for a task.
 
     Args:
         task_id: Task ID
@@ -711,8 +700,7 @@ async def get_arena_history(
     db: Session = Depends(get_db),  # noqa: B008
     limit: int = 20,
 ):
-    """
-    Get arena competition history.
+    """Get arena competition history.
 
     Uses eager loading to prevent N+1 queries on task relationships.
 
@@ -736,8 +724,7 @@ async def get_arena_history(
 
 
 async def get_arena_stats(db: Session = Depends(get_db)):  # noqa: B008
-    """
-    Get arena competition statistics.
+    """Get arena competition statistics.
 
     Args:
         db: Database session
@@ -780,8 +767,7 @@ async def get_arena_stats(db: Session = Depends(get_db)):  # noqa: B008
 
 
 async def get_admin_metrics(db: Session = Depends(get_db)):  # noqa: B008
-    """
-    Get admin metrics for system monitoring.
+    """Get admin metrics for system monitoring.
 
     Args:
         db: Database session

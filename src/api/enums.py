@@ -1,6 +1,4 @@
-"""
-Enum definitions for API models.
-"""
+"""Enum definitions for API models."""
 
 from enum import Enum as PyEnum
 

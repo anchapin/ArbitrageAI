@@ -1,5 +1,4 @@
-"""
-Agent Execution Module.
+"""Agent Execution Module.
 
 This module provides functionality for executing code in secure sandboxes
 using the E2B Code Interpreter SDK.

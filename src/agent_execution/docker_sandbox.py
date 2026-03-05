@@ -1,5 +1,4 @@
-"""
-Local Docker Sandbox - Drop-in replacement for E2B Code Interpreter.
+"""Local Docker Sandbox - Drop-in replacement for E2B Code Interpreter.
 
 This module provides functionality for executing Python code in secure,
 ephemeral Docker containers. It serves as a cost-free alternative to E2B.
@@ -61,6 +60,7 @@ class SandboxLog:
     stream: str = "stdout"  # stdout or stderr
 
     def __repr__(self):
+        """Return string representation of SandboxLog."""
         return f"SandboxLog(text={self.text[:50]}..., stream={self.stream})"
 
 
@@ -73,6 +73,7 @@ class SandboxArtifact:
     mime_type: str = "application/octet-stream"
 
     def __repr__(self):
+        """Return string representation of SandboxArtifact."""
         return f"SandboxArtifact(name={self.name}, size={len(self.data)} bytes)"
 
 
@@ -91,6 +92,7 @@ class SandboxResult:
         return self.error is None and not self.timed_out
 
     def __repr__(self):
+        """Return string representation of SandboxResult."""
         return f"SandboxResult(success={self.success}, logs={len(self.logs)}, artifacts={len(self.artifacts)})"
 
 
@@ -100,8 +102,7 @@ class SandboxResult:
 
 
 class LocalDockerSandbox:
-    """
-    A secure sandbox environment for executing Python code using Docker.
+    """A secure sandbox environment for executing Python code using Docker.
 
     This class provides a drop-in replacement for E2B's Code Interpreter,
     using local Docker containers instead of cloud-based execution.
@@ -126,8 +127,7 @@ class LocalDockerSandbox:
         network_disabled: bool = True,
         memory_limit: str = "1g",
     ):
-        """
-        Initialize the Local Docker Sandbox.
+        """Initialize the Local Docker Sandbox.
 
         Args:
             image: Docker image to use for execution
@@ -164,8 +164,7 @@ class LocalDockerSandbox:
         return self._client
 
     def _ensure_image_exists(self) -> bool:
-        """
-        Ensure the sandbox image exists locally.
+        """Ensure the sandbox image exists locally.
 
         Returns:
             True if image is available
@@ -182,9 +181,9 @@ class LocalDockerSandbox:
             logger.warning(f"Warning: Error checking for image: {e}")
             return False
 
-    def _extract_artifacts(self, host_dir: str) -> list[SandboxArtifact]:
-        """
-        Extract artifacts from the host directory.
+    @staticmethod
+    def _extract_artifacts(host_dir: str) -> list[SandboxArtifact]:
+        """Extract artifacts from the host directory.
 
         Args:
             host_dir: Host directory where artifacts were written
@@ -248,8 +247,7 @@ class LocalDockerSandbox:
     def run_code(
         self, code: str, timeout: int | None = None, output_format: str = "image",
     ) -> SandboxResult:
-        """
-        Execute Python code in the sandbox.
+        """Execute Python code in the sandbox.
 
         Args:
             code: Python code to execute
@@ -377,8 +375,7 @@ class LocalDockerSandbox:
         timeout: int = DEFAULT_TIMEOUT,
         output_format: str = "image",
     ) -> SandboxResult:
-        """
-        Execute code in a temporary sandbox (convenience method).
+        """Execute code in a temporary sandbox (convenience method).
 
         This is a static method that creates a sandbox, executes code,
         and cleans up - all in one call.
@@ -404,8 +401,7 @@ class LocalDockerSandbox:
 def create_sandbox(
     api_key: str | None = None, timeout: int = DEFAULT_TIMEOUT, **kwargs,
 ) -> LocalDockerSandbox:
-    """
-    Create a LocalDockerSandbox instance (E2B-compatible interface).
+    """Create a LocalDockerSandbox instance (E2B-compatible interface).
 
     Args:
         api_key: Ignored (kept for E2B compatibility)
@@ -424,8 +420,7 @@ def run_code_in_sandbox(
     timeout: int = DEFAULT_TIMEOUT,
     output_format: str = "image",
 ) -> SandboxResult:
-    """
-    Execute code in sandbox (E2B-compatible interface).
+    """Execute code in sandbox (E2B-compatible interface).
 
     Args:
         code: Python code to execute

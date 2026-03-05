@@ -1,5 +1,4 @@
-"""
-Document generation module.
+"""Document generation module.
 
 This module contains DocumentGenerator and ReportGenerator classes
 for generating documents and reports.

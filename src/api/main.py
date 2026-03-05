@@ -1,5 +1,4 @@
-"""
-FastAPI backend for ArbitrageAI - Main Module.
+"""FastAPI backend for ArbitrageAI - Main Module.
 
 This module has been refactored to import from specialized submodules:
 - files: File upload validation, delivery endpoints, rate limiting
@@ -15,19 +14,9 @@ Backward compatibility is maintained by re-exporting all symbols.
 # Import other required modules
 import os
 
-from fastapi import Depends, HTTPException
+from fastapi import HTTPException
 from pydantic import BaseModel, ValidationInfo, field_validator
-from sqlalchemy.orm import Session
-
 import stripe
-
-# Import payments module for webhook
-from .payments import stripe_webhook
-
-from .database import get_db
-
-# Import auth for endpoints
-from src.api.auth import verify_client_token
 
 # Import Agent Arena modules
 # Import executor for backward compatibility
@@ -65,16 +54,6 @@ from .files import (
     _record_ip_delivery_attempt,
     _sanitize_string,
 )
-from .tasks import (  # noqa: F401 - re-exported for tests
-    _reset_redis_rate_limiter,
-    delivery_router,
-    get_arena_history,
-    get_arena_stats,
-    get_secure_delivery,
-    get_task,
-    get_task_by_session,
-    router as tasks_router,
-)
 from .financial import (
     COMPLEXITY_MULTIPLIERS,
     DOMAIN_BASE_RATES,
@@ -93,6 +72,24 @@ from .learning import (
     _log_arena_learning,
     experience_logger,
 )
+from .tasks import (
+    get_arena_history,
+    get_arena_stats,
+    get_secure_delivery,
+    get_task,
+    get_task_by_session,
+    run_arena_competition,
+)
+from .auth import (
+    get_client_discount_info,
+    get_client_task_history,
+    get_oauth_status,
+    initiate_oauth,
+    oauth_callback,
+    refresh_oauth_token,
+    revoke_oauth_token,
+)
+from .payments import create_checkout_session
 
 # Import models for backward compatibility
 from .models import (
@@ -191,6 +188,18 @@ class TaskSubmission(BaseModel):
     @field_validator("file_content")
     @classmethod
     def validate_file_upload_content(cls, v, info: ValidationInfo):
+        """Validate file upload content against filename and type.
+
+        Args:
+            v: The file content value to validate
+            info: Validation info containing other field values
+
+        Returns:
+            The validated file content
+
+        Raises:
+            ValueError: If file validation fails
+        """
         values = info.data
         filename = values.get("filename")
         file_type = values.get("file_type")
@@ -204,6 +213,18 @@ class TaskSubmission(BaseModel):
     @field_validator("filename")
     @classmethod
     def validate_filename_present_with_content(cls, v, info: ValidationInfo):
+        """Validate that filename is present when file_content is provided.
+
+        Args:
+            v: The filename value to validate
+            info: Validation info containing other field values
+
+        Returns:
+            The validated filename
+
+        Raises:
+            ValueError: If filename is missing when file_content is provided
+        """
         values = info.data
         if values.get("file_content") and not v:
             raise ValueError("filename is required when file_content is provided")
@@ -224,23 +245,14 @@ class CheckoutResponse(BaseModel):
 # Create the FastAPI app
 app = create_app()
 
-# Register disaster recovery router (router already has prefix="/api/disaster-recovery")
-app.include_router(disaster_recovery_router, tags=["disaster-recovery"])
-
-# Register tasks router for task delivery and management endpoints
-app.include_router(tasks_router, prefix="/api", tags=["tasks"])
-
-# Register delivery router (delivery_router already has prefix="/delivery")
-app.include_router(delivery_router, prefix="/api", tags=["delivery"])
+# Register disaster recovery router
+app.include_router(disaster_recovery_router, prefix="/api", tags=["disaster-recovery"])
 
 # Register scheduler routes
 register_scheduler_routes(app)
 
 # Register analytics routes
 register_analytics_routes(app)
-
-# Register payments webhook
-app.add_api_route("/api/webhook", stripe_webhook, methods=["POST"], tags=["payments"])
 
 
 @app.get("/")
@@ -288,99 +300,8 @@ async def get_price_estimate(
         raise HTTPException(status_code=400, detail=str(e)) from e
 
 
-@app.post("/api/client/calculate-price-with-discount")
-async def calculate_price_with_discount(
-    domain: str,
-    complexity: str = "medium",
-    urgency: str = "standard",
-    email: str | None = None,
-    token: str | None = None,
-    db: Session = Depends(get_db),  # noqa: B008 - FastAPI dependency injection pattern
-):
-    """Calculate price with repeat-client discount for authenticated users."""
-    # Verify the client token
-    if not email or not token:
-        raise HTTPException(status_code=401, detail="Authentication required")
-
-    if not verify_client_token(email, token):
-        raise HTTPException(status_code=401, detail="Invalid token")
-
-    # Count completed tasks for this client
-    completed_count = (
-        db.query(Task)
-        .filter(Task.client_email == email, Task.status == TaskStatus.COMPLETED)
-        .count()
-    )
-
-    # Calculate base price
-    base_price = calculate_task_price(domain, complexity, urgency)
-
-    # Get discount
-    discount = get_client_discount(completed_count)
-    discount_amount = base_price * discount
-    final_price = base_price - discount_amount
-
-    return {
-        "domain": domain,
-        "complexity": complexity,
-        "urgency": urgency,
-        "base_price": base_price,
-        "completed_tasks": completed_count,
-        "is_repeat_client": completed_count >= 1,
-        "discount_percentage": discount,
-        "discount_amount": discount_amount,
-        "final_price": final_price,
-    }
-
-
-# Import remaining endpoints from original file for backward compatibility
-# These will be gradually migrated to specialized modules
-from .main_original import (  # noqa: E402
-    add_seed_money,
-    # Import the router for registered endpoints
-    router as compatibility_router,
-    # Import remaining functions
-    create_checkout_session,
-    # Threshold endpoints
-    create_threshold_petition,
-    decide_threshold_petition,
-    # Auto-threshold endpoints
-    evaluate_auto_threshold,
-    generate_proposal,
-    get_auto_threshold_status,
-    get_client_discount_info,
-    get_client_task_history,
-    # Confidence endpoints
-    get_confidence_recommendation,
-    get_confidence_summary,
-    get_cost_history,
-    get_current_threshold,
-    # System mode endpoints
-    get_financial_status,
-    get_learning_insights,
-    get_oauth_status,
-    get_prediction_accuracy,
-    get_profitable_strategies,
-    get_roi_by_marketplace,
-    get_roi_by_strategy,
-    # Marketplace OAuth endpoints
-    initiate_oauth,
-    list_threshold_petitions,
-    oauth_callback,
-    process_task_async,
-    # Learning endpoints
-    record_job_completion,
-    refresh_oauth_token,
-    revoke_oauth_token,
-    rollback_auto_threshold,
-    # Arena endpoints
-    run_arena_competition,
-    run_autonomous_loop,
-    set_budget,
-)
-
-# Register compatibility router for backward compatibility endpoints
-app.include_router(compatibility_router)
+# Import remaining endpoints from specialized modules (done above)
+# See tasks, auth, payments modules for full implementations
 
 # Export all symbols for backward compatibility
 __all__ = [
@@ -455,7 +376,7 @@ __all__ = [
     "create_app",
     "get_system_mode",
     "set_system_mode",
-    # Endpoints
+    # Endpoints - from tasks module
     "create_checkout_session",
     "get_domains",
     "get_price_estimate",
@@ -464,41 +385,14 @@ __all__ = [
     "get_client_task_history",
     "get_client_discount_info",
     "get_secure_delivery",
-    "process_task_async",
-    "run_autonomous_loop",
     # Arena
     "run_arena_competition",
     "get_arena_history",
     "get_arena_stats",
-    # Financial endpoints
-    "get_financial_status",
-    "add_seed_money",
-    "set_budget",
-    "get_roi_by_marketplace",
-    "get_roi_by_strategy",
-    "get_profitable_strategies",
-    "get_cost_history",
-    # Confidence
-    "get_confidence_recommendation",
-    "get_confidence_summary",
-    # Threshold
-    "create_threshold_petition",
-    "get_current_threshold",
-    "list_threshold_petitions",
-    "decide_threshold_petition",
-    "evaluate_auto_threshold",
-    "rollback_auto_threshold",
-    "get_auto_threshold_status",
     # OAuth
     "initiate_oauth",
     "oauth_callback",
     "get_oauth_status",
     "refresh_oauth_token",
     "revoke_oauth_token",
-    # Learning
-    "record_job_completion",
-    "get_prediction_accuracy",
-    "get_learning_insights",
-    # Utilities
-    "generate_proposal",
 ]

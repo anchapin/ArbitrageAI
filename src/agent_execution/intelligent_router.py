@@ -1,5 +1,4 @@
-"""
-Intelligent Task Routing System.
+"""Intelligent Task Routing System.
 
 This module provides ML-based task classification and automatic routing
 to optimize task distribution and improve success rates.
@@ -11,22 +10,20 @@ from typing import Any
 from traceloop.sdk.decorators import workflow
 
 from src.utils.logger import get_logger
-from src.agent_execution.classifiers import TaskClassifier
-from src.agent_execution.handlers import HandlerFactory
-from src.agent_execution.models import RouteDecision, TaskProfile
-from src.agent_execution.performance import PerformanceTracker
+
+from .classifiers import TaskClassifier
+from .handlers import HandlerFactory
+from .models import RouteDecision, TaskProfile
+from .performance import PerformanceTracker
 
 logger = get_logger(__name__)
 
 
 class IntelligentRouter:
-    """
-    Intelligent task router using ML classification and performance data.
-    """
+    """Intelligent task router using ML classification and performance data."""
 
     def __init__(self, db_session=None, model_path: str | None = None):
-        """
-        Initialize the intelligent router.
+        """Initialize the intelligent router.
 
         Args:
             db_session: Database session for performance tracking
@@ -123,11 +120,11 @@ class IntelligentRouter:
             "classification": classification,
             "performance_recommendations": performance_recommendations,
             "execution_result": result,
-            "task_profile": self._profile_to_dict(task_profile),
+            "task_profile": IntelligentRouter._profile_to_dict(task_profile),
         }
 
+    @staticmethod
     def _create_task_profile(
-        self,
         domain: str,
         user_request: str,
         csv_data: str,
@@ -140,9 +137,9 @@ class IntelligentRouter:
         first_line = csv_data.strip().split("\n")[0]
         csv_headers = [h.strip() for h in first_line.split(",")]
 
-        complexity = self._calculate_complexity_score(user_request, csv_headers, domain)
-        estimated_time = self._estimate_execution_time(complexity, output_format)
-        success_rate = self._calculate_success_rate(domain, task_type, output_format)
+        complexity = IntelligentRouter._calculate_complexity_score(user_request, csv_headers, domain)
+        estimated_time = IntelligentRouter._estimate_execution_time(complexity, output_format)
+        success_rate = IntelligentRouter._calculate_success_rate(domain, task_type, output_format)
 
         task_router = TaskRouter()
 
@@ -163,8 +160,9 @@ class IntelligentRouter:
             created_at=datetime.now(),
         )
 
+    @staticmethod
     def _calculate_complexity_score(
-        self, user_request: str, csv_headers: list[str], domain: str,
+        user_request: str, csv_headers: list[str], domain: str,
     ) -> float:
         """Calculate task complexity score."""
         score = 0.0
@@ -195,7 +193,8 @@ class IntelligentRouter:
 
         return min(score, 1.0)
 
-    def _estimate_execution_time(self, complexity: float, output_format: str) -> float:
+    @staticmethod
+    def _estimate_execution_time(complexity: float, output_format: str) -> float:
         """Estimate execution time based on complexity and output format."""
         base_time = 60
         time_multiplier = 1 + (complexity * 2)
@@ -205,8 +204,9 @@ class IntelligentRouter:
 
         return base_time * time_multiplier * format_multiplier
 
+    @staticmethod
     def _calculate_success_rate(
-        self, domain: str, task_type: str, output_format: str,
+        domain: str, task_type: str, output_format: str,
     ) -> float:
         """Calculate expected success rate."""
         domain_rates = {"legal": 0.85, "accounting": 0.90, "data_analysis": 0.95}
@@ -384,7 +384,8 @@ class IntelligentRouter:
                 "model_used": "none",
             }
 
-    def _profile_to_dict(self, profile: TaskProfile) -> dict[str, Any]:
+    @staticmethod
+    def _profile_to_dict(profile: TaskProfile) -> dict[str, Any]:
         """Convert TaskProfile to dictionary."""
         from dataclasses import asdict
         return asdict(profile)
@@ -425,44 +426,34 @@ class IntelligentRouter:
         }
 
 
-# =============================================================================
-# Backward compatibility functions
-# =============================================================================
+# Module-level singleton instance
+_router_instance: IntelligentRouter | None = None
 
 
-def get_intelligent_router(db_session=None, model_path: str | None = None) -> IntelligentRouter:
-    """
-    Get or create an IntelligentRouter instance.
-
-    This function provides backward compatibility for the original API.
-
-    Args:
-        db_session: Database session for performance tracking
-        model_path: Optional path to load pre-trained models
-
-    Returns:
-        IntelligentRouter instance
-    """
-    return IntelligentRouter(db_session=db_session, model_path=model_path)
+def get_intelligent_router() -> IntelligentRouter:
+    """Get the singleton IntelligentRouter instance."""
+    global _router_instance
+    if _router_instance is None:
+        _router_instance = IntelligentRouter()
+    return _router_instance
 
 
 async def route_task_intelligently(
-    task_data: dict[str, Any],
+    task_profile: TaskProfile,
     db_session=None,
-    model_path: str | None = None,
-) -> RouteDecision:
-    """
-    Route a task intelligently using ML classification.
-
-    This function provides backward compatibility for the original API.
+    **kwargs,
+) -> tuple[RouteDecision, dict[str, Any]]:
+    """Convenience function to route a task intelligently.
 
     Args:
-        task_data: Dictionary containing task information
-        db_session: Database session
-        model_path: Optional path to load pre-trained models
+        task_profile: The task profile to route
+        db_session: Optional database session
+        **kwargs: Additional arguments for execution
 
     Returns:
-        RouteDecision with routing information
+        Tuple of (RouteDecision, execution_result)
     """
-    router = get_intelligent_router(db_session, model_path)
-    return await router.route_task(task_data)
+    router = get_intelligent_router()
+    decision = await router.route_task(task_profile)
+    result = await router._execute_with_handler(task_profile, decision, **kwargs)
+    return decision, result
