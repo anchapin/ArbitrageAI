@@ -426,3 +426,37 @@ class IntelligentRouter:
             "handler_performance": self.performance_tracker.metrics,
             "top_handlers": performance_recommendations[:5] if performance_recommendations else [],
         }
+
+
+# Module-level singleton instance
+_router_instance: IntelligentRouter | None = None
+
+
+def get_intelligent_router() -> IntelligentRouter:
+    """Get the singleton IntelligentRouter instance."""
+    global _router_instance
+    if _router_instance is None:
+        _router_instance = IntelligentRouter()
+    return _router_instance
+
+
+async def route_task_intelligently(
+    task_profile: TaskProfile,
+    db_session=None,
+    **kwargs,
+) -> tuple[RouteDecision, dict[str, Any]]:
+    """
+    Convenience function to route a task intelligently.
+
+    Args:
+        task_profile: The task profile to route
+        db_session: Optional database session
+        **kwargs: Additional arguments for execution
+
+    Returns:
+        Tuple of (RouteDecision, execution_result)
+    """
+    router = get_intelligent_router()
+    decision = await router.route_task(task_profile)
+    result = await router._execute_with_handler(task_profile, decision, **kwargs)
+    return decision, result

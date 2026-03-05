@@ -126,6 +126,7 @@ class ConfigManager:
         "DATABASE_URL": "sqlite:///./data/tasks.db",
         # Authentication - Auto-loaded from secure storage or environment
         # JWT_SECRET_KEY is loaded from secrets or environment (not hardcoded)
+        "JWT_SECRET_KEY": None,
     }
 
     def __init__(self):

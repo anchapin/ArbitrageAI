@@ -25,9 +25,9 @@ from src.disaster_recovery import (
     BackupManager,
     BackupMetadata,
     BackupType,
-    DisasterRecoveryOrchestrator,
     RecoveryManager,
 )
+from src.disaster_recovery.legacy import DisasterRecoveryOrchestrator
 from src.utils.logger import get_logger
 from src.utils.telemetry import get_tracer
 
