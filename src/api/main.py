@@ -290,7 +290,7 @@ async def calculate_price_with_discount(
     urgency: str = "standard",
     email: str | None = None,
     token: str | None = None,
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db),  # noqa: B008 - FastAPI dependency injection pattern
 ):
     """Calculate price with repeat-client discount for authenticated users."""
     # Verify the client token
