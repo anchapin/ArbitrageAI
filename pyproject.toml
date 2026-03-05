@@ -627,6 +627,9 @@ exclude = [
     "*/alembic/versions/*",
 ]
 
+[tool.vulture.white_list]
+# Add project-specific exceptions here
+
 
 # =============================================================================
 # Flake8 - Code Quality (complements Ruff)
