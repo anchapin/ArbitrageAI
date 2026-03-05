@@ -1,0 +1,48 @@
+# CODEOWNERS - Code Ownership Rules
+# https://help.github.com/articles/about-codeowners/
+
+# Default owner for all files (fallback)
+* @anchapin
+
+# Core API & Backend
+/src/api/ @anchapin
+
+# Agent Execution Engine
+/src/agent_execution/ @anchapin
+
+# Frontend / Client Portal
+/src/client_portal/ @anchapin
+
+# LLM & AI Services
+/src/llm_service.py @anchapin
+/src/llm_health_check.py @anchapin
+/src/async_rag_service.py @anchapin
+
+# Fine-tuning & Model Training
+/src/fine_tuning/ @anchapin
+/src/distillation/ @anchapin
+
+# Analytics & Reporting
+/src/analytics/ @anchapin
+src/analytics.py @anchapin
+
+# Utilities & Infrastructure
+/src/utils/ @anchapin
+/src/config/ @anchapin
+
+# Disaster Recovery
+/src/disaster_recovery/ @anchapin
+
+# Database Migrations
+/alembic/ @anchapin
+
+# Docker & Deployment
+/docker/ @anchapin
+docker-compose*.yml @anchapin
+Dockerfile* @anchapin
+
+# Scripts & Automation
+/scripts/ @anchapin
+
+# Testing
+/tests/ @anchapin
