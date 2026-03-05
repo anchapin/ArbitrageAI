@@ -74,7 +74,7 @@ def test_database_operational_error(mock_db, task_submission_payload):
     assert excinfo.value.status_code == 500
     assert "Database error occurred" in excinfo.value.detail
 
-@patch("src.api.main.LLMService.complete")
+@patch("src.llm_service.LLMService.complete")
 def test_llm_service_outage(mock_llm_complete, mock_db, task_submission_payload):
     """Test handling of LLM service outages (Issue #29)"""
     from src.api.main import create_checkout_session

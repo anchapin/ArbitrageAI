@@ -1,5 +1,4 @@
-"""
-File and delivery endpoints module.
+"""File and delivery endpoints module.
 
 This module contains file upload validation, delivery endpoints,
 and rate limiting for secure file delivery.
@@ -186,8 +185,7 @@ class DeliveryTimestampModel(BaseModel):
 
 
 def _check_delivery_rate_limit(task_id: str) -> bool:
-    """
-    Check if a task_id is rate-limited for delivery attempts.
+    """Check if a task_id is rate-limited for delivery attempts.
 
     Uses Redis for distributed rate limiting (QAQC-009).
     Falls back to in-memory limiting when Redis unavailable.
@@ -220,8 +218,7 @@ def _check_delivery_rate_limit(task_id: str) -> bool:
 
 
 def _record_delivery_failure(task_id: str, ip: str | None = None) -> None:
-    """
-    Record a failed delivery attempt for rate limiting.
+    """Record a failed delivery attempt for rate limiting.
 
     Uses Redis for distributed tracking (QAQC-009).
     Also updates in-memory dict for backward compatibility.
@@ -246,8 +243,7 @@ def _record_delivery_failure(task_id: str, ip: str | None = None) -> None:
 
 
 def _check_delivery_ip_rate_limit(ip: str) -> bool:
-    """
-    Check if an IP is rate-limited for delivery attempts.
+    """Check if an IP is rate-limited for delivery attempts.
 
     Uses Redis for distributed rate limiting (QAQC-009).
     Falls back to in-memory limiting when Redis unavailable.
@@ -280,8 +276,7 @@ def _check_delivery_ip_rate_limit(ip: str) -> bool:
 
 
 def _record_ip_delivery_attempt(ip: str) -> None:
-    """
-    Record a delivery attempt from an IP.
+    """Record a delivery attempt from an IP.
 
     Uses Redis for distributed tracking (QAQC-009).
     Also updates in-memory dict for backward compatibility.

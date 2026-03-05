@@ -1,5 +1,4 @@
-"""
-Market Scanner Module.
+"""Market Scanner Module.
 
 This module provides functionality to scan freelance marketplaces for potential tasks.
 """

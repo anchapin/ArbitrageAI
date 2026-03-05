@@ -49,8 +49,7 @@ class EscalationLog(Base):
     resolved_at = Column(DateTime, nullable=True)
 
     def to_dict(self):
-        """
-        Convert EscalationLog to dictionary.
+        """Convert EscalationLog to dictionary.
 
         Returns:
             Dictionary containing escalation log data with timestamps.
@@ -94,8 +93,7 @@ class ThresholdPetition(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     def to_dict(self):
-        """
-        Convert ThresholdPetition to dictionary.
+        """Convert ThresholdPetition to dictionary.
 
         Returns:
             Dictionary containing petition data with threshold values and decision info.
@@ -147,8 +145,7 @@ class CostEntry(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     def to_dict(self):
-        """
-        Convert CostEntry to dictionary.
+        """Convert CostEntry to dictionary.
 
         Returns:
             Dictionary containing cost entry data with ROI information.
@@ -192,8 +189,7 @@ class ConfidenceEntry(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     def to_dict(self):
-        """
-        Convert ConfidenceEntry to dictionary.
+        """Convert ConfidenceEntry to dictionary.
 
         Returns:
             Dictionary containing confidence entry data with streak information.
@@ -232,8 +228,7 @@ class ConfidenceAdjustment(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     def to_dict(self):
-        """
-        Convert ConfidenceAdjustment to dictionary.
+        """Convert ConfidenceAdjustment to dictionary.
 
         Returns:
             Dictionary containing adjustment data with old/new conservatism values.
@@ -268,8 +263,7 @@ class VirtualWallet(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     def to_dict(self):
-        """
-        Convert VirtualWallet to dictionary.
+        """Convert VirtualWallet to dictionary.
 
         Returns:
             Dictionary containing wallet balance, budget info, and usage percentages.
@@ -308,8 +302,7 @@ class WebhookSecret(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     def to_dict(self):
-        """
-        Convert WebhookSecret to dictionary.
+        """Convert WebhookSecret to dictionary.
 
         Returns:
             Dictionary containing webhook secret metadata.
@@ -349,8 +342,7 @@ class LearningEntry(Base):
     created_at = Column(DateTime, default=datetime.utcnow, index=True)
 
     def to_dict(self) -> dict:
-        """
-        Convert LearningEntry to dictionary.
+        """Convert LearningEntry to dictionary.
 
         Returns:
             Dictionary containing learning event data with prediction errors.

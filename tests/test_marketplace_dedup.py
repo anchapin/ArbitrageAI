@@ -28,7 +28,8 @@ from src.agent_execution.bid_deduplication import (
     should_bid,
     mark_bid_withdrawn,
 )
-from src.api.models import Base, Bid, BidStatus
+from src.api.models import Bid, BidStatus
+from src.api.marketplace_models import Base
 
 
 class TestBidLockManager:

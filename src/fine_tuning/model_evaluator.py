@@ -1,5 +1,4 @@
-"""
-Fine-Tuned Model Evaluator.
+"""Fine-Tuned Model Evaluator.
 
 Evaluates model performance on test sets and compares metrics.
 """
@@ -31,8 +30,7 @@ class EvaluationResult:
 
 
 class ModelEvaluator:
-    """
-    Evaluates fine-tuned models on test sets.
+    """Evaluates fine-tuned models on test sets.
 
     Metrics:
     - Accuracy, Precision, Recall, F1
@@ -55,8 +53,7 @@ class ModelEvaluator:
         cost_per_inference: float = 0.0,
         metadata: dict[str, Any] | None = None,
     ) -> EvaluationResult:
-        """
-        Evaluate model using exact match accuracy.
+        """Evaluate model using exact match accuracy.
 
         Args:
             predictions: List of model predictions
@@ -116,8 +113,7 @@ class ModelEvaluator:
         cost_per_inference: float = 0.0,
         metadata: dict[str, Any] | None = None,
     ) -> EvaluationResult:
-        """
-        Evaluate model using substring matching.
+        """Evaluate model using substring matching.
 
         Counts a prediction as correct if reference contains prediction as substring.
 
@@ -177,8 +173,7 @@ class ModelEvaluator:
     def compare_models(
         base_result: EvaluationResult, finetuned_result: EvaluationResult,
     ) -> dict[str, Any]:
-        """
-        Compare base and fine-tuned models.
+        """Compare base and fine-tuned models.
 
         Args:
             base_result: Evaluation result for base model
@@ -225,8 +220,7 @@ class ModelEvaluator:
         accuracy_improvement: float,
         inference_count: int,
     ) -> dict[str, float]:
-        """
-        Calculate ROI of fine-tuning.
+        """Calculate ROI of fine-tuning.
 
         Args:
             base_cost: Cost per inference for base model
@@ -263,8 +257,7 @@ class ModelEvaluator:
         }
 
     def get_results_summary(self) -> dict[str, Any]:
-        """
-        Get summary of all evaluation results.
+        """Get summary of all evaluation results.
 
         Returns:
             Summary dictionary
@@ -301,8 +294,7 @@ class ModelEvaluator:
         return summary
 
     def export_results(self, filepath: str) -> None:
-        """
-        Export evaluation results to JSON file.
+        """Export evaluation results to JSON file.
 
         Args:
             filepath: Path to save results

@@ -1,5 +1,4 @@
-"""
-Auto-Execution Pipeline (Issue #104).
+"""Auto-Execution Pipeline (Issue #104).
 
 Provides automated task execution with:
 - Automatic bid placement
@@ -81,8 +80,7 @@ class BidDecision:
 
 
 class AutoExecutionPipeline:
-    """
-    Automated task execution pipeline.
+    """Automated task execution pipeline.
 
     Features:
     - Automatic marketplace scanning
@@ -101,8 +99,7 @@ class AutoExecutionPipeline:
         retry_attempts: int = 3,
         retry_delay_seconds: float = 1.0,
     ):
-        """
-        Initialize the autonomous execution engine.
+        """Initialize the autonomous execution engine.
 
         Args:
             strategy: Execution strategy to use (default: BALANCED)
@@ -158,8 +155,7 @@ class AutoExecutionPipeline:
         opportunity: dict[str, Any],
         db: Session | None = None,
     ) -> ExecutionResult:
-        """
-        Execute a marketplace opportunity.
+        """Execute a marketplace opportunity.
 
         Args:
             opportunity: Opportunity data from marketplace
@@ -259,8 +255,7 @@ class AutoExecutionPipeline:
         self,
         opportunity: dict[str, Any],
     ) -> BidDecision:
-        """
-        Analyze an opportunity and decide whether to bid.
+        """Analyze an opportunity and decide whether to bid.
 
         Args:
             opportunity: Opportunity data
@@ -325,8 +320,7 @@ class AutoExecutionPipeline:
         confidence: float,
         strategy: ExecutionStrategy,
     ) -> int:
-        """
-        Calculate optimal bid amount.
+        """Calculate optimal bid amount.
 
         Strategy:
         - High confidence: Bid 70-90% of budget
@@ -358,8 +352,7 @@ class AutoExecutionPipeline:
         amount_cents: int,
         db: Session,
     ) -> dict[str, Any]:
-        """
-        Place a bid on an opportunity.
+        """Place a bid on an opportunity.
 
         Args:
             opportunity: Opportunity data
@@ -416,8 +409,7 @@ class AutoExecutionPipeline:
         bid_id: str,
         db: Session,
     ) -> dict[str, Any]:
-        """
-        Execute a task after winning the bid.
+        """Execute a task after winning the bid.
 
         Args:
             task_data: Task data
@@ -513,8 +505,7 @@ class AutoExecutionPipeline:
         task_id: str,
         domain: str,
     ) -> dict[str, Any]:
-        """
-        Execute task with retry logic.
+        """Execute task with retry logic.
 
         Args:
             task_data: Task data

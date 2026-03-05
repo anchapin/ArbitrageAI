@@ -1,5 +1,4 @@
-"""
-Plan Executor and Reviewer.
+"""Plan Executor and Reviewer.
 
 This module handles plan execution and artifact review.
 """
@@ -33,8 +32,8 @@ class PlanExecutor:
         from src.agent_execution.executor import TaskRouter, execute_data_visualization
 
         user_request = work_plan.get("user_request", "")
-        task_type = self._infer_task_type(work_plan)
-        output_format = work_plan.get("output_format") or self._infer_output_format(work_plan)
+        task_type = PlanExecutor._infer_task_type(work_plan)
+        output_format = work_plan.get("output_format") or PlanExecutor._infer_output_format(work_plan)
 
         execution_log = {
             "started_at": datetime.now(timezone.utc).isoformat(),

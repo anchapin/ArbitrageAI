@@ -1,5 +1,4 @@
-"""
-Migration: Add Unique Constraints to Bid and EscalationLog Models (Issue #33).
+"""Migration: Add Unique Constraints to Bid and EscalationLog Models (Issue #33).
 
 This migration adds unique constraints to the Bid and EscalationLog models
 to prevent duplicate data and enforce data integrity at the database level.

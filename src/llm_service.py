@@ -1,5 +1,4 @@
-"""
-LLM Service Module.
+"""LLM Service Module.
 
 This module provides an OpenAI client wrapper for interacting with Large Language Models.
 It supports both cloud providers (OpenAI, Anthropic, etc.) and local inference via Ollama/llama.cpp.
@@ -52,8 +51,7 @@ MIN_CLOUD_REVENUE: int = ConfigManager.get("MIN_CLOUD_REVENUE")
 
 
 class ModelConfig:
-    """
-    Configuration for model selection based on task type.
+    """Configuration for model selection based on task type.
 
     Allows specifying different models for different task types,
     with support for both cloud and local inference.
@@ -69,8 +67,7 @@ class ModelConfig:
         task_model_map: dict[str, str] | None = None,
         task_use_local_map: dict[str, bool] | None = None,
     ):
-        """
-        Initialize model configuration.
+        """Initialize model configuration.
 
         Args:
             cloud_model: Default cloud model (e.g., "gpt-4o-mini")
@@ -94,8 +91,7 @@ class ModelConfig:
 
     @classmethod
     def from_env(cls) -> "ModelConfig":
-        """
-        Create ModelConfig from environment variables.
+        """Create ModelConfig from environment variables.
 
         Environment variables:
         - CLOUD_MODEL: Default cloud model
@@ -144,8 +140,7 @@ class ModelConfig:
     def get_model_for_task(
         self, task_type: str, prefer_local: bool | None = None,
     ) -> tuple:
-        """
-        Get the appropriate model and configuration for a task type.
+        """Get the appropriate model and configuration for a task type.
 
         Args:
             task_type: The type of task (e.g., "basic_admin", "complex")
@@ -200,8 +195,7 @@ def set_default_model_config(config: ModelConfig):
 
 
 class LLMService:
-    """
-    A wrapper class for the OpenAI client that supports configurable base URLs.
+    """A wrapper class for the OpenAI client that supports configurable base URLs.
 
     This allows switching between cloud providers (OpenAI, Anthropic, etc.)
     and local inference engines (Ollama, llama.cpp, LM Studio, etc.).
@@ -223,8 +217,7 @@ class LLMService:
         enable_fallback: bool = True,
         enable_circuit_breaker: bool = True,
     ):
-        """
-        Initialize the LLM Service.
+        """Initialize the LLM Service.
 
         Args:
             base_url: The base URL for the API endpoint.
@@ -346,8 +339,7 @@ class LLMService:
         stealth_mode: bool = False,
         **kwargs,
     ) -> dict[str, Any]:
-        """
-        Generate a completion from the LLM.
+        """Generate a completion from the LLM.
 
         Args:
             prompt: The user prompt/input
@@ -444,8 +436,7 @@ class LLMService:
         stealth_mode: bool = False,
         **kwargs,
     ) -> dict[str, Any]:
-        """
-        Async version of complete() - uses asyncio.sleep instead of blocking.
+        """Async version of complete() - uses asyncio.sleep instead of blocking.
 
         Args:
             prompt: The user prompt/input
@@ -481,8 +472,7 @@ class LLMService:
         system_prompt: str | None = None,
         **kwargs,
     ):
-        """
-        Generate a streaming completion from the LLM.
+        """Generate a streaming completion from the LLM.
 
         Args:
             prompt: The user prompt/input
@@ -545,8 +535,7 @@ class LLMService:
     def for_task(
         cls, task_type: str, model_config: ModelConfig | None = None, **kwargs,
     ) -> "LLMService":
-        """
-        Create an LLMService instance configured for a specific task type.
+        """Create an LLMService instance configured for a specific task type.
 
         Args:
             task_type: The type of task (e.g., "basic_admin", "complex")
@@ -569,8 +558,7 @@ class LLMService:
 
     @classmethod
     def for_basic_admin(cls, **kwargs) -> "LLMService":
-        """
-        Create an LLMService for "Basic Admin" tasks using local model.
+        """Create an LLMService for "Basic Admin" tasks using local model.
 
         This is suitable for simple tasks that don't require powerful models,
         allowing cost savings by using local inference.
@@ -585,8 +573,7 @@ class LLMService:
 
     @classmethod
     def for_complex_task(cls, **kwargs) -> "LLMService":
-        """
-        Create an LLMService for complex tasks using cloud model.
+        """Create an LLMService for complex tasks using cloud model.
 
         This is suitable for complex tasks that require powerful models,
         using cloud inference for best results.
@@ -601,8 +588,7 @@ class LLMService:
 
     @classmethod
     def for_distilled_task(cls, model: str | None = None, **kwargs) -> "LLMService":
-        """
-        Create an LLMService for distilled tasks using fine-tuned local model.
+        """Create an LLMService for distilled tasks using fine-tuned local model.
 
         This uses your fine-tuned local model that was trained on successful
         outputs from GPT-4o. This gives you cloud-quality results at local costs!
@@ -633,8 +619,7 @@ class LLMService:
 
     @classmethod
     def with_local(cls, model: str | None = None, **kwargs) -> "LLMService":
-        """
-        Create an LLMService configured for local inference.
+        """Create an LLMService configured for local inference.
 
         Args:
             model: Optional model name (defaults to config's local_model)
@@ -654,8 +639,7 @@ class LLMService:
 
     @classmethod
     def with_cloud(cls, model: str | None = None, **kwargs) -> "LLMService":
-        """
-        Create an LLMService configured for cloud inference.
+        """Create an LLMService configured for cloud inference.
 
         Args:
             model: Optional model name (defaults to config's cloud_model)
@@ -684,8 +668,7 @@ class LLMService:
         min_cloud_revenue: int | None = None,
         **kwargs,
     ) -> "LLMService":
-        """
-        Get an optimized LLMService based on potential revenue.
+        """Get an optimized LLMService based on potential revenue.
 
         Uses revenue-based model selection to optimize costs:
         - Below MIN_CLOUD_REVENUE threshold: Use local model (free)
@@ -722,8 +705,7 @@ class LLMService:
         system_prompt: str | None = None,
         **kwargs,
     ) -> dict[str, Any]:
-        """
-        Generate a completion with automatic fallback to local model if cloud fails.
+        """Generate a completion with automatic fallback to local model if cloud fails.
 
         Uses exponential backoff with multiple attempts:
         - Attempt 0 (10s timeout, no backoff): Try cloud

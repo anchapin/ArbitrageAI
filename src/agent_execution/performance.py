@@ -1,5 +1,4 @@
-"""
-Performance Tracker Module.
+"""Performance Tracker Module.
 
 Tracks and analyzes task execution performance for continuous improvement.
 """
@@ -21,8 +20,7 @@ class PerformanceTracker:
     """Tracks and analyzes task execution performance for continuous improvement."""
 
     def __init__(self, db_session=None):
-        """
-        Initialize performance tracker.
+        """Initialize performance tracker.
 
         Args:
             db_session: Database session for storing performance data
@@ -39,8 +37,7 @@ class PerformanceTracker:
         }
 
     def record_execution(self, task_profile: TaskProfile, actual_success: bool):
-        """
-        Record task execution results for performance analysis.
+        """Record task execution results for performance analysis.
 
         Args:
             task_profile: Task profile
@@ -93,8 +90,7 @@ class PerformanceTracker:
     def get_handler_recommendations(
         self, task_profile: TaskProfile,
     ) -> list[dict[str, Any]]:
-        """
-        Get handler recommendations based on performance data.
+        """Get handler recommendations based on performance data.
 
         Args:
             task_profile: Task profile to get recommendations for
@@ -140,8 +136,7 @@ class PerformanceTracker:
         return recommendations
 
     def get_complexity_thresholds(self) -> dict[str, float]:
-        """
-        Calculate complexity thresholds for different handler types.
+        """Calculate complexity thresholds for different handler types.
 
         Returns:
             Dictionary mapping handler types to complexity thresholds

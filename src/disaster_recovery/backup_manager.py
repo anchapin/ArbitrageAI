@@ -1,5 +1,4 @@
-"""
-Backup Manager Module.
+"""Backup Manager Module.
 
 Manages backup operations for the platform including full, incremental,
 and point-in-time backups.
@@ -91,13 +90,13 @@ class BackupManager:
                 temp_path = Path(temp_dir)
 
                 await self._backup_database(temp_path / "database.sqlite")
-                await self._backup_configuration(temp_path / "config")
-                await self._backup_logs(temp_path / "logs")
-                await self._backup_uploads(temp_path / "uploads")
+                await BackupManager._backup_configuration(temp_path / "config")
+                await BackupManager._backup_logs(temp_path / "logs")
+                await BackupManager._backup_uploads(temp_path / "uploads")
 
-                await self._create_archive(temp_path, backup_path)
+                await BackupManager._create_archive(temp_path, backup_path)
 
-                metadata.checksum = await self._calculate_checksum(backup_path)
+                metadata.checksum = await BackupManager._calculate_checksum(backup_path)
                 metadata.size = backup_path.stat().st_size
 
                 if self.s3_client and self.config.AWS_S3_BACKUP_BUCKET:
@@ -147,9 +146,9 @@ class BackupManager:
             with tempfile.TemporaryDirectory() as temp_dir:
                 temp_path = Path(temp_dir)
                 await self._backup_incremental_data(temp_path, last_full_backup.timestamp)
-                await self._create_archive(temp_path, backup_path)
+                await BackupManager._create_archive(temp_path, backup_path)
 
-                metadata.checksum = await self._calculate_checksum(backup_path)
+                metadata.checksum = await BackupManager._calculate_checksum(backup_path)
                 metadata.size = backup_path.stat().st_size
                 metadata.status = BackupStatus.COMPLETED
                 await self._store_backup_metadata(metadata)
@@ -193,9 +192,9 @@ class BackupManager:
             with tempfile.TemporaryDirectory() as temp_dir:
                 temp_path = Path(temp_dir)
                 await self._create_point_in_time_snapshot(temp_path, timestamp)
-                await self._create_archive(temp_path, backup_path)
+                await BackupManager._create_archive(temp_path, backup_path)
 
-                metadata.checksum = await self._calculate_checksum(backup_path)
+                metadata.checksum = await BackupManager._calculate_checksum(backup_path)
                 metadata.size = backup_path.stat().st_size
                 metadata.status = BackupStatus.COMPLETED
                 await self._store_backup_metadata(metadata)
@@ -276,7 +275,7 @@ class BackupManager:
         """Backup only data changed since the specified time."""
         try:
             await self._backup_database_changes(backup_dir / "database_changes.sqlite", since)
-            await self._backup_new_files(backup_dir / "new_files", since)
+            await BackupManager._backup_new_files(backup_dir / "new_files", since)
             logger.info("Incremental data backup completed")
         except Exception as e:
             logger.error(f"Incremental data backup failed: {e}")
@@ -519,7 +518,7 @@ class BackupManager:
             file_size = backup_file.stat().st_size
             results["checks"]["file_size"] = file_size == metadata.size
 
-            calculated_checksum = await self._calculate_checksum(backup_file)
+            calculated_checksum = await BackupManager._calculate_checksum(backup_file)
             results["checks"]["checksum"] = calculated_checksum == metadata.checksum
 
             try:

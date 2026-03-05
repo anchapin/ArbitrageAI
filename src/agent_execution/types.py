@@ -1,5 +1,4 @@
-"""
-Task types and output formats module.
+"""Task types and output formats module.
 
 This module contains type classifications and output format definitions
 for the agent execution system.

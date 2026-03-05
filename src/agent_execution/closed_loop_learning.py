@@ -1,5 +1,4 @@
-"""
-Closed-Loop Learning System.
+"""Closed-Loop Learning System.
 
 Implements continuous learning from completed job results.
 After each job completion:
@@ -12,6 +11,7 @@ After each job completion:
 Issue #106: [PHASE 5.3] CLOSED-LOOP LEARNING SYSTEM
 """
 
+import uuid
 from datetime import datetime, timedelta, timezone
 from enum import Enum as PyEnum
 from typing import Any
@@ -49,8 +49,7 @@ class StrategyAdjustmentType(PyEnum):
 
 
 class ClosedLoopLearningSystem:
-    """
-    Closed-Loop Learning System.
+    """Closed-Loop Learning System.
 
     Continuously learns from completed jobs to improve bidding strategy:
 
@@ -92,8 +91,7 @@ class ClosedLoopLearningSystem:
         strategy_type: str | None = None,
         metadata: dict[str, Any] | None = None,
     ) -> LearningEntry:
-        """
-        Record job completion and calculate learning metrics.
+        """Record job completion and calculate learning metrics.
 
         Args:
             task_id: Task identifier
@@ -184,8 +182,7 @@ class ClosedLoopLearningSystem:
             logger.error(f"Failed to record job completion: {e}")
             db.rollback()
             raise
-        finally:
-            db.close()
+        finally:            db.close()
 
     @staticmethod
     def calculate_prediction_accuracy(
@@ -193,8 +190,7 @@ class ClosedLoopLearningSystem:
         strategy_type: str | None = None,
         limit: int = 100,
     ) -> dict[str, Any]:
-        """
-        Calculate prediction accuracy metrics.
+        """Calculate prediction accuracy metrics.
 
         Args:
             marketplace: Filter by marketplace
@@ -275,8 +271,7 @@ class ClosedLoopLearningSystem:
         marketplace: str | None = None,
         strategy_type: str | None = None,
     ) -> dict[str, Any]:
-        """
-        Generate learning insights and recommendations.
+        """Generate learning insights and recommendations.
 
         Args:
             marketplace: Filter by marketplace
@@ -285,7 +280,7 @@ class ClosedLoopLearningSystem:
         Returns:
             Dictionary with insights and recommendations
         """
-        accuracy = self.calculate_prediction_accuracy(
+        accuracy = ClosedLoopLearningSystem.calculate_prediction_accuracy(
             marketplace=marketplace, strategy_type=strategy_type,
         )
 
@@ -346,8 +341,7 @@ class ClosedLoopLearningSystem:
         }
 
     def perform_weekly_review(self) -> dict[str, Any]:
-        """
-        Perform weekly strategy review.
+        """Perform weekly strategy review.
 
         Analyzes past week's performance and generates strategic recommendations.
 
@@ -501,8 +495,7 @@ class ClosedLoopLearningSystem:
         marketplace: str,
         strategy_type: str | None,
     ) -> None:
-        """
-        Adjust strategy if enough data has been collected.
+        """Adjust strategy if enough data has been collected.
 
         Args:
             marketplace: Marketplace platform
@@ -522,7 +515,7 @@ class ClosedLoopLearningSystem:
 
             if count >= self.MIN_SAMPLES_FOR_ADJUSTMENT:
                 # Get recent accuracy
-                accuracy = self.calculate_prediction_accuracy(
+                accuracy = ClosedLoopLearningSystem.calculate_prediction_accuracy(
                     marketplace=marketplace, limit=50,
                 )
 
@@ -539,7 +532,7 @@ class ClosedLoopLearningSystem:
 
                     # Record adjustment
                     entry = LearningEntry(
-                        id=str(id),
+                        id=f"adjustment_{marketplace}_{datetime.now(timezone.utc).strftime('%Y-%m-%d_%H%M%S')}_{uuid.uuid4().hex[:8]}",
                         task_id=f"adjustment_{marketplace}_{datetime.now(timezone.utc).strftime('%Y-%m-%d')}",
                         event_type=LearningEventType.STRATEGY_ADJUSTED.value,
                         marketplace=marketplace,
@@ -575,8 +568,7 @@ class ClosedLoopLearningSystem:
         event_type: LearningEventType | None = None,
         marketplace: str | None = None,
     ) -> list[LearningEntry]:
-        """
-        Get learning history.
+        """Get learning history.
 
         Args:
             limit: Maximum entries to return

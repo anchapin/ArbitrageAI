@@ -1,5 +1,4 @@
-"""
-Disaster Recovery API Endpoints.
+"""Disaster Recovery API Endpoints.
 
 This module provides REST API endpoints for disaster recovery operations,
 including backup management, recovery operations, and disaster recovery workflows.
@@ -153,8 +152,7 @@ class DisasterRecoveryAPI:
     """Main disaster recovery API class."""
 
     def __init__(self, config: Config):
-        """
-        Initialize the disaster recovery API.
+        """Initialize the disaster recovery API.
 
         Args:
             config: Configuration object
@@ -168,8 +166,7 @@ class DisasterRecoveryAPI:
     async def create_backup(
         self, backup_type: str, force: bool = False, timestamp: str | None = None,
     ) -> BackupResponse:
-        """
-        Create a backup of the specified type.
+        """Create a backup of the specified type.
 
         Args:
             backup_type: Type of backup to create
@@ -242,8 +239,7 @@ class DisasterRecoveryAPI:
     async def list_backups(
         self, backup_type: str | None = None, limit: int = 50, offset: int = 0,
     ) -> BackupListResponse:
-        """
-        List available backups.
+        """List available backups.
 
         Args:
             backup_type: Filter by backup type
@@ -295,8 +291,7 @@ class DisasterRecoveryAPI:
 
     @task(name="get_backup_details_endpoint")
     async def get_backup_details(self, backup_id: str) -> BackupMetadata:
-        """
-        Get details for a specific backup.
+        """Get details for a specific backup.
 
         Args:
             backup_id: ID of backup to retrieve
@@ -328,8 +323,7 @@ class DisasterRecoveryAPI:
 
     @task(name="validate_backup_endpoint")
     async def validate_backup(self, backup_id: str) -> dict[str, Any]:
-        """
-        Validate backup integrity.
+        """Validate backup integrity.
 
         Args:
             backup_id: ID of backup to validate
@@ -362,8 +356,7 @@ class DisasterRecoveryAPI:
 
     @task(name="delete_backup_endpoint")
     async def delete_backup(self, backup_id: str) -> dict[str, str]:
-        """
-        Delete a backup.
+        """Delete a backup.
 
         Args:
             backup_id: ID of backup to delete
@@ -418,8 +411,7 @@ class DisasterRecoveryAPI:
         plan_id: str = "default",
         target_location: str | None = None,
     ) -> RecoveryResponse:
-        """
-        Execute recovery operation.
+        """Execute recovery operation.
 
         Args:
             backup_id: ID of backup to restore
@@ -466,8 +458,7 @@ class DisasterRecoveryAPI:
     async def get_recovery_status(
         self, operation_id: str,
     ) -> RecoveryResponse | None:
-        """
-        Get status of a recovery operation.
+        """Get status of a recovery operation.
 
         Args:
             operation_id: ID of recovery operation
@@ -508,8 +499,7 @@ class DisasterRecoveryAPI:
 
     @task(name="test_recovery_plan_endpoint")
     async def test_recovery_plan(self, plan_id: str) -> dict[str, Any]:
-        """
-        Test a recovery plan without affecting production.
+        """Test a recovery plan without affecting production.
 
         Args:
             plan_id: ID of recovery plan to test
@@ -537,8 +527,7 @@ class DisasterRecoveryAPI:
     async def execute_disaster_recovery(
         self, disaster_type: str, plan_id: str = "default",
     ) -> DisasterRecoveryResponse:
-        """
-        Execute complete disaster recovery workflow.
+        """Execute complete disaster recovery workflow.
 
         Args:
             disaster_type: Type of disaster
@@ -569,8 +558,7 @@ class DisasterRecoveryAPI:
 
     @task(name="get_recovery_plans_endpoint")
     async def get_recovery_plans(self) -> list[RecoveryPlanResponse]:
-        """
-        Get available recovery plans.
+        """Get available recovery plans.
 
         Returns:
             List of recovery plans
@@ -601,8 +589,7 @@ class DisasterRecoveryAPI:
 
     @task(name="get_recovery_metrics_endpoint")
     async def get_recovery_metrics(self) -> RecoveryMetricsResponse:
-        """
-        Get disaster recovery metrics.
+        """Get disaster recovery metrics.
 
         Returns:
             Recovery metrics
@@ -631,8 +618,7 @@ disaster_recovery_api = DisasterRecoveryAPI(Config())
 @router.post("/backups", response_model=BackupResponse)
 @task(name="create_backup_api")
 async def create_backup_endpoint(request: BackupRequest, db: Session = Depends(get_db)):  # noqa: B008
-    """
-    Create a backup of the specified type.
+    """Create a backup of the specified type.
 
     - **backup_type**: Type of backup (full, incremental, point_in_time)
     - **force**: Force backup even if not scheduled (default: false)
@@ -655,8 +641,7 @@ async def list_backups_endpoint(
     offset: int = Query(0, ge=0, description="Offset for pagination"),
     db: Session = Depends(get_db),  # noqa: B008
 ):
-    """
-    List available backups.
+    """List available backups.
 
     - **backup_type**: Filter by backup type (optional)
     - **limit**: Maximum number of backups to return (1-100, default: 50)
@@ -670,8 +655,7 @@ async def list_backups_endpoint(
 @router.get("/backups/{backup_id}", response_model=BackupMetadata)
 @task(name="get_backup_details_api")
 async def get_backup_details_endpoint(backup_id: str, db: Session = Depends(get_db)):  # noqa: B008
-    """
-    Get details for a specific backup.
+    """Get details for a specific backup.
 
     - **backup_id**: ID of backup to retrieve
     """
@@ -681,8 +665,7 @@ async def get_backup_details_endpoint(backup_id: str, db: Session = Depends(get_
 @router.post("/backups/{backup_id}/validate", response_model=dict[str, Any])
 @task(name="validate_backup_api")
 async def validate_backup_endpoint(backup_id: str, db: Session = Depends(get_db)):  # noqa: B008
-    """
-    Validate backup integrity.
+    """Validate backup integrity.
 
     - **backup_id**: ID of backup to validate
     """
@@ -692,8 +675,7 @@ async def validate_backup_endpoint(backup_id: str, db: Session = Depends(get_db)
 @router.delete("/backups/{backup_id}", response_model=dict[str, str])
 @task(name="delete_backup_api")
 async def delete_backup_endpoint(backup_id: str, db: Session = Depends(get_db)):  # noqa: B008
-    """
-    Delete a backup.
+    """Delete a backup.
 
     - **backup_id**: ID of backup to delete
     """
@@ -705,8 +687,7 @@ async def delete_backup_endpoint(backup_id: str, db: Session = Depends(get_db)):
 async def execute_recovery_endpoint(
     request: RecoveryRequest, db: Session = Depends(get_db),  # noqa: B008
 ):
-    """
-    Execute recovery operation.
+    """Execute recovery operation.
 
     - **backup_id**: ID of backup to restore
     - **plan_id**: Recovery plan to use (default: "default")
@@ -724,8 +705,7 @@ async def execute_recovery_endpoint(
 async def get_recovery_status_endpoint(
     operation_id: str, db: Session = Depends(get_db),  # noqa: B008
 ):
-    """
-    Get status of a recovery operation.
+    """Get status of a recovery operation.
 
     - **operation_id**: ID of recovery operation
     """
@@ -735,8 +715,7 @@ async def get_recovery_status_endpoint(
 @router.post("/recovery-plans/{plan_id}/test", response_model=dict[str, Any])
 @task(name="test_recovery_plan_api")
 async def test_recovery_plan_endpoint(plan_id: str, db: Session = Depends(get_db)):  # noqa: B008
-    """
-    Test a recovery plan without affecting production.
+    """Test a recovery plan without affecting production.
 
     - **plan_id**: ID of recovery plan to test
     """
@@ -748,8 +727,7 @@ async def test_recovery_plan_endpoint(plan_id: str, db: Session = Depends(get_db
 async def execute_disaster_recovery_endpoint(
     request: DisasterRecoveryRequest, db: Session = Depends(get_db),  # noqa: B008
 ):
-    """
-    Execute complete disaster recovery workflow.
+    """Execute complete disaster recovery workflow.
 
     - **disaster_type**: Type of disaster (database_corruption, data_loss, system_failure, ransomware_attack)
     - **plan_id**: Recovery plan to use (default: "default")

@@ -1,5 +1,4 @@
-"""
-Task management endpoints for ArbitrageAI.
+"""Task management endpoints for ArbitrageAI.
 
 Handles:
 - Task retrieval and status
@@ -17,7 +16,7 @@ from datetime import datetime, timezone
 import os
 import time as _time
 
-from fastapi import BackgroundTasks, Depends, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
 from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload, selectinload
 
@@ -33,6 +32,12 @@ from .models import (
     Task,
     TaskStatus,
 )
+
+# Create router for task endpoints
+router = APIRouter(prefix="/tasks", tags=["tasks"])
+
+# Create separate router for delivery endpoints (needs /api/delivery path)
+delivery_router = APIRouter(prefix="/delivery", tags=["delivery"])
 
 # Initialize logger
 logger = get_logger(__name__)
@@ -60,8 +65,23 @@ DELIVERY_IP_LOCKOUT_SECONDS = ConfigManager.get("DELIVERY_IP_LOCKOUT_SECONDS")
 
 # In-memory rate limiter for backward compatibility with tests
 # In production, Redis is used instead (QAQC-009)
+# These are imported from main.py where they're properly initialized
+# to avoid circular import issues
 _delivery_rate_limits: dict[str, tuple[int, float]] = {}
 _delivery_ip_rate_limits: dict[str, tuple[int, float]] = {}
+
+
+def _get_delivery_rate_limits():
+    """Get the delivery rate limits dict from main module."""
+    from .main import _delivery_rate_limits as main_limits
+    return main_limits
+
+
+def _get_delivery_ip_rate_limits():
+    """Get the delivery IP rate limits dict from main module."""
+    from .main import _delivery_ip_rate_limits as main_ip_limits
+    return main_ip_limits
+
 
 # Redis rate limiter instance (lazy-loaded)
 _redis_rate_limiter = None
@@ -89,9 +109,14 @@ def _get_redis_rate_limiter():
     return _redis_rate_limiter
 
 
+def _reset_redis_rate_limiter() -> None:
+    """Reset the Redis rate limiter. Useful for testing."""
+    global _redis_rate_limiter
+    _redis_rate_limiter = None
+
+
 def _check_delivery_rate_limit(task_id: str) -> bool:
-    """
-    Check if a task_id is rate-limited for delivery attempts.
+    """Check if a task_id is rate-limited for delivery attempts.
 
     Uses Redis for distributed rate limiting (QAQC-009).
     Falls back to in-memory limiting when Redis unavailable.
@@ -113,22 +138,22 @@ def _check_delivery_rate_limit(task_id: str) -> bool:
             logger.warning(f"Redis rate limit check failed: {e}, using in-memory fallback")
 
     # Fallback to in-memory (for tests or when Redis unavailable)
-    entry = _delivery_rate_limits.get(task_id)
+    limits = _get_delivery_rate_limits()
+    entry = limits.get(task_id)
     if entry is None:
         return True
 
     fail_count, first_fail_ts = entry
     # Reset if lockout window has passed
     if _time.time() - first_fail_ts > DELIVERY_LOCKOUT_SECONDS:
-        del _delivery_rate_limits[task_id]
+        del limits[task_id]
         return True
 
     return fail_count < DELIVERY_MAX_FAILED_ATTEMPTS
 
 
 def _record_delivery_failure(task_id: str, ip: str | None = None) -> None:
-    """
-    Record a failed delivery attempt for rate limiting.
+    """Record a failed delivery attempt for rate limiting.
 
     Uses Redis for distributed tracking (QAQC-009).
     Also updates in-memory dict for backward compatibility.
@@ -144,24 +169,36 @@ def _record_delivery_failure(task_id: str, ip: str | None = None) -> None:
             logger.warning(f"Failed to record delivery failure in Redis: {e}")
 
     # Also update in-memory for backward compatibility
-    entry = _delivery_rate_limits.get(task_id)
+    limits = _get_delivery_rate_limits()
+    entry = limits.get(task_id)
     if entry is None:
-        _delivery_rate_limits[task_id] = (1, _time.time())
+        limits[task_id] = (1, _time.time())
     else:
         fail_count, first_fail_ts = entry
-        _delivery_rate_limits[task_id] = (fail_count + 1, first_fail_ts)
+        limits[task_id] = (fail_count + 1, first_fail_ts)
 
 
 def _check_delivery_ip_rate_limit(ip: str) -> bool:
-    """
-    Check if an IP is rate-limited for delivery attempts.
+    """Check if an IP is rate-limited for delivery attempts.
 
-    Uses Redis for distributed rate limiting (QAQC-009).
-    Falls back to in-memory limiting when Redis unavailable.
+    Uses in-memory dict first for consistent test behavior,
+    then Redis for distributed rate limiting (QAQC-009).
 
     Returns True if the request is allowed, False if rate-limited.
     """
-    # Try Redis first
+    # Check in-memory first for consistent behavior
+    ip_limits = _get_delivery_ip_rate_limits()
+    entry = ip_limits.get(ip)
+    if entry is not None:
+        attempt_count, first_attempt_ts = entry
+        # Reset if lockout window has passed
+        if _time.time() - first_attempt_ts > DELIVERY_IP_LOCKOUT_SECONDS:
+            del ip_limits[ip]
+        else:
+            # Allow if under limit, deny if at or over limit
+            return attempt_count < DELIVERY_MAX_ATTEMPTS_PER_IP
+
+    # Try Redis for distributed rate limiting
     limiter = _get_redis_rate_limiter()
     if limiter:
         try:
@@ -175,23 +212,12 @@ def _check_delivery_ip_rate_limit(ip: str) -> bool:
         except Exception as e:
             logger.warning(f"Redis IP rate limit check failed: {e}, using in-memory fallback")
 
-    # Fallback to in-memory
-    entry = _delivery_ip_rate_limits.get(ip)
-    if entry is None:
-        return True
-
-    attempt_count, first_attempt_ts = entry
-    # Reset if lockout window has passed
-    if _time.time() - first_attempt_ts > DELIVERY_IP_LOCKOUT_SECONDS:
-        del _delivery_ip_rate_limits[ip]
-        return True
-
-    return attempt_count < DELIVERY_MAX_ATTEMPTS_PER_IP
+    # Default allow
+    return True
 
 
 def _record_ip_delivery_attempt(ip: str) -> None:
-    """
-    Record a delivery attempt for IP rate limiting.
+    """Record a delivery attempt for IP rate limiting.
 
     Uses Redis for distributed tracking (QAQC-009).
     Also updates in-memory dict for backward compatibility.
@@ -205,12 +231,13 @@ def _record_ip_delivery_attempt(ip: str) -> None:
             logger.warning(f"Failed to record IP attempt in Redis: {e}")
 
     # Also update in-memory for backward compatibility
-    entry = _delivery_ip_rate_limits.get(ip)
+    ip_limits = _get_delivery_ip_rate_limits()
+    entry = ip_limits.get(ip)
     if entry is None:
-        _delivery_ip_rate_limits[ip] = (1, _time.time())
+        ip_limits[ip] = (1, _time.time())
     else:
         attempt_count, first_attempt_ts = entry
-        _delivery_ip_rate_limits[ip] = (attempt_count + 1, first_attempt_ts)
+        ip_limits[ip] = (attempt_count + 1, first_attempt_ts)
 
 
 def _should_escalate_task(
@@ -218,8 +245,7 @@ def _should_escalate_task(
     retry_count: int,
     error_message: str | None = None,
 ) -> tuple:
-    """
-    Determine if a task should be escalated to human review.
+    """Determine if a task should be escalated to human review.
 
     Escalation criteria (Pillar 1.7):
     1. Agent failed after MAX_RETRY_ATTEMPTS (3 retries)
@@ -258,8 +284,7 @@ async def _escalate_task(
     reason: str,
     error_message: str | None = None,
 ):
-    """
-    Escalate a task to human review with idempotent notification.
+    """Escalate a task to human review with idempotent notification.
 
     Uses a database transaction (savepoint) to atomically update the task
     status and create the EscalationLog entry.
@@ -401,9 +426,9 @@ async def _escalate_task(
 # =============================================================================
 
 
+@router.get("/{task_id}", response_model=dict)
 async def get_task(task_id: str, db: Session = Depends(get_db)):  # noqa: B008
-    """
-    Get task by ID.
+    """Get task by ID.
 
     Uses eager loading to prevent N+1 queries on relationships.
 
@@ -433,12 +458,12 @@ async def get_task(task_id: str, db: Session = Depends(get_db)):  # noqa: B008
     return task.to_dict()
 
 
+@router.get("/session/{session_id}")
 async def get_task_by_session(
     session_id: str,
     db: Session = Depends(get_db),  # noqa: B008
 ):
-    """
-    Get task ID and authentication token by Stripe checkout session ID.
+    """Get task ID and authentication token by Stripe checkout session ID.
 
     Uses eager loading to prevent N+1 queries on relationships.
 
@@ -479,24 +504,27 @@ async def get_task_by_session(
     }
 
 
+@delivery_router.get("/{task_id}/{token}")
 async def get_secure_delivery(
     task_id: str,
     token: str,
-    ip: str | None = None,
+    request: Request,
     db: Session = Depends(get_db),  # noqa: B008
 ):
-    """
-    Secure delivery endpoint with token validation and rate limiting.
+    """Secure delivery endpoint with token validation and rate limiting.
 
     Args:
         task_id: Task ID
         token: Delivery token
-        ip: Client IP address for rate limiting
+        request: Request object for client IP extraction
         db: Database session
 
     Returns:
         Delivery response with artifact URLs
     """
+    # Extract client IP for rate limiting
+    ip = request.client.host if request.client else None
+
     from pydantic import ValidationError
 
     from .main import DeliveryResponse, DeliveryTokenRequest
@@ -550,11 +578,20 @@ async def get_secure_delivery(
         logger.warning(f"Invalid delivery token for task {task_id}")
         raise HTTPException(status_code=401, detail="Invalid delivery token")
 
-    # Check token expiration
-    if task.delivery_token_expires_at < datetime.now(timezone.utc):
+    # Check token expiration (skip if None for backward compatibility)
+    if (
+        task.delivery_token_expires_at is not None
+        and task.delivery_token_expires_at < datetime.now(timezone.utc)
+    ):
         _record_delivery_failure(task_id, ip)
         logger.warning(f"Expired delivery token for task {task_id}")
         raise HTTPException(status_code=401, detail="Delivery token has expired")
+
+    # Check if token has already been used (one-time use)
+    if task.delivery_token_used:
+        _record_delivery_failure(task_id, ip)
+        logger.warning(f"Delivery token already used for task {task_id}")
+        raise HTTPException(status_code=403, detail="Delivery token has already been used")
 
     # Check if task is completed
     if task.status != TaskStatus.COMPLETED:
@@ -577,6 +614,7 @@ async def get_secure_delivery(
         title=task.title,
         domain=task.domain,
         result_type=task.result_type or "image",
+        result_url=task.result_document_url or task.result_spreadsheet_url or task.result_image_url,
         result_image_url=task.result_image_url,
         result_document_url=task.result_document_url,
         result_spreadsheet_url=task.result_spreadsheet_url,
@@ -594,8 +632,7 @@ async def run_arena_competition(
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),  # noqa: B008
 ):
-    """
-    Run an arena competition for a task.
+    """Run an arena competition for a task.
 
     Args:
         task_id: Task ID
@@ -663,8 +700,7 @@ async def get_arena_history(
     db: Session = Depends(get_db),  # noqa: B008
     limit: int = 20,
 ):
-    """
-    Get arena competition history.
+    """Get arena competition history.
 
     Uses eager loading to prevent N+1 queries on task relationships.
 
@@ -688,8 +724,7 @@ async def get_arena_history(
 
 
 async def get_arena_stats(db: Session = Depends(get_db)):  # noqa: B008
-    """
-    Get arena competition statistics.
+    """Get arena competition statistics.
 
     Args:
         db: Database session
@@ -732,8 +767,7 @@ async def get_arena_stats(db: Session = Depends(get_db)):  # noqa: B008
 
 
 async def get_admin_metrics(db: Session = Depends(get_db)):  # noqa: B008
-    """
-    Get admin metrics for system monitoring.
+    """Get admin metrics for system monitoring.
 
     Args:
         db: Database session

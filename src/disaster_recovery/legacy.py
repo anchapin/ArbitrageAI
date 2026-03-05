@@ -1,12 +1,11 @@
-"""
-Disaster Recovery and Backup Strategy.
+"""Disaster Recovery and Backup Strategy.
 
 This module provides comprehensive disaster recovery and backup capabilities
 for the ArbitrageAI platform.
 """
 
-from dataclasses import asdict
 from datetime import datetime
+from dataclasses import asdict
 import threading
 import time
 from typing import Any
@@ -32,7 +31,7 @@ class DisasterRecoveryOrchestrator:
         self.config = config
         self.backup_manager = BackupManager(config)
         self.recovery_manager = RecoveryManager(config, self.backup_manager)
-        self._start_scheduler()
+        DisasterRecoveryOrchestrator._start_scheduler()
 
     @staticmethod
     def _start_scheduler():
@@ -54,15 +53,15 @@ class DisasterRecoveryOrchestrator:
         try:
             logger.info(f"Starting disaster recovery for: {disaster_type}")
 
-            recovery_strategy = await self._assess_disaster(disaster_type)
+            recovery_strategy = await DisasterRecoveryOrchestrator._assess_disaster(disaster_type)
             backup_id = await self._select_backup_for_recovery(disaster_type, recovery_strategy)
 
             recovery_result = await self.recovery_manager.execute_recovery(
                 backup_id=backup_id, plan_id=plan_id,
             )
 
-            validation_result = await self._validate_disaster_recovery(recovery_result)
-            await self._notify_recovery_completion(recovery_result, validation_result)
+            validation_result = await DisasterRecoveryOrchestrator._validate_disaster_recovery(recovery_result)
+            await DisasterRecoveryOrchestrator._notify_recovery_completion(recovery_result, validation_result)
 
             return {
                 "success": True,
@@ -76,7 +75,7 @@ class DisasterRecoveryOrchestrator:
 
         except Exception as e:
             logger.error(f"Disaster recovery failed: {e}")
-            await self._notify_recovery_failure(disaster_type, str(e))
+            await DisasterRecoveryOrchestrator._notify_recovery_failure(disaster_type, str(e))
             return {
                 "success": False,
                 "disaster_type": disaster_type,
@@ -163,7 +162,6 @@ class DisasterRecoveryOrchestrator:
                 metadata = await self.backup_manager.create_point_in_time_backup()
             else:
                 return {"success": False, "error": f"Unknown backup type: {backup_type}"}
-
             return {
                 "success": True,
                 "backup_id": metadata.backup_id,

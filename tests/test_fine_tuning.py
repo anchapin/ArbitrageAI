@@ -180,7 +180,8 @@ class TestDatasetBuilder:
         )
 
         assert os.path.exists(filepath)
-        assert filepath.endswith(".jsonl")
+        filepath_str = str(filepath)
+        assert filepath_str.endswith(".jsonl")
 
         # Verify content
         with open(filepath, "r") as f:
@@ -199,7 +200,8 @@ class TestDatasetBuilder:
         )
 
         assert os.path.exists(filepath)
-        assert filepath.endswith(".json")
+        filepath_str = str(filepath)
+        assert filepath_str.endswith(".json")
 
         # Verify content
         with open(filepath, "r") as f:

@@ -1,5 +1,4 @@
-"""
-Distributed Lock Manager for Bid Placement.
+"""Distributed Lock Manager for Bid Placement.
 
 This module implements a database-backed distributed lock mechanism to prevent
 race conditions when multiple scanner instances attempt to place bids on the
@@ -29,8 +28,7 @@ logger = get_logger(__name__)
 
 
 class BidLockManager:
-    """
-    Database-backed distributed lock manager for bid placement.
+    """Database-backed distributed lock manager for bid placement.
 
     Prevents concurrent bids on the same marketplace posting by using
     a DistributedLock table with a unique constraint on lock_key.
@@ -38,8 +36,7 @@ class BidLockManager:
     """
 
     def __init__(self, ttl: int = 300):
-        """
-        Initialize the BidLockManager.
+        """Initialize the BidLockManager.
 
         Args:
             ttl: Time to live for locks in seconds (default: 300 = 5 minutes)
@@ -87,8 +84,7 @@ class BidLockManager:
         timeout: float = 10.0,
         holder_id: str = "default",
     ) -> bool:
-        """
-        Try to acquire a distributed lock for bidding on a specific posting.
+        """Try to acquire a distributed lock for bidding on a specific posting.
 
         Uses atomic INSERT with unique constraint as compare-and-set.
         Retries with short sleeps until timeout.
@@ -109,18 +105,18 @@ class BidLockManager:
             raise ValueError("marketplace_id and posting_id must not be empty")
 
         self._lock_attempts += 1
-        lock_key = self._make_lock_key(marketplace_id, posting_id)
+        lock_key = BidLockManager._make_lock_key(marketplace_id, posting_id)
         start_time = time.time()
 
         # Create a single db session per lock acquisition attempt to reduce overhead
         db = None
         try:
-            db = self._get_db()
+            db = BidLockManager._get_db()
 
             while True:
                 try:
                     # Clean expired locks
-                    self._cleanup_expired_locks(db)
+                    BidLockManager._cleanup_expired_locks(db)
 
                     now = time.time()
 
@@ -184,14 +180,13 @@ class BidLockManager:
                     logger.error(f"Error acquiring lock {lock_key}: {e}")
                     return False
         finally:
-            if db:
-                db.close()
+            if db:                db.close()
 
+    @staticmethod
     async def release_lock(
-        self, marketplace_id: str, posting_id: str, holder_id: str = "default",
+        marketplace_id: str, posting_id: str, holder_id: str = "default",
     ) -> bool:
-        """
-        Release a previously acquired lock.
+        """Release a previously acquired lock.
 
         Args:
             marketplace_id: ID of the marketplace
@@ -201,8 +196,8 @@ class BidLockManager:
         Returns:
             True if lock released, False if lock doesn't exist or holder mismatch
         """
-        lock_key = self._make_lock_key(marketplace_id, posting_id)
-        db = self._get_db()
+        lock_key = BidLockManager._make_lock_key(marketplace_id, posting_id)
+        db = BidLockManager._get_db()
 
         try:
             existing = (
@@ -243,8 +238,7 @@ class BidLockManager:
         timeout: float = 10.0,
         holder_id: str = "default",
     ):
-        """
-        Async context manager for acquiring and releasing locks.
+        """Async context manager for acquiring and releasing locks.
 
         Usage:
             async with bid_lock_manager.with_lock("upwork", "posting_123"):
@@ -271,7 +265,7 @@ class BidLockManager:
         try:
             yield
         finally:
-            await self.release_lock(
+            await BidLockManager.release_lock(
                 marketplace_id=marketplace_id,
                 posting_id=posting_id,
                 holder_id=holder_id,
@@ -279,7 +273,7 @@ class BidLockManager:
 
     def get_metrics(self) -> dict[str, int]:
         """Get lock manager metrics."""
-        db = self._get_db()
+        db = BidLockManager._get_db()
         try:
             active_locks = (
                 db.query(DistributedLock)
@@ -300,9 +294,10 @@ class BidLockManager:
             "active_locks": active_locks,
         }
 
-    async def cleanup_all(self) -> None:
+    @staticmethod
+    async def cleanup_all() -> None:
         """Force cleanup of all locks (for testing/shutdown)."""
-        db = self._get_db()
+        db = BidLockManager._get_db()
         try:
             db.query(DistributedLock).delete()
             db.commit()

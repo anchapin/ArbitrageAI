@@ -1,5 +1,4 @@
-"""
-Payment processing and pricing endpoints for ArbitrageAI.
+"""Payment processing and pricing endpoints for ArbitrageAI.
 
 Handles:
 - Stripe checkout session creation
@@ -13,7 +12,9 @@ import os
 import secrets
 import uuid
 
-from fastapi import Depends, HTTPException
+from fastapi import Depends, Header, HTTPException
+from fastapi.background import BackgroundTasks
+from fastapi.requests import Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
@@ -80,8 +81,7 @@ def calculate_task_price(
     complexity: str = "medium",
     urgency: str = "standard",
 ) -> int:
-    """
-    Calculate task price using the Task Price Formula.
+    """Calculate task price using the Task Price Formula.
 
     Price = Base Rate × Complexity × Urgency.
 
@@ -132,8 +132,7 @@ def calculate_task_price(
 
 
 async def create_checkout_session(task_data, db: Session = Depends(get_db)):  # noqa: B008
-    """
-    Create a Stripe checkout session based on task submission.
+    """Create a Stripe checkout session based on task submission.
 
     Calculates price using the Task Price Formula (Pillar 1.4):
     Price = Base Rate × Complexity × Urgency
@@ -288,13 +287,12 @@ async def create_checkout_session(task_data, db: Session = Depends(get_db)):  # 
 
 
 async def stripe_webhook(
-    request,
-    background_tasks,
+    request: Request,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),  # noqa: B008
-    stripe_signature: str | None = None,
+    stripe_signature: str | None = Header(None, alias="stripe-signature"),
 ):
-    """
-    Stripe webhook endpoint to handle checkout events.
+    """Stripe webhook endpoint to handle checkout events.
 
     Listens for checkout.session.completed events and updates task status to PAID.
     When a task is marked as PAID, a background task is added to process the task asynchronously.
@@ -345,11 +343,11 @@ async def stripe_webhook(
 
             # Add background task to process the visualization asynchronously
             from src.api.main import process_task_async
-            from src.experience_vector_db import get_background_job_queue
+            from src.background_job_queue import get_background_job_queue
 
             EXPERIENCE_DB_AVAILABLE = True
             try:
-                from src.experience_vector_db import get_background_job_queue
+                from src.background_job_queue import get_background_job_queue
             except ImportError:
                 EXPERIENCE_DB_AVAILABLE = False
 
@@ -358,11 +356,11 @@ async def stripe_webhook(
                 await queue.queue_job(
                     job_type="task_processing",
                     task_func=process_task_async,
-                    task_args=(task.id,),
+                    task_args=(db, task.id),
                     max_retries=3,
                 )
             else:
-                background_tasks.add_task(process_task_async, task.id)
+                background_tasks.add_task(process_task_async, db, task.id)
 
             return {
                 "status": "success",
@@ -394,8 +392,7 @@ async def stripe_webhook(
 
 
 async def get_domains():
-    """
-    Get available domains and their pricing configuration.
+    """Get available domains and their pricing configuration.
 
     Returns:
         Dictionary with domains, complexity levels, and urgency levels
@@ -425,8 +422,7 @@ async def get_price_estimate(
     complexity: str = "medium",
     urgency: str = "standard",
 ):
-    """
-    Calculate a price estimate based on domain, complexity, and urgency.
+    """Calculate a price estimate based on domain, complexity, and urgency.
 
     Args:
         domain: The task domain (accounting, legal, data_analysis)

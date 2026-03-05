@@ -1,5 +1,4 @@
-"""
-Self-Adjusting Confidence Algorithm.
+"""Self-Adjusting Confidence Algorithm.
 
 Implements adaptive confidence calculation that learns and improves over time
 based on performance patterns.
@@ -30,6 +29,7 @@ class AdjustmentReason(Enum):
 
     WIN_STREAK = "win_streak"
     LOSS_STREAK = "loss_streak"
+    POOR_PERFORMANCE = "poor_performance"
     PROFIT_DECLINE = "profit_decline"
     PROFIT_INCREASE = "profit_increase"
     HIGH_VARIANCE = "high_variance"
@@ -50,8 +50,7 @@ class ConservatismLevel(Enum):
 
 
 class SelfAdjustingConfidenceAlgorithm:
-    """
-    Self-Adjusting Confidence Algorithm.
+    """Self-Adjusting Confidence Algorithm.
 
     Automatically adjusts confidence calculation parameters based on
     performance patterns to optimize profitability.
@@ -102,8 +101,7 @@ class SelfAdjustingConfidenceAlgorithm:
             db.close()
 
     def analyze_performance(self) -> dict[str, Any]:
-        """
-        Analyze recent performance to determine if adjustment is needed.
+        """Analyze recent performance to determine if adjustment is needed.
 
         Returns:
             Dictionary with performance analysis and recommendations
@@ -155,7 +153,7 @@ class SelfAdjustingConfidenceAlgorithm:
                         break
 
             # Calculate variance
-            variance = self._calculate_profit_variance(profitable_wins)
+            variance = SelfAdjustingConfidenceAlgorithm._calculate_profit_variance(profitable_wins)
 
             # Compare with baseline if available
             improvement = None
@@ -225,8 +223,7 @@ class SelfAdjustingConfidenceAlgorithm:
         manual_override: bool = False,
         override_value: int | None = None,
     ) -> dict[str, Any]:
-        """
-        Adjust conservatism level based on performance or manual override.
+        """Adjust conservatism level based on performance or manual override.
 
         Args:
             reason: Reason for adjustment
@@ -387,8 +384,7 @@ class SelfAdjustingConfidenceAlgorithm:
         }
 
     def get_adjusted_threshold(self, base_threshold: int) -> int:
-        """
-        Get adjusted threshold based on current conservatism.
+        """Get adjusted threshold based on current conservatism.
 
         Args:
             base_threshold: Base threshold from confidence calculation
@@ -404,8 +400,7 @@ class SelfAdjustingConfidenceAlgorithm:
         return int(max(0, min(100, adjusted)))
 
     def get_algorithm_status(self) -> dict[str, Any]:
-        """
-        Get current algorithm status and configuration.
+        """Get current algorithm status and configuration.
 
         Returns:
             Dictionary with algorithm state and metrics
@@ -509,8 +504,7 @@ class SelfAdjustingConfidenceAlgorithm:
         conservatism_value: int,
         reason: str = "Manual adjustment by user",
     ) -> dict[str, Any]:
-        """
-        Manually override conservatism level.
+        """Manually override conservatism level.
 
         Args:
             conservatism_value: New conservatism value (0-100)
@@ -538,8 +532,7 @@ class SelfAdjustingConfidenceAlgorithm:
         return result
 
     def reset_to_baseline(self) -> dict[str, Any]:
-        """
-        Reset conservatism to baseline value.
+        """Reset conservatism to baseline value.
 
         Returns:
             Dictionary with reset result

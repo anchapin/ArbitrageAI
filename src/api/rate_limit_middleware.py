@@ -1,5 +1,4 @@
-"""
-Rate limiting middleware for FastAPI.
+"""Rate limiting middleware for FastAPI.
 
 Issue #45: API Rate Limiting, Quotas, and Usage Analytics
 Issue QAQC-009: Replace In-Memory Rate Limiting with Redis
@@ -38,8 +37,7 @@ _quota_manager = None
 
 
 def get_rate_limiter():
-    """
-    Get or create global rate limiter.
+    """Get or create global rate limiter.
 
     Uses Redis for distributed rate limiting (QAQC-009).
     Falls back to in-memory when Redis unavailable.
@@ -72,8 +70,7 @@ def get_quota_manager():
 
 
 class RateLimitMiddleware(BaseHTTPMiddleware):
-    """
-    Middleware to enforce rate limits and quotas on all endpoints.
+    """Middleware to enforce rate limits and quotas on all endpoints.
 
     Extracts user_id from:
     1. Header: X-User-ID

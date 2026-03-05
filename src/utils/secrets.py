@@ -1,5 +1,4 @@
-"""
-Secure Secret Management Module.
+"""Secure Secret Management Module.
 
 Provides secure generation and storage of cryptographic secrets.
 Used for JWT secrets, API keys, and other sensitive configuration values.
@@ -43,8 +42,7 @@ INSECURE_DEFAULTS = {
 
 
 def generate_secure_secret() -> str:
-    """
-    Generate a cryptographically secure random secret.
+    """Generate a cryptographically secure random secret.
 
     Returns:
         str: 256-bit (64 character hex) secure random secret
@@ -53,8 +51,7 @@ def generate_secure_secret() -> str:
 
 
 def _load_secrets() -> dict[str, str]:
-    """
-    Load secrets from secure file.
+    """Load secrets from secure file.
 
     Returns:
         Dict containing loaded secrets
@@ -83,8 +80,7 @@ def _load_secrets() -> dict[str, str]:
 
 
 def _save_secrets(secrets_dict: dict[str, str]) -> None:
-    """
-    Save secrets to secure file with restricted permissions.
+    """Save secrets to secure file with restricted permissions.
 
     Args:
         secrets_dict: Dictionary of secrets to save
@@ -109,8 +105,7 @@ def _save_secrets(secrets_dict: dict[str, str]) -> None:
 
 
 def load_or_create_secrets() -> dict[str, str]:
-    """
-    Load existing secrets or create new ones if they don't exist.
+    """Load existing secrets or create new ones if they don't exist.
 
     This function should be called during application startup to ensure
     all required secrets are available.
@@ -141,8 +136,7 @@ def load_or_create_secrets() -> dict[str, str]:
 
 
 def is_insecure_default(value: str) -> bool:
-    """
-    Check if a value appears to be an insecure default.
+    """Check if a value appears to be an insecure default.
 
     Args:
         value: The secret value to check
@@ -175,8 +169,7 @@ def is_insecure_default(value: str) -> bool:
 
 
 def validate_secret_security(value: str, name: str) -> tuple[bool, str]:
-    """
-    Validate that a secret meets security requirements.
+    """Validate that a secret meets security requirements.
 
     Args:
         value: The secret value to validate

@@ -1,6 +1,4 @@
-"""
-
-Simulation Engine Module for Training Mode.
+"""Simulation Engine Module for Training Mode.
 
 Provides functionality to track hypothetical bids and calculate simulation profits
 when the system operates in training mode without making real financial commitments.
@@ -46,8 +44,7 @@ logger = get_logger(__name__)
 
 
 class SimulationEngine:
-    """
-    Simulation Engine for Tracking Hypothetical Bids.
+    """Simulation Engine for Tracking Hypothetical Bids.
 
     Manages simulation bids made during training mode when no real financial
     commitment is made. Provides tools for analyzing bidding strategies
@@ -64,8 +61,8 @@ class SimulationEngine:
             f"Simulation Engine initialized - Training Mode: {self.training_mode}",
         )
 
-    @staticmethod
     def record_simulation_bid(
+        self,
         job_title: str,
         job_description: str,
         job_url: str,
@@ -77,8 +74,7 @@ class SimulationEngine:
         job_marketplace: str | None = None,
         skills_matched: list[str] | None = None,
     ) -> SimulationBid:
-        """
-        Record a hypothetical bid to the simulation database.
+        """Record a hypothetical bid to the simulation database.
 
         When in training mode, this method saves a bid without submitting it
         to the actual marketplace. This allows for analysis and strategy testing.
@@ -134,13 +130,12 @@ class SimulationEngine:
         finally:
             db.close()
 
-    @staticmethod
     def calculate_total_profit(
+        self,
         strategy_type: str | None = None,
         date_filter: dict[str, str] | None = None,
     ) -> dict[str, Any]:
-        """
-        Calculate total simulated profit/loss from simulation bids.
+        """Calculate total simulated profit/loss from simulation bids.
 
         Calculates the total profit/loss based on simulated outcomes.
         If would_have_won=True, adds bid_amount to profit.
@@ -224,8 +219,7 @@ class SimulationEngine:
         self,
         date_filter: dict[str, str] | None = None,
     ) -> dict[str, Any]:
-        """
-        Compare performance of different bidding strategies.
+        """Compare performance of different bidding strategies.
 
         Compares aggressive, conservative, and balanced strategies to determine
         which performs better. Generates insights for bidding optimization.
@@ -241,7 +235,7 @@ class SimulationEngine:
         # Calculate stats for each strategy
         results = {}
         for strategy in strategies:
-            results[strategy] = SimulationEngine.calculate_total_profit(
+            results[strategy] = self.calculate_total_profit(
                 strategy_type=strategy, date_filter=date_filter,
             )
 
@@ -257,7 +251,7 @@ class SimulationEngine:
                 best_strategy = strategy
 
         # Generate insights
-        insights = SimulationEngine._generate_insights(results)
+        insights = self._generate_insights(results)
 
         return {
             "strategies": results,
@@ -267,10 +261,8 @@ class SimulationEngine:
             "insights": insights,
         }
 
-    @staticmethod
-    def _generate_insights(results: dict[str, Any]) -> list[str]:
-        """
-        Generate actionable insights from simulation results.
+    def _generate_insights(self, results: dict[str, Any]) -> list[str]:
+        """Generate actionable insights from simulation results.
 
         Analyzes simulation data to provide recommendations for bidding optimization.
 
@@ -337,8 +329,7 @@ class SimulationEngine:
         strategy_type: str,
         date_filter: dict[str, str] | None = None,
     ) -> dict[str, Any]:
-        """
-        Get a summary of performance for a specific strategy.
+        """Get a summary of performance for a specific strategy.
 
         Args:
             strategy_type: Strategy type to analyze (aggressive, conservative, balanced)
@@ -347,7 +338,7 @@ class SimulationEngine:
         Returns:
             Dictionary with detailed strategy summary
         """
-        stats = SimulationEngine.calculate_total_profit(
+        stats = self.calculate_total_profit(
             strategy_type=strategy_type, date_filter=date_filter,
         )
 
@@ -364,12 +355,10 @@ class SimulationEngine:
             "average_bid_cents": stats["average_bid_cents"],
         }
 
-    @staticmethod
     def get_recent_simulations(
-        limit: int = 100, date_filter: dict[str, str] | None = None,
+        self, limit: int = 100, date_filter: dict[str, str] | None = None,
     ) -> list[SimulationBid]:
-        """
-        Get recent simulation bids for review and analysis.
+        """Get recent simulation bids for review and analysis.
 
         Args:
             limit: Maximum number of simulations to return
@@ -412,8 +401,7 @@ _sim_engine_instance: Optional["SimulationEngine"] = None
 
 
 def get_simulation_engine() -> SimulationEngine:
-    """
-    Get or create the global Simulation Engine singleton.
+    """Get or create the global Simulation Engine singleton.
 
     Returns:
         SimulationEngine: Global instance of the simulation engine
@@ -450,7 +438,7 @@ if __name__ == "__main__":
         # Record some test simulation bids
         logger.info("\nRecording test simulation bids...")
 
-        SimulationEngine.record_simulation_bid(
+        engine.record_simulation_bid(
             job_title="Python Data Analysis Script",
             job_description="Need Python developer for data analysis",
             job_url="https://example.com/job1",
@@ -463,7 +451,7 @@ if __name__ == "__main__":
             skills_matched=["Python", "pandas"],
         )
 
-        SimulationEngine.record_simulation_bid(
+        engine.record_simulation_bid(
             job_title="React Dashboard Development",
             job_description="Build dashboard with charts",
             job_url="https://example.com/job2",
@@ -476,7 +464,7 @@ if __name__ == "__main__":
             skills_matched=["React", "D3.js"],
         )
 
-        SimulationEngine.record_simulation_bid(
+        engine.record_simulation_bid(
             job_title="Excel Spreadsheet Automation",
             job_description="VBA macros for automation",
             job_url="https://example.com/job3",

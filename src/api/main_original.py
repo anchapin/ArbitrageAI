@@ -1,5 +1,4 @@
-"""
-Backward compatibility module for main.py.
+"""Backward compatibility module for main.py.
 
 This module re-exports functions from their correct module locations.
 Some functions have been moved to specialized modules while maintaining

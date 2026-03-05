@@ -1,5 +1,4 @@
-"""
-Task router module.
+"""Task router module.
 
 This module contains the TaskRouter class for routing tasks to appropriate
 handlers based on domain and task type.
@@ -68,8 +67,9 @@ class TaskRouter:
 
         return TaskType.VISUALIZATION
 
+    @staticmethod
     def detect_output_format(
-        self, domain: str, task_type: str, explicit_format: str | None = None,
+        domain: str, task_type: str, explicit_format: str | None = None,
     ) -> str:
         """Detect the output format based on domain and task type."""
         if explicit_format:
@@ -105,7 +105,7 @@ class TaskRouter:
     ) -> dict:
         """Route the task to the appropriate handler."""
         detected_task_type = self.detect_task_type(user_request, task_type)
-        detected_format = self.detect_output_format(domain, detected_task_type, output_format)
+        detected_format = TaskRouter.detect_output_format(domain, detected_task_type, output_format)
 
         logger.info(
             f"TaskRouter: domain={domain}, task_type={detected_task_type}, output_format={detected_format}",
@@ -139,8 +139,9 @@ class TaskRouter:
             domain=domain, user_request=user_request, csv_data=csv_data, **kwargs,
         )
 
+    @staticmethod
     def _handle_visualization(
-        self, domain: str, user_request: str, csv_data: str,
+        domain: str, user_request: str, csv_data: str,
         few_shot_examples: list[Any] | None = None, **kwargs,
     ) -> dict:
         """Handle visualization tasks."""
