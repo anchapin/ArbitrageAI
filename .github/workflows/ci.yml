@@ -75,7 +75,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install ruff>=0.14.0
+          pip install ruff
 
       - name: Run Linter (Ruff)
         run: ruff check .

@@ -201,7 +201,6 @@ ignore = [
     "ARG002",   # unused-method-argument (34 violations)
     "PERF203",  # try-except-in-loop (23 violations - intentional retry patterns)
     "PLR1702",  # too-many-nested-blocks (13 violations)
-    "RUF067",   # __init__ module should only contain docstrings (side effects for registry)
     "N806",     # non-lowercase-variable-in-function (10 violations)
     "PLR0917",  # too-many-positional-arguments (9 violations)
     "RUF029",   # unused-async (22 violations)
