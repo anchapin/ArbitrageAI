@@ -57,6 +57,7 @@ dev = [
     "ruff>=0.1.0",
     "httpx>=0.24.0",
     "pre-commit>=3.6.0",
+    "mypy>=1.8.0",
 ]
 tests = [
     "pytest>=7.0.0",
@@ -500,4 +501,79 @@ output = "coverage.xml"
 # JSON report for CI/CD integration
 [tool.coverage.json]
 output = "coverage.json"
+
+# Mypy type checking configuration
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = false
+warn_unused_configs = true
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+check_untyped_defs = false
+disallow_untyped_decorators = false
+no_implicit_optional = false
+warn_redundant_casts = false
+warn_unused_ignores = true
+warn_no_return = false
+follow_imports = "normal"
+ignore_missing_imports = true
+
+# Mypy paths - use explicit package bases
+namespace_packages = true
+explicit_package_bases = true
+
+# Incremental mode for faster checks
+incremental = true
+cache_dir = ".mypy_cache"
+
+# Show error context
+show_error_context = true
+show_column_numbers = true
+show_error_codes = true
+
+# Pretty output
+pretty = true
+
+# Disable strict mode for incremental adoption
+strict = false
+
+# Exclude directories that don't need type checking
+[[tool.mypy.overrides]]
+ignore_errors = true
+module = [
+    "tests.*",
+    "alembic.*",
+    "scripts.*",
+    "refactor_models",
+]
+
+# Third-party packages without type stubs
+[[tool.mypy.overrides]]
+ignore_missing_imports = true
+module = [
+    "e2b_code_interpreter",
+    "traceloop_sdk",
+    "arize_phoenix",
+    "chromadb",
+    "sentence_transformers",
+    "playwright",
+    "stripe",
+    "openai",
+    "httpx",
+    "docker",
+    "redis",
+    "boto3",
+    "opentelemetry.*",
+    "pydantic.*",
+    "fastapi",
+    "uvicorn",
+    "sqlalchemy",
+    "alembic",
+    "croniter",
+    "pyjwt",
+    "schedule",
+    "pandas",
+    "openpyxl",
+    "pypdf2",
+]
 
