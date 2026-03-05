@@ -417,7 +417,7 @@ parallel = true
 # Include concurrency support
 concurrency = ["thread", "multiprocessing"]
 # Measure coverage in real-time
-dynamic_context = "thread"
+# dynamic_context = "thread"  # Removed: not supported in Python 3.10
 
 [tool.coverage.report]
 exclude_lines = [
