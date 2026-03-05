@@ -118,6 +118,22 @@ repos:
         exclude: ^tests/|scripts/|alembic/
 
   # ---------------------------------------------------------------------------
+  # Duplicate Code Detection
+  # ---------------------------------------------------------------------------
+
+  # jscpd - Copy/paste detector
+  - repo: local
+    hooks:
+      - id: jscpd
+        name: jscpd - Duplicate code detection
+        description: Detect copy/paste code in Python projects
+        entry: npx jscpd --config .jscpd.json
+        language: system
+        types: [python]
+        pass_filenames: false
+        stages: [pre-commit]
+
+  # ---------------------------------------------------------------------------
   # Code Formatting
   # ---------------------------------------------------------------------------
 
