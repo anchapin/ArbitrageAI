@@ -182,7 +182,8 @@ class ClosedLoopLearningSystem:
             logger.error(f"Failed to record job completion: {e}")
             db.rollback()
             raise
-        finally:            db.close()
+        finally:
+            db.close()
 
     @staticmethod
     def calculate_prediction_accuracy(
