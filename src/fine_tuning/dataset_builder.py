@@ -215,7 +215,7 @@ class DatasetBuilder:
                     f.write(json.dumps(item) + "\n")
 
         logger.info(f"Saved {len(examples)} examples to {filepath}")
-        return filepath
+        return str(filepath)
 
     @staticmethod
     def get_dataset_stats(examples: list[dict[str, Any]]) -> dict[str, Any]:
@@ -227,9 +227,9 @@ class DatasetBuilder:
         Returns:
             Statistics dictionary
         """
-        domains = {}
-        task_types = {}
-        ratings = {}
+        domains: dict[str, int] = {}
+        task_types: dict[str, int] = {}
+        ratings: dict[str, int] = {}
 
         for ex in examples:
             domain = ex.get("domain", "unknown")

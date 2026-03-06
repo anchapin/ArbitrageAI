@@ -50,9 +50,9 @@ class DistillationDataCollector:
 
     def __init__(
         self,
-        output_dir: str | None = None,
-        teacher_file: str | None = None,
-        curated_file: str | None = None,
+        output_dir: str | Path | None = None,
+        teacher_file: str | Path | None = None,
+        curated_file: str | Path | None = None,
     ):
         """Initialize the data collector.
 
@@ -62,9 +62,9 @@ class DistillationDataCollector:
             curated_file: Path to curated dataset JSONL file
         """
         # Set up paths
-        self.output_dir = output_dir or DISTILLATION_DIR
-        self.teacher_file = teacher_file or TEACHER_EXAMPLES_FILE
-        self.curated_file = curated_file or CURATED_DATASET_FILE
+        self.output_dir: str | Path = output_dir or DISTILLATION_DIR
+        self.teacher_file: str | Path = teacher_file or TEACHER_EXAMPLES_FILE
+        self.curated_file: str | Path = curated_file or CURATED_DATASET_FILE
 
         # Ensure directory exists
         Path(self.output_dir).mkdir(parents=True, exist_ok=True)
@@ -200,7 +200,7 @@ class DistillationDataCollector:
         )
 
     @staticmethod
-    def _append_to_jsonl(filepath: str, record: dict[str, Any]) -> None:
+    def _append_to_jsonl(filepath: str | Path, record: dict[str, Any]) -> None:
         """Append a record to a JSONL file with atomic write semantics.
 
         Args:
@@ -211,6 +211,7 @@ class DistillationDataCollector:
             IOError: If write fails (caller should implement fallback)
         """
         import tempfile
+        filepath_str = str(filepath)
 
         # Write to temporary file first to ensure atomic operation
         try:
@@ -223,7 +224,7 @@ class DistillationDataCollector:
                 temp_path = tmp.name
 
             # Append temp file to actual file atomically
-            with open(filepath, "a", encoding="utf-8") as f, open(temp_path, encoding="utf-8") as tmp:
+            with open(filepath_str, "a", encoding="utf-8") as f, open(temp_path, encoding="utf-8") as tmp:
                 f.write(tmp.read())
 
             # Clean up temp file
@@ -260,7 +261,7 @@ class DistillationDataCollector:
         }
 
     @staticmethod
-    def _count_jsonl_lines(filepath: str) -> int:
+    def _count_jsonl_lines(filepath: str | Path) -> int:
         """Count lines in a JSONL file."""
         try:
             with open(filepath, encoding="utf-8") as f:
@@ -269,9 +270,9 @@ class DistillationDataCollector:
             return 0
 
     @staticmethod
-    def _get_domain_distribution(filepath: str) -> dict[str, int]:
+    def _get_domain_distribution(filepath: str | Path) -> dict[str, int]:
         """Get distribution of examples by domain."""
-        domain_counts = {}
+        domain_counts: dict[str, int] = {}
         try:
             with open(filepath, encoding="utf-8") as f:
                 for line in f:

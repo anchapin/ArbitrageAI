@@ -269,13 +269,13 @@ class ModelEvaluator:
             }
 
         # Group by model
-        by_model = {}
+        by_model: dict[str, list[EvaluationResult]] = {}
         for result in self.results:
             if result.model_name not in by_model:
                 by_model[result.model_name] = []
             by_model[result.model_name].append(result)
 
-        summary = {
+        summary: dict[str, Any] = {
             "total_evaluations": len(self.results),
             "models": {},
         }

@@ -535,6 +535,7 @@ show_column_numbers = true
 show_error_codes = true
 pretty = true
 strict = false
+allow_redefinition = true
 
 # Disable pre-existing mypy error codes (Issue #245)
 # These errors existed in the main branch before type checking was enabled
@@ -622,6 +623,8 @@ module = [
     "sklearn",
     "numpy",
     "pandas",
+    "croniter",
+    "pytz",
 ]
 
 # Exclude directories that don't need type checking

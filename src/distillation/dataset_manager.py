@@ -13,6 +13,7 @@ from collections.abc import Callable
 from datetime import datetime, timezone
 import json
 import logging
+from pathlib import Path
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -38,7 +39,7 @@ class DistillationDatasetManager:
     """
 
     def __init__(
-        self, curated_file: str | None = None, teacher_file: str | None = None,
+        self, curated_file: str | Path | None = None, teacher_file: str | Path | None = None,
     ):
         """Initialize the dataset manager.
 
@@ -46,12 +47,12 @@ class DistillationDatasetManager:
             curated_file: Path to curated dataset file
             teacher_file: Path to teacher examples file
         """
-        self.curated_file = curated_file or CURATED_DATASET_FILE
-        self.teacher_file = teacher_file or TEACHER_EXAMPLES_FILE
+        self.curated_file: str | Path = curated_file or CURATED_DATASET_FILE
+        self.teacher_file: str | Path = teacher_file or TEACHER_EXAMPLES_FILE
 
     def load_examples(
         self,
-        filepath: str | None = None,
+        filepath: str | Path | None = None,
         domain: str | None = None,
         task_type: str | None = None,
         min_rating: int = 1,
@@ -71,11 +72,11 @@ class DistillationDatasetManager:
         Returns:
             List of filtered examples
         """
-        filepath = filepath or self.curated_file
-        examples = []
+        file_path: str | Path = filepath if filepath is not None else self.curated_file
+        examples: list[dict[str, Any]] = []
 
         try:
-            with open(filepath, encoding="utf-8") as f:
+            with open(file_path, encoding="utf-8") as f:
                 for line in f:
                     if line.strip():
                         try:
@@ -132,7 +133,7 @@ class DistillationDatasetManager:
 
     def validate_dataset(
         self,
-        filepath: str | None = None,
+        filepath: str | Path | None = None,
         min_examples: int = MIN_EXAMPLES_FOR_TRAINING,
     ) -> dict[str, Any]:
         """Validate the entire dataset.
@@ -144,12 +145,12 @@ class DistillationDatasetManager:
         Returns:
             Validation report
         """
-        filepath = filepath or self.curated_file
-        examples = self.load_examples(filepath)
+        file_path: str | Path = filepath if filepath is not None else self.curated_file
+        examples = self.load_examples(file_path)
 
         # Validate each example
-        valid_examples = []
-        invalid_examples = []
+        valid_examples: list[dict[str, Any]] = []
+        invalid_examples: list[dict[str, Any]] = []
 
         for ex in examples:
             is_valid, issues = self.validate_example(ex)
@@ -164,13 +165,13 @@ class DistillationDatasetManager:
         invalid_count = len(invalid_examples)
 
         # Domain distribution
-        domain_dist = {}
+        domain_dist: dict[str, int] = {}
         for ex in valid_examples:
             domain = ex.get("domain", "unknown")
             domain_dist[domain] = domain_dist.get(domain, 0) + 1
 
         # Rating distribution
-        rating_dist = {}
+        rating_dist: dict[int, int] = {}
         for ex in valid_examples:
             rating = ex.get("rating", 0)
             rating_dist[rating] = rating_dist.get(rating, 0) + 1
@@ -284,9 +285,9 @@ class DistillationDatasetManager:
         }
 
     @staticmethod
-    def _count_by_field(examples: list[dict], field: str) -> dict:
+    def _count_by_field(examples: list[dict], field: str) -> dict[str, int]:
         """Count examples by a specific field."""
-        counts = {}
+        counts: dict[str, int] = {}
         for ex in examples:
             value = ex.get(field, "unknown")
             counts[value] = counts.get(value, 0) + 1
@@ -302,7 +303,7 @@ class DistillationDatasetManager:
         total = sum(transform(ex.get(field, "")) for ex in examples)
         return total / len(examples)
 
-    def deduplicate(self, output_path: str | None = None) -> int:
+    def deduplicate(self, output_path: str | Path | None = None) -> int:
         """Remove duplicate examples based on prompt content.
 
         Args:
@@ -328,7 +329,8 @@ class DistillationDatasetManager:
 
         # Write deduplicated data
         output_path = output_path or self.curated_file
-        with open(output_path, "w", encoding="utf-8") as f:
+        write_path: str = output_path  # type: ignore[assignment]
+        with open(write_path, "w", encoding="utf-8") as f:
             for ex in unique_examples:
                 f.write(json.dumps(ex) + "\n")
 

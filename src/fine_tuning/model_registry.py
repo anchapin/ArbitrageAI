@@ -62,16 +62,18 @@ class ModelRegistry:
         if registry_path is None:
             data_dir = Path(__file__).parent.parent.parent / "data" / "fine_tuning"
             data_dir.mkdir(parents=True, exist_ok=True)
-            registry_path = data_dir / "model_registry.json"
+            self.registry_path: str | Path = data_dir / "model_registry.json"
+        else:
+            self.registry_path = registry_path
 
-        self.registry_path = registry_path
         self.models: dict[str, list[dict[str, Any]]] = self._load_registry()
 
     def _load_registry(self) -> dict[str, list[dict[str, Any]]]:
         """Load registry from file."""
-        if Path(self.registry_path).exists():
+        path = Path(self.registry_path)
+        if path.exists():
             try:
-                with open(self.registry_path, encoding="utf-8") as f:
+                with open(path, encoding="utf-8") as f:
                     return json.load(f)
             except Exception as e:
                 logger.warning(f"Failed to load registry: {e}")
@@ -80,7 +82,8 @@ class ModelRegistry:
 
     def _save_registry(self) -> None:
         """Save registry to file."""
-        with open(self.registry_path, "w", encoding="utf-8") as f:
+        path = Path(self.registry_path)
+        with open(path, "w", encoding="utf-8") as f:
             json.dump(self.models, f, indent=2)
 
     def register_model(
@@ -256,7 +259,7 @@ class ModelRegistry:
                 "total_cost": total_cost,
             }
         # All models
-        summary = {
+        summary: dict[str, Any] = {
             "models": {},
             "total_cost": 0.0,
         }
