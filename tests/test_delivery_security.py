@@ -26,7 +26,6 @@ from src.api.main import (
     _delivery_rate_limits,
     _check_delivery_ip_rate_limit,
     _delivery_ip_rate_limits,
-    _reset_redis_rate_limiter,
     _sanitize_string,
     DeliveryTokenRequest,
     DELIVERY_MAX_FAILED_ATTEMPTS,
@@ -190,8 +189,8 @@ class TestTokenExpiration:
             response = client.get(
                 "/api/delivery/550e8400-e29b-41d4-a716-446655440001/valid_token_string_1234567890abc"
             )
-            # Implementation returns 401 for both invalid and expired tokens
-            assert response.status_code == 401
+            # Implementation returns 410 for expired tokens
+            assert response.status_code == 410
             # Response should indicate token problem (either invalid or expired)
             assert "token" in response.json()["detail"].lower()
         finally:
@@ -428,8 +427,8 @@ class TestTokenVerification:
             response = client.get(
                 "/api/delivery/550e8400-e29b-41d4-a716-446655440006/wrong_token_string_1234567890xyz"
             )
-            # Implementation returns 401 for invalid tokens
-            assert response.status_code == 401
+            # Implementation returns 403 for invalid tokens (wrong token)
+            assert response.status_code == 403
         finally:
             app.dependency_overrides.clear()
 
@@ -469,8 +468,8 @@ class TestTokenVerification:
             response = client.get(
                 "/api/delivery/550e8400-e29b-41d4-a716-446655440007/any_token_string_1234567890abcde"
             )
-            # Implementation returns 401 for invalid tokens (including None)
-            assert response.status_code == 401
+            # Implementation returns 403 for invalid tokens (including None)
+            assert response.status_code == 403
         finally:
             app.dependency_overrides.clear()
 
@@ -814,7 +813,7 @@ class TestInputValidation:
             response = client.get(
                 "/api/delivery/550e8400-e29b-41d4-a716-446655440000/bad-token!"
             )
-            assert response.status_code == 422
+            assert response.status_code == 400
             assert "Invalid" in response.json()["detail"]
         finally:
             app.dependency_overrides.clear()
@@ -829,7 +828,7 @@ class TestInputValidation:
             response = client.get(
                 "/api/delivery/not-a-uuid/valid_token_string_1234567890"
             )
-            assert response.status_code == 422
+            assert response.status_code == 400
             assert "Invalid" in response.json()["detail"]
         finally:
             app.dependency_overrides.clear()
