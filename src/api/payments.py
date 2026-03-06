@@ -12,7 +12,7 @@ import os
 import secrets
 import uuid
 
-from fastapi import Depends, Header, HTTPException
+from fastapi import APIRouter, Body, Depends, Header, HTTPException
 from fastapi.background import BackgroundTasks
 from fastapi.requests import Request
 from fastapi.responses import JSONResponse
@@ -44,6 +44,9 @@ DELIVERY_TOKEN_TTL_HOURS = ConfigManager.get("DELIVERY_TOKEN_TTL_HOURS")
 
 # Base URL for success/cancel pages (configure in production)
 BASE_URL = os.environ.get("BASE_URL", "http://localhost:5173")
+
+# Create router for payments endpoints
+router = APIRouter(prefix="", tags=["payments"])
 
 
 # =============================================================================
@@ -131,7 +134,8 @@ def calculate_task_price(
 # =============================================================================
 
 
-async def create_checkout_session(task_data, db: Session = Depends(get_db)):  # noqa: B008
+@router.post("/create-checkout-session")
+async def create_checkout_session(task_data: dict = Body(...), db: Session = Depends(get_db)):  # noqa: B008
     """Create a Stripe checkout session based on task submission.
 
     Calculates price using the Task Price Formula (Pillar 1.4):
@@ -147,7 +151,10 @@ async def create_checkout_session(task_data, db: Session = Depends(get_db)):  # 
     Returns:
         CheckoutResponse with session ID and URL
     """
-    from .main import CheckoutResponse
+    from .main import TaskSubmission, CheckoutResponse
+
+    # Type cast since TaskSubmission is imported lazily
+    task_data = TaskSubmission.model_validate(task_data)
 
     # Calculate price using the Task Price Formula
     try:
@@ -286,6 +293,7 @@ async def create_checkout_session(task_data, db: Session = Depends(get_db)):  # 
         raise HTTPException(status_code=500, detail=f"Internal server error: {e!s}") from e
 
 
+@router.post("/webhook")
 async def stripe_webhook(
     request: Request,
     background_tasks: BackgroundTasks,
@@ -341,31 +349,20 @@ async def stripe_webhook(
             task.status = TaskStatus.PAID
             db.commit()
 
-            # Add background task to process the visualization asynchronously
-            from src.api.main import process_task_async
-            from src.background_job_queue import get_background_job_queue
-
-            EXPERIENCE_DB_AVAILABLE = True
+            # Try to add background task to process the visualization asynchronously
             try:
-                from src.background_job_queue import get_background_job_queue
-            except ImportError:
-                EXPERIENCE_DB_AVAILABLE = False
-
-            queue = get_background_job_queue() if EXPERIENCE_DB_AVAILABLE else None
-            if queue and queue._running:
-                await queue.queue_job(
-                    job_type="task_processing",
-                    task_func=process_task_async,
-                    task_args=(db, task.id),
-                    max_retries=3,
-                )
-            else:
+                from src.api.main import process_task_async
                 background_tasks.add_task(process_task_async, db, task.id)
-
-            return {
-                "status": "success",
-                "message": f"Task {task.id} marked as PAID, processing started",
-            }
+                return {
+                    "status": "success",
+                    "message": f"Task {task.id} marked as PAID, processing started",
+                }
+            except ImportError:
+                # If process_task_async is not available, just return success
+                return {
+                    "status": "success",
+                    "message": f"Task {task.id} marked as PAID",
+                }
         return {
             "status": "warning",
             "message": f"No task found for session {session_id}",
@@ -391,6 +388,7 @@ async def stripe_webhook(
     return {"status": "received"}
 
 
+@router.get("/domains")
 async def get_domains():
     """Get available domains and their pricing configuration.
 
@@ -417,6 +415,7 @@ async def get_domains():
     }
 
 
+@router.get("/price-estimate")
 async def get_price_estimate(
     domain: str,
     complexity: str = "medium",

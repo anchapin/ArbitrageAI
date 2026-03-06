@@ -180,7 +180,8 @@ class BidLockManager:
                     logger.error(f"Error acquiring lock {lock_key}: {e}")
                     return False
         finally:
-            if db:                db.close()
+            if db:
+                db.close()
 
     @staticmethod
     async def release_lock(

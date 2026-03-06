@@ -105,7 +105,8 @@ class CostTracker:
             logger.error(f"Failed to track cost: {e}")
             db.rollback()
             raise
-        finally:            db.close()
+        finally:
+            db.close()
 
     @staticmethod
     def add_revenue(
@@ -168,7 +169,8 @@ class CostTracker:
             logger.error(f"Failed to add revenue: {e}")
             db.rollback()
             return False
-        finally:            db.close()
+        finally:
+            db.close()
 
     @staticmethod
     def calculate_roi_by_marketplace(
@@ -243,7 +245,8 @@ class CostTracker:
         except Exception as e:
             logger.error(f"Failed to calculate ROI by marketplace: {e}")
             raise
-        finally:            db.close()
+        finally:
+            db.close()
 
     @staticmethod
     def calculate_roi_by_strategy(

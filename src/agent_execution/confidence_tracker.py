@@ -254,7 +254,8 @@ class ConfidenceTracker:
 
             return int(max(0, min(100, score)))
 
-        finally:            db.close()
+        finally:
+            db.close()
 
     @staticmethod
     def _calculate_variance(entries: list[ConfidenceEntry]) -> float:
@@ -428,7 +429,8 @@ class ConfidenceTracker:
                 "confidence_score": confidence_score,
             }
 
-        finally:            db.close()
+        finally:
+            db.close()
 
     @staticmethod
     def get_recent_history(
