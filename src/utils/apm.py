@@ -22,7 +22,7 @@ from contextlib import contextmanager
 from functools import wraps
 import os
 import time
-from typing import Any, Optional
+from typing import Any, Optional, Self
 
 from opentelemetry import metrics, trace
 from opentelemetry.sdk.metrics import MeterProvider
@@ -103,7 +103,7 @@ class APMManager:
     _instance: Optional["APMManager"] = None
     _initialized: bool = False
 
-    def __new__(cls) -> "APMManager":
+    def __new__(cls) -> "Self":
         """Create or return the singleton APMManager instance.
 
         Returns:
