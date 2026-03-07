@@ -38,13 +38,14 @@ jobs:
             # Also exclude files that legitimately contain these patterns for detection purposes:
             # - src/utils/secrets.py - defines detection patterns
             # - src/config/__init__.py - config validation
+            # - src/config/validation.py - security check patterns (contains placeholder for detection)
             # - src/utils/client_auth.py - auth placeholder patterns
             # - tests/ - test files
             # - scripts/ - scripts with example patterns
             # - .github/workflows/ - workflow files contain patterns
             # - .github/ISSUES/ - security documentation with test patterns
             # - .env.example - documentation placeholders
-            if grep -r --include="*.yml" --include="*.yaml" --include="*.toml" --include="*.py" --include="*.js" --include="*.ts" "$pattern" . 2>/dev/null | grep -v "src/utils/secrets.py" | grep -v "src/config/__init__.py" | grep -v "src/utils/client_auth.py" | grep -v "tests/" | grep -v "scripts/" | grep -v ".github/workflows/" | grep -v ".github/ISSUES/" | grep -v ".env.example"; then
+            if grep -r --include="*.yml" --include="*.yaml" --include="*.toml" --include="*.py" --include="*.js" --include="*.ts" "$pattern" . 2>/dev/null | grep -v "src/utils/secrets.py" | grep -v "src/config/__init__.py" | grep -v "src/config/validation.py" | grep -v "src/utils/client_auth.py" | grep -v "tests/" | grep -v "scripts/" | grep -v ".github/workflows/" | grep -v ".github/ISSUES/" | grep -v ".env.example"; then
               echo "❌ Found insecure default pattern: $pattern"
               FOUND_ISSUES=1
             fi

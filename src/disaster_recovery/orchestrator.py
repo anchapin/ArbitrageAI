@@ -1,18 +1,23 @@
-"""
-Disaster Recovery Orchestrator Module.
+"""Disaster Recovery Orchestrator Module.
 
 Coordinates disaster recovery operations across backup and recovery managers.
 """
 
+import threading
+import time
+from dataclasses import asdict
 from datetime import datetime
 from typing import Any
 
+import schedule
 from sqlalchemy import create_engine, text
+from traceloop.sdk.decorators import workflow
+
 from src.config import Config
 from src.utils.logger import get_logger
 
 from .backup_manager import BackupManager
-from .models import BackupType
+from .models import BackupType, RecoveryStatus
 from .recovery_manager import RecoveryManager
 
 logger = get_logger(__name__)
@@ -26,7 +31,22 @@ class DisasterRecoveryOrchestrator:
         self.config = config
         self.backup_manager = BackupManager(config)
         self.recovery_manager = RecoveryManager(config, self.backup_manager)
+        self._start_scheduler()
 
+    @staticmethod
+    def _start_scheduler():
+        """Start the backup scheduler."""
+
+        def run_scheduler():
+            while True:
+                schedule.run_pending()
+                time.sleep(60)
+
+        scheduler_thread = threading.Thread(target=run_scheduler, daemon=True)
+        scheduler_thread.start()
+        logger.info("Backup scheduler started")
+
+    @workflow(name="disaster_recovery_workflow")
     async def execute_disaster_recovery(
         self, disaster_type: str, plan_id: str = "default",
     ) -> dict[str, Any]:
@@ -264,3 +284,46 @@ class DisasterRecoveryOrchestrator:
                 "database_connectivity": False,
                 "data_integrity": False,
             }
+
+    async def create_backup(self, backup_type: str = "full") -> dict[str, Any]:
+        """Create a backup manually."""
+        try:
+            if backup_type == "full":
+                metadata = await self.backup_manager.create_full_backup(force=True)
+            elif backup_type == "incremental":
+                metadata = await self.backup_manager.create_incremental_backup()
+            elif backup_type == "point_in_time":
+                metadata = await self.backup_manager.create_point_in_time_backup()
+            else:
+                return {"success": False, "error": f"Unknown backup type: {backup_type}"}
+
+            return {
+                "success": True,
+                "backup_id": metadata.backup_id,
+                "metadata": asdict(metadata),
+            }
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+
+    async def list_backups(self) -> list[dict[str, Any]]:
+        """List all available backups."""
+        backups = await self.backup_manager.list_backups()
+        return [asdict(backup) for backup in backups]
+
+    async def validate_backup(self, backup_id: str) -> dict[str, Any]:
+        """Validate a backup."""
+        return await self.backup_manager.validate_backup(backup_id)
+
+    async def execute_recovery(
+        self, backup_id: str, plan_id: str = "default",
+    ) -> dict[str, Any]:
+        """Execute a recovery operation."""
+        result = await self.recovery_manager.execute_recovery(backup_id, plan_id)
+        return {
+            "success": result.status == RecoveryStatus.COMPLETED,
+            "operation": asdict(result),
+        }
+
+    async def test_recovery_plan(self, plan_id: str) -> dict[str, Any]:
+        """Test a recovery plan."""
+        return await self.recovery_manager.test_recovery_plan(plan_id)

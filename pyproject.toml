@@ -218,7 +218,6 @@ ignore = [
     "PLR0917",  # too-many-positional-arguments (9 violations)
     "RUF029",   # unused-async (22 violations)
     "ASYNC230", # blocking-open-call-in-async-function (6 violations)
-    "ASYNC240", # async-functions-using-pathlib (27 violations - requires trio.Path or anyio.path refactoring)
     "PLW1514",  # unspecified-encoding (4 violations)
     "RUF002",   # ambiguous-unicode-character-docstring (4 violations)
     "RUF003",   # ambiguous-unicode-character-comment (4 violations)
@@ -232,7 +231,6 @@ ignore = [
     "RUF001",   # ambiguous-unicode-character-string (2 violations)
     "RUF012",   # mutable-class-default (3 violations)
     "ASYNC110", # async-busy-wait (1 violation)
-    "ASYNC240", # pathlib-in-async (pre-existing, needs trio.Path refactor)
     "RUF067",   # non-empty-init (pre-existing registry pattern)
     "PYI034",   # __new__ return type (singleton pattern)
     "B027",     # empty-method-without-abstract-decorator (1 violation)
@@ -313,7 +311,7 @@ preview = true
 # Lazy imports to avoid circular dependencies
 "src/agent_execution/planning.py" = ["E501", "PLC0415"]
 "src/api/user_models.py" = ["E501"]
-"src/api/disaster_recovery.py" = ["E501", "PLC0415", "ARG001"]
+"src/api/disaster_recovery.py" = ["ASYNC240", "E501", "PLC0415", "ARG001"]
 # Documentation code examples
 "docs/**/*.py" = ["D100", "D103", "F401", "ARG"]
 # Retry patterns require try-except in loops
@@ -321,7 +319,7 @@ preview = true
 "src/agent_execution/bid_lock_manager.py" = ["PERF203"]
 "src/agent_execution/bid_deduplication.py" = ["RUF029", "PERF203"]
 # Lazy imports to avoid circular dependencies
-"src/agent_execution/arena.py" = ["E501", "F821", "PLC0415"]
+"src/agent_execution/arena.py" = ["E501", "PLC0415"]
 "src/agent_execution/auto_threshold.py" = ["PLC0415", "E501"]
 "src/agent_execution/bid_lock_manager_factory.py" = ["PLC0415"]
 "src/agent_execution/classifiers/task_classifier.py" = ["PLC0415"]

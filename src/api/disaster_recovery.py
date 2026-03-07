@@ -36,7 +36,7 @@ tracer = get_tracer(__name__)
 
 # Router setup
 router = APIRouter(
-    prefix="/api/disaster-recovery",
+    prefix="/disaster-recovery",
     tags=["disaster-recovery"],
     responses={404: {"description": "Not found"}},
 )
