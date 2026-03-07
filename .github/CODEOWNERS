@@ -1,52 +1,41 @@
-# CODEOWNERS - Code Ownership Rules
-# https://help.github.com/articles/about-codeowners/
+# Code Owners
+# https://help.github.com/articles/about-code-owners/
 
-# Default owner for all files (fallback)
+# Default owner for everything not matched below
 * @anchapin
 
-# Core API & Backend
-/src/api/ @anchapin
+# Core modules
+src/agent_execution/ @anchapin
+src/api/ @anchapin
+src/client_portal/ @anchapin
+src/config/ @anchapin
 
-# Agent Execution Engine
-/src/agent_execution/ @anchapin
+# Services
+src/analytics/ @anchapin
+src/llm_service.py @anchapin
+src/llm_health_check.py @anchapin
+src/websocket/ @anchapin
+src/websocket_manager.py @anchapin
+src/background_job_queue.py @anchapin
+src/market_scanner/ @anchapin
+src/planning/ @anchapin
+src/planning.py @anchapin
 
-# Frontend / Client Portal
-/src/client_portal/ @anchapin
+# Specialized components
+src/fine_tuning/ @anchapin
+src/distillation/ @anchapin
+src/disaster_recovery/ @anchapin
 
-# LLM & AI Services
-/src/llm_service.py @anchapin
-/src/llm_health_check.py @anchapin
-/src/async_rag_service.py @anchapin
-
-# Fine-tuning & Model Training
-/src/fine_tuning/ @anchapin
-/src/distillation/ @anchapin
-
-# Analytics & Reporting
-/src/analytics/ @anchapin
-
-# Utilities & Infrastructure
-/src/utils/ @anchapin
-/src/config/ @anchapin
-
-# Disaster Recovery
-/src/disaster_recovery/ @anchapin
-
-# Database Migrations
-/alembic/ @anchapin
-
-# Docker & Deployment
-/docker/ @anchapin
+# Infrastructure
+alembic/ @anchapin
+tests/ @anchapin
+docker/ @anchapin
+Dockerfile @anchapin
+Dockerfile.sandbox @anchapin
 docker-compose*.yml @anchapin
-Dockerfile* @anchapin
-
-# Scripts & Automation
-/scripts/ @anchapin
-
-# Testing
-/tests/ @anchapin
-
-# GitHub configuration
+scripts/ @anchapin
 .github/ @anchapin
 .github/workflows/ @anchapin
 .github/dependabot.yml @anchapin
+.pre-commit-config.yaml @anchapin
+docs/ @anchapin
