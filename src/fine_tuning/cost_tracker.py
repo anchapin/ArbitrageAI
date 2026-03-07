@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 import json
 import logging
+import sys
 from pathlib import Path
 from typing import Any
 
@@ -49,16 +50,18 @@ class CostTracker:
         if tracker_path is None:
             data_dir = Path(__file__).parent.parent.parent / "data" / "fine_tuning"
             data_dir.mkdir(parents=True, exist_ok=True)
-            tracker_path = data_dir / "cost_tracking.json"
+            self.tracker_path: str | Path = data_dir / "cost_tracking.json"
+        else:
+            self.tracker_path = tracker_path
 
-        self.tracker_path = tracker_path
         self.costs: dict[str, Any] = self._load_costs()
 
     def _load_costs(self) -> dict[str, Any]:
         """Load cost tracking data."""
-        if Path(self.tracker_path).exists():
+        path = Path(self.tracker_path)
+        if path.exists():
             try:
-                with open(self.tracker_path, encoding="utf-8") as f:
+                with open(path, encoding="utf-8") as f:
                     return json.load(f)
             except Exception as e:
                 logger.warning(f"Failed to load costs: {e}")
@@ -67,7 +70,8 @@ class CostTracker:
 
     def _save_costs(self) -> None:
         """Save cost tracking data."""
-        with open(self.tracker_path, "w", encoding="utf-8") as f:
+        path = Path(self.tracker_path)
+        with open(path, "w", encoding="utf-8") as f:
             json.dump(self.costs, f, indent=2)
 
     def record_training_job(
@@ -164,7 +168,7 @@ class CostTracker:
 
     def get_inference_costs(
         self, model_name: str | None = None,
-    ) -> dict[str, float]:
+    ) -> dict[str, dict[str, float]]:
         """Get inference costs by model.
 
         Args:
@@ -173,7 +177,7 @@ class CostTracker:
         Returns:
             Inference costs dictionary
         """
-        costs = {}
+        costs: dict[str, dict[str, float]] = {}
 
         for inference in self.costs["inferences"]:
             model = inference.get("model_name", "unknown")
@@ -234,7 +238,7 @@ class CostTracker:
         if cost_savings > 0:
             break_even = int(training_cost / cost_savings * expected_inference_count)
         else:
-            break_even = float("inf")
+            break_even = sys.maxsize  # Use max int instead of inf
 
         # ROI calculation
         roi = (cost_savings - training_cost) / training_cost if training_cost > 0 else 0
@@ -270,7 +274,7 @@ class CostTracker:
         Returns:
             Cost summary dictionary
         """
-        training_costs = {}
+        training_costs: dict[str, float] = {}
         for job in self.costs["jobs"].values():
             model_name = job.get("model_name", "unknown")
             if model_name not in training_costs:

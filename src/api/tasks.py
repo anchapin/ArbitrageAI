@@ -495,7 +495,7 @@ async def get_task_by_session(
     # Generate client auth token if email was provided
     client_token = None
     if task.client_email:
-        client_token = generate_client_token(task.client_email)
+        client_token = generate_client_token(str(task.client_email))
 
     return {
         "task_id": task.id,
@@ -610,14 +610,14 @@ async def get_secure_delivery(
 
     # Return delivery response
     return DeliveryResponse(
-        task_id=task.id,
-        title=task.title,
-        domain=task.domain,
-        result_type=task.result_type or "image",
-        result_url=task.result_document_url or task.result_spreadsheet_url or task.result_image_url,
-        result_image_url=task.result_image_url,
-        result_document_url=task.result_document_url,
-        result_spreadsheet_url=task.result_spreadsheet_url,
+        task_id=str(task.id),
+        title=str(task.title),
+        domain=str(task.domain),
+        result_type=str(task.result_type) if task.result_type else "image",
+        result_url=str(task.result_document_url) if task.result_document_url else str(task.result_spreadsheet_url) if task.result_spreadsheet_url else str(task.result_image_url) if task.result_image_url else None,
+        result_image_url=str(task.result_image_url) if task.result_image_url else None,
+        result_document_url=str(task.result_document_url) if task.result_document_url else None,
+        result_spreadsheet_url=str(task.result_spreadsheet_url) if task.result_spreadsheet_url else None,
         delivered_at=datetime.now(timezone.utc).isoformat(),
     )
 
@@ -714,7 +714,6 @@ async def get_arena_history(
     competitions = (
         db.query(ArenaCompetition)
         .filter(ArenaCompetition.status == ArenaCompetitionStatus.COMPLETED)
-        .options(joinedload(ArenaCompetition.task))
         .order_by(ArenaCompetition.created_at.desc())
         .limit(limit)
         .all()

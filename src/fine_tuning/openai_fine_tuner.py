@@ -86,7 +86,7 @@ class OpenAIFineTuner:
             raise ValueError(f"Unsupported model: {model}. Supported: {self.SUPPORTED_MODELS}")
 
         # Create fine-tuning job
-        kwargs = {
+        kwargs: dict[str, Any] = {
             "model": model,
             "training_file": training_file_id,
             "learning_rate_multiplier": learning_rate_multiplier,
@@ -129,7 +129,7 @@ class OpenAIFineTuner:
             "status": job.status,
             "fine_tuned_model": job.fine_tuned_model,
             "created_at": job.created_at,
-            "updated_at": job.updated_at,
+            "updated_at": getattr(job, "updated_at", None),
             "trained_tokens": getattr(job, "trained_tokens", None),
             "training_file": job.training_file,
         }
@@ -173,7 +173,7 @@ class OpenAIFineTuner:
         ]
 
     @staticmethod
-    def estimate_cost(training_tokens: int, model: str) -> dict[str, float]:
+    def estimate_cost(training_tokens: int, model: str) -> dict[str, Any]:
         """Estimate fine-tuning cost.
 
         OpenAI pricing (as of 2024):

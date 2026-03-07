@@ -9,8 +9,11 @@ Issue #193: Fix N+1 Query Problems with Eager Loading
 """
 
 
+from datetime import datetime
+
 from sqlalchemy import and_
 from sqlalchemy.orm import Session, joinedload, selectinload
+from sqlalchemy.engine import Row
 
 from src.api.models import Bid, BidStatus, Task, TaskStatus
 
@@ -219,7 +222,7 @@ def get_task_by_client_and_status_optimized(
     )
 
 
-def get_tasks_for_metrics_optimized(db: Session) -> list[Task]:
+def get_tasks_for_metrics_optimized(db: Session) -> list[Row[tuple[str, str, TaskStatus, int | None, datetime]]]:
     """Optimized query for admin metrics calculations.
 
     Fetches all tasks ordered by created_at using composite index.
@@ -229,7 +232,7 @@ def get_tasks_for_metrics_optimized(db: Session) -> list[Task]:
         db: Database session
 
     Returns:
-        All tasks for metrics calculation
+        List of tuples (id, domain, status, amount_paid, created_at)
     """
     return (
         db.query(

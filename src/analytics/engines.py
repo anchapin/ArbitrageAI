@@ -5,7 +5,7 @@ Core analytics engines for KPI, predictive, anomaly, and performance analytics.
 
 from datetime import datetime, timedelta
 import json
-from typing import Any
+from typing import Any, cast
 
 import numpy as np
 from sklearn.ensemble import IsolationForest
@@ -34,9 +34,9 @@ class AnalyticsEngine:
     def __init__(self, db: Session):
         """Initialize the analytics engine."""
         self.db = db
-        self.cache = {}
+        self.cache: dict[str, dict[str, Any]] = {}
         self.cache_ttl = 300
-        self.prediction_models = {}
+        self.prediction_models: dict[str, Any] = {}
 
     @staticmethod
     def _get_cache_key(query_type: str, params: dict[str, Any]) -> str:
@@ -140,7 +140,7 @@ class KPIAnalytics(AnalyticsEngine):
         if not tasks:
             return 0.0
 
-        total_time = 0
+        total_time = 0.0
         for task_item in tasks:
             if task_item.completed_at:
                 completion_time = (task_item.completed_at - task_item.created_at).total_seconds()
@@ -271,7 +271,7 @@ class PredictiveAnalytics(AnalyticsEngine):
                 self.db.query(
                     func.date_trunc("hour", Task.created_at).label("hour"),
                     func.count(Task.id).label("total_tasks"),
-                    func.sum(case([(Task.status == TaskStatus.COMPLETED, 1)], else_=0)).label("completed_tasks"),
+                    func.sum(case([(Task.status == TaskStatus.COMPLETED, 1)], else_=0)).label("completed_tasks"),  # type: ignore[arg-type]
                 )
                 .filter(Task.created_at >= start_time, Task.created_at <= end_time)
                 .group_by(func.date_trunc("hour", Task.created_at))
@@ -327,7 +327,7 @@ class PredictiveAnalytics(AnalyticsEngine):
         std_dev = np.std(data.values)
         margin_of_error = 1.96 * std_dev
 
-        return prediction - margin_of_error, prediction + margin_of_error
+        return cast(tuple[float, float], (prediction - margin_of_error, prediction + margin_of_error))
 
 
 class AnomalyDetection(AnalyticsEngine):
@@ -366,6 +366,9 @@ class AnomalyDetection(AnalyticsEngine):
 
     def _get_recent_data(self, metric: str, time_filter: datetime) -> list[float]:
         """Get recent data points for anomaly detection."""
+        from typing import Any
+
+        query: Any
         if metric == "revenue":
             query = (
                 self.db.query(func.sum(Task.amount_paid).label("revenue"))
@@ -385,17 +388,12 @@ class AnomalyDetection(AnalyticsEngine):
                 .order_by(desc("task_count"))
             )
         else:
-            query = (
-                self.db.query(
-                    (func.sum(case([(Task.status == TaskStatus.COMPLETED, 1)], else_=0)) * 100.0 / func.count(Task.id)).label("success_rate"),
-                )
-                .filter(Task.created_at >= time_filter)
-                .group_by(func.date_trunc("hour", Task.created_at))
-                .order_by(desc("success_rate"))
-            )
+            query = self.db.query(
+                (func.sum(case([(Task.status == TaskStatus.COMPLETED, 1)], else_=0)) * 100.0 / func.count(Task.id)).label("success_rate"),  # type: ignore[arg-type]
+            ).filter(Task.created_at >= time_filter).group_by(func.date_trunc("hour", Task.created_at)).order_by(desc("success_rate"))
 
         results = query.all()
-        return [float(row[0] or 0) for row in results]
+        return [float(row[0]) for row in results]
 
     @staticmethod
     def _detect_isolation_forest_anomalies(data: list[float]) -> list[dict[str, Any]]:
@@ -542,3 +540,46 @@ class PerformanceAnalytics(AnalyticsEngine):
             .filter(Task.status.in_([TaskStatus.PENDING, TaskStatus.PAID]))
             .count()
         )
+
+    def _calculate_avg_completion_time(self, time_filter: datetime) -> float:
+        """Calculate average task completion time in hours."""
+        tasks = (
+            self.db.query(Task)
+            .filter(
+                time_filter <= Task.created_at,
+                Task.status == TaskStatus.COMPLETED,
+                Task.completed_at.isnot(None),
+            )
+            .options(joinedload(Task.execution))
+            .all()
+        )
+
+        if not tasks:
+            return 0.0
+
+        total_time = sum(
+            (task.completed_at - task.created_at).total_seconds() / 3600
+            for task in tasks
+            if task.completed_at is not None
+        )
+        return total_time / len(tasks)
+
+    def _calculate_success_rate(self, time_filter: datetime) -> float:
+        """Calculate task success rate."""
+        total_tasks = (
+            self.db.query(Task)
+            .filter(time_filter <= Task.created_at)
+            .count()
+        )
+        if total_tasks == 0:
+            return 0.0
+
+        completed_tasks = (
+            self.db.query(Task)
+            .filter(
+                time_filter <= Task.created_at,
+                Task.status == TaskStatus.COMPLETED,
+            )
+            .count()
+        )
+        return (completed_tasks / total_tasks) * 100

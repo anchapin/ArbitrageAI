@@ -1,6 +1,7 @@
 """Marketplace-related database models."""
 
 from datetime import datetime
+from typing import TYPE_CHECKING
 import logging
 import uuid
 
@@ -17,12 +18,16 @@ from sqlalchemy import (
     Text,
     UniqueConstraint,
 )
-from sqlalchemy.orm import declarative_base
+from sqlalchemy.orm import DeclarativeBase, declarative_base
 
 from .enums import ArenaCompetitionStatus, BidStatus
 
+if TYPE_CHECKING:
+    from sqlalchemy.orm import DeclarativeBase as Base
+else:
+    Base = declarative_base()
+
 logger = logging.getLogger(__name__)
-Base = declarative_base()
 
 
 class Bid(Base):

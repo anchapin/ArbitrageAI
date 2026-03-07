@@ -1,6 +1,7 @@
 """User-related database models."""
 
 from datetime import datetime
+from typing import TYPE_CHECKING
 import logging
 import uuid
 
@@ -16,12 +17,16 @@ from sqlalchemy import (
     String,
     UniqueConstraint,
 )
-from sqlalchemy.orm import declarative_base
+from sqlalchemy.orm import DeclarativeBase, declarative_base
 
 from .enums import PricingTier
 
+if TYPE_CHECKING:
+    from sqlalchemy.orm import DeclarativeBase as Base
+else:
+    Base = declarative_base()
+
 logger = logging.getLogger(__name__)
-Base = declarative_base()
 
 
 class ClientProfile(Base):

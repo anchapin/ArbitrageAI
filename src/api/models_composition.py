@@ -13,6 +13,7 @@ Issue #5: Refactor overloaded Task model using composition pattern
 
 from datetime import datetime
 from enum import Enum as PyEnum
+from typing import TYPE_CHECKING
 import uuid
 
 from sqlalchemy import (
@@ -27,9 +28,12 @@ from sqlalchemy import (
     String,
     Text,
 )
-from sqlalchemy.orm import declarative_base, relationship
+from sqlalchemy.orm import DeclarativeBase, declarative_base, relationship
 
-Base = declarative_base()
+if TYPE_CHECKING:
+    from sqlalchemy.orm import DeclarativeBase as Base
+else:
+    Base = declarative_base()
 
 
 # ============================================================================

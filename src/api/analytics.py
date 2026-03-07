@@ -26,7 +26,7 @@ import numpy as np
 from pydantic import BaseModel
 from sklearn.ensemble import IsolationForest
 from sklearn.linear_model import LinearRegression
-from sqlalchemy import case, desc, func
+from sqlalchemy import case, desc, func, cast as sql_cast, Integer
 from sqlalchemy.orm import Session, joinedload
 
 # Import telemetry
@@ -145,9 +145,9 @@ class AnalyticsEngine:
             db: Database session
         """
         self.db = db
-        self.cache = {}
+        self.cache: dict[str, dict[str, Any]] = {}
         self.cache_ttl = 300  # 5 minutes
-        self.prediction_models = {}
+        self.prediction_models: dict[str, Any] = {}
 
     @staticmethod
     def _get_cache_key(query_type: str, params: dict[str, Any]) -> str:
@@ -208,7 +208,7 @@ class AnalyticsEngine:
         if not tasks:
             return 0.0
 
-        total_time = 0
+        total_time = 0.0
         for task_item in tasks:
             if task_item.completed_at:
                 completion_time = (
@@ -432,7 +432,10 @@ class PredictiveAnalytics(AnalyticsEngine):
                     func.date_trunc("hour", Task.created_at).label("hour"),
                     func.count(Task.id).label("total_tasks"),
                     func.sum(
-                        case([(Task.status == TaskStatus.COMPLETED, 1)], else_=0),
+                        sql_cast(
+                            case([(Task.status == TaskStatus.COMPLETED, 1)], else_=0),  # type: ignore[arg-type]
+                            Integer,
+                        )
                     ).label("completed_tasks"),
                 )
                 .filter(Task.created_at >= start_time, Task.created_at <= end_time)
@@ -497,9 +500,9 @@ class PredictiveAnalytics(AnalyticsEngine):
             return prediction * 0.9, prediction * 1.1
 
         std_dev = np.std(data.values)
-        margin_of_error = 1.96 * std_dev  # 95% confidence
+        margin_of_error = 1.96 * float(std_dev)  # 95% confidence
 
-        return prediction - margin_of_error, prediction + margin_of_error
+        return float(prediction - margin_of_error), float(prediction + margin_of_error)
 
 
 class AnomalyDetection(AnalyticsEngine):
@@ -553,6 +556,7 @@ class AnomalyDetection(AnalyticsEngine):
 
     def _get_recent_data(self, metric: str, time_filter: datetime) -> list[float]:
         """Get recent data points for anomaly detection."""
+        query: Any = None
         if metric == "revenue":
             query = (
                 self.db.query(func.sum(Task.amount_paid).label("revenue"))
@@ -578,7 +582,10 @@ class AnomalyDetection(AnalyticsEngine):
                 self.db.query(
                     (
                         func.sum(
-                            case([(Task.status == TaskStatus.COMPLETED, 1)], else_=0),
+                            sql_cast(
+                                case([(Task.status == TaskStatus.COMPLETED, 1)], else_=0),  # type: ignore[arg-type]
+                                Integer,
+                            ),
                         )
                         * 100.0
                         / func.count(Task.id)
@@ -931,12 +938,12 @@ class AnalyticsAPI:
 
         # Performance recommendations
         for metric in performance_metrics:
-            if metric.name == "avg_completion_time" and metric.value > metric.target:
+            if metric.target is not None and metric.name == "avg_completion_time" and metric.value > metric.target:
                 recommendations.append(
                     f"Task completion time ({metric.value:.1f}h) exceeds target ({metric.target}h). Optimize task processing pipeline.",
                 )
 
-            elif metric.name == "queue_length" and metric.value > metric.target:
+            elif metric.target is not None and metric.name == "queue_length" and metric.value > metric.target:
                 recommendations.append(
                     f"Task queue length ({metric.value}) is high. Consider scaling resources or optimizing task distribution.",
                 )

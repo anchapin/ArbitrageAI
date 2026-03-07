@@ -1,6 +1,7 @@
 """Task-related database models."""
 
 from datetime import datetime
+from typing import TYPE_CHECKING
 import logging
 import uuid
 
@@ -19,12 +20,16 @@ from sqlalchemy import (
     UniqueConstraint,
 )
 from sqlalchemy.ext.hybrid import hybrid_property
-from sqlalchemy.orm import declarative_base, relationship
+from sqlalchemy.orm import DeclarativeBase, declarative_base, relationship
 
 from .enums import ExecutionStatus, OutputType, PlanningStatus, ReviewStatus, TaskStatus
 
+if TYPE_CHECKING:
+    from sqlalchemy.orm import DeclarativeBase as Base
+else:
+    Base = declarative_base()
+
 logger = logging.getLogger(__name__)
-Base = declarative_base()
 
 
 class Task(Base):

@@ -155,21 +155,21 @@ from trl import SFTTrainer
 import json
 
 # Configuration
-BASE_MODEL = "{base_model}"  # noqa: F821
-DATASET_PATH = "{dataset_path}"  # noqa: F821
-OUTPUT_MODEL_NAME = "{output_model_name}"  # noqa: F821
-NUM_EPOCHS = {num_epochs}  # noqa: F821
-LEARNING_RATE = {learning_rate}  # noqa: F821
-BATCH_SIZE = {batch_size}  # noqa: F821
+BASE_MODEL = "{base_model}"  # type: ignore[name-defined]  # noqa: F821
+DATASET_PATH = "{dataset_path}"  # type: ignore[name-defined]  # noqa: F821
+OUTPUT_MODEL_NAME = "{output_model_name}"  # type: ignore[name-defined]  # noqa: F821
+NUM_EPOCHS = {num_epochs}  # type: ignore[name-defined]  # noqa: F821
+LEARNING_RATE = {learning_rate}  # type: ignore[name-defined]  # noqa: F821
+BATCH_SIZE = {batch_size}  # type: ignore[name-defined]  # noqa: F821
 
 # Load base model
-logger.info(f"Loading base model: {BASE_MODEL}")
+logger.info(f"Loading base model: {{BASE_MODEL}}")
 max_seq_length = 2048
 dtype = None  # Auto detect
 load_in_4bit = True
 
 model, tokenizer = FastLanguageModel.from_pretrained(
-    model_name=BASE_MODEL,
+    model_name=BASE_MODEL,  # type: ignore[name-defined]
     max_seq_length=max_seq_length,
     dtype=dtype,
     load_in_4bit=load_in_4bit,
@@ -187,24 +187,24 @@ model = FastLanguageModel.get_peft_model(
 )
 
 # Load dataset
-logger.info(f"Loading dataset: {DATASET_PATH}")
-with open(DATASET_PATH, 'r') as f:
+logger.info(f"Loading dataset: {{DATASET_PATH}}")
+with open(DATASET_PATH, 'r') as f:  # type: ignore[name-defined]
     data = json.load(f)
 
 dataset = load_dataset(
     "json",
-    data_files={{"train": DATASET_PATH}},
+    data_files={{"train": DATASET_PATH}},  # type: ignore[name-defined]
     split="train",
 )
 
 # Define training arguments
 training_args = TrainingArguments(
     output_dir=f"./models/{{OUTPUT_MODEL_NAME}}",
-    num_train_epochs=NUM_EPOCHS,
-    per_device_train_batch_size=BATCH_SIZE,
+    num_train_epochs=NUM_EPOCHS,  # type: ignore[name-defined]
+    per_device_train_batch_size=BATCH_SIZE,  # type: ignore[name-defined]
     gradient_accumulation_steps=4,
     warmup_steps=5,
-    learning_rate=LEARNING_RATE,
+    learning_rate=LEARNING_RATE,  # type: ignore[name-defined]
     fp16=not torch.cuda.is_available(),
     bf16=torch.cuda.is_available(),
     logging_steps=10,
@@ -247,7 +247,7 @@ logger.info(f"Fine-tuning complete! Model saved to ./models/{{OUTPUT_MODEL_NAME}
             f.write(script)
 
         # Make script executable
-        pathlib.Path(output_path).chmod(0o755)
+        Path(output_path).chmod(0o755)
 
         logger.info(f"Generated Unsloth script: {output_path}")
         return output_path
