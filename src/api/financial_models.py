@@ -1,6 +1,6 @@
 """Financial database models."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import TYPE_CHECKING
 import logging
 import uuid
@@ -266,6 +266,68 @@ class VirtualWallet(Base):
     critical_budget_alert_sent = Column(Boolean, default=False, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    @staticmethod
+    def _reset_budget_if_needed(db, wallet) -> None:
+        """Reset budget if the reset period has passed.
+        
+        Args:
+            db: Database session
+            wallet: VirtualWallet instance
+        """
+        if not wallet.budget_start_at:
+            return
+        
+        # Get current time in UTC with timezone awareness
+        now = datetime.now(timezone.utc)
+        
+        # Handle naive datetime (no timezone info)
+        budget_start = wallet.budget_start_at
+        if budget_start.tzinfo is None:
+            # Naive datetime - assume it's UTC
+            budget_start = budget_start.replace(tzinfo=timezone.utc)
+        
+        wallet_age = now - budget_start
+        
+        should_reset = False
+        if wallet.budget_reset_period == "daily":
+            should_reset = wallet_age.days >= 1
+        elif wallet.budget_reset_period == "weekly":
+            should_reset = wallet_age.days >= 7
+        elif wallet.budget_reset_period == "monthly":
+            should_reset = wallet_age.days >= 30
+        
+        if should_reset:
+            wallet.budget_spent_cents = 0
+            wallet.budget_start_at = now
+            wallet.low_budget_alert_sent = False
+            wallet.critical_budget_alert_sent = False
+            db.commit()
+
+    @staticmethod
+    def _check_budget_alerts(db, wallet) -> None:
+        """Check budget thresholds and set alert flags.
+        
+        Args:
+            db: Database session
+            wallet: VirtualWallet instance
+        """
+        if wallet.budget_cap_cents == 0:
+            return
+            
+        budget_percentage = (wallet.budget_spent_cents / wallet.budget_cap_cents) * 100
+        
+        # Check for critical budget (below 10%)
+        if budget_percentage >= (100 - wallet.critical_budget_threshold_percent):
+            if not wallet.critical_budget_alert_sent:
+                wallet.critical_budget_alert_sent = True
+                db.commit()
+        
+        # Check for low budget (below 25%)
+        if budget_percentage >= (100 - wallet.low_budget_threshold_percent):
+            if not wallet.low_budget_alert_sent:
+                wallet.low_budget_alert_sent = True
+                db.commit()
 
     def to_dict(self):
         """Convert VirtualWallet to dictionary.

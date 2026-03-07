@@ -4,8 +4,7 @@ Tests for Training Mode & Simulation Engine (Issues #88, #89, #90, #91)
 
 import pytest
 from datetime import datetime
-from src.api.database import SessionLocal
-from src.api.models import SimulationBid
+from src.api.marketplace_models import SimulationBid
 from src.agent_execution.simulation_engine import (
     SimulationEngine,
     get_simulation_engine,
@@ -22,14 +21,48 @@ def reset_config():
     yield
 
 
+@pytest.fixture(autouse=True)
+def setup_test_db():
+    """Set up test database with tables before each test."""
+    from src.api.database import engine
+    from src.api.models import Base
+    from src.api.marketplace_models import Base as MarketplaceBase
+    
+    # Create all tables before each test
+    Base.metadata.create_all(bind=engine)
+    MarketplaceBase.metadata.create_all(bind=engine)
+    
+    yield
+    
+    # Clean up data after each test
+    from src.api.database import SessionLocal
+    session = SessionLocal()
+    try:
+        for table in reversed(MarketplaceBase.metadata.sorted_tables):
+            try:
+                session.execute(table.delete())
+            except Exception:
+                pass
+        for table in reversed(Base.metadata.sorted_tables):
+            try:
+                session.execute(table.delete())
+            except Exception:
+                pass
+        session.commit()
+    except Exception:
+        session.rollback()
+    finally:
+        session.close()
+
+
 @pytest.fixture
 def db_session():
-    """Provide a database session for tests."""
+    """Provide a synchronous database session for tests."""
+    from src.api.database import SessionLocal
     session = SessionLocal()
     try:
         yield session
     finally:
-        session.rollback()
         session.close()
 
 
