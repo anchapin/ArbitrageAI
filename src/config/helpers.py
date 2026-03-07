@@ -5,6 +5,7 @@ environment variables.
 """
 
 import os
+import re
 
 
 def get_redis_url() -> str:
@@ -126,8 +127,6 @@ def get_all_configured_env_vars() -> dict:
     Returns:
         Dictionary mapping variable names to their current values (with secrets masked)
     """
-    import re
-
     # All known environment variables in the application
     all_vars = {
         # Database
