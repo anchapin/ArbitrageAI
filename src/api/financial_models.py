@@ -1,6 +1,6 @@
 """Financial database models."""
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import TYPE_CHECKING
 import logging
 import uuid
@@ -293,6 +293,38 @@ class VirtualWallet(Base):
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
         }
+
+    @staticmethod
+    def _reset_budget_if_needed(db, wallet: "VirtualWallet"):
+        """Reset budget tracking if reset period has elapsed."""
+        now = datetime.now()
+
+        # Calculate when budget should reset
+        reset_delta = None
+        if wallet.budget_reset_period == "daily":
+            reset_delta = timedelta(days=1)
+        elif wallet.budget_reset_period == "weekly":
+            reset_delta = timedelta(weeks=1)
+        elif wallet.budget_reset_period == "monthly":
+            reset_delta = timedelta(days=30)
+
+        if reset_delta and (now - wallet.budget_start_at) >= reset_delta:
+            wallet.budget_spent_cents = 0
+            wallet.budget_start_at = now
+            wallet.low_budget_alert_sent = False
+            wallet.critical_budget_alert_sent = False
+            wallet.updated_at = now
+
+            db.commit()
+
+    @staticmethod
+    def _check_budget_alerts(db, wallet: "VirtualWallet"):
+        """Check if budget alerts need to be sent (no-op for model).
+
+        Note: Actual alert sending is handled by VirtualWalletManager.
+        This method exists for API compatibility.
+        """
+        pass
 
 
 class WebhookSecret(Base):
