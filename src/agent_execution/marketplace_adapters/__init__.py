@@ -5,7 +5,7 @@ Implements unified interface for searching, bidding, and tracking across
 different platforms (Fiverr, Upwork, PeoplePerHour, etc.).
 """
 
-from .base import (
+from src.agent_execution.marketplace_adapters.base import (
     AuthenticationError,
     BidProposal,
     BidStatus,
@@ -17,15 +17,13 @@ from .base import (
     SearchQuery,
     SearchResult,
 )
-from .fiverr_adapter import FiverrAdapter
-from .peoplehour_adapter import PeoplePerHourAdapter
-from .registry import MarketplaceRegistry
-from .upwork_adapter import UpworkAdapter
+from src.agent_execution.marketplace_adapters.fiverr_adapter import FiverrAdapter
+from src.agent_execution.marketplace_adapters.peoplehour_adapter import PeoplePerHourAdapter
+from src.agent_execution.marketplace_adapters.registry import MarketplaceRegistry
+from src.agent_execution.marketplace_adapters.upwork_adapter import UpworkAdapter
 
-# Register adapters in the registry
-MarketplaceRegistry.register("fiverr", FiverrAdapter)
-MarketplaceRegistry.register("upwork", UpworkAdapter)
-MarketplaceRegistry.register("peoplehour", PeoplePerHourAdapter)
+# Import for side effects (registering adapters)
+import src.agent_execution.marketplace_adapters.registry_setup  # noqa: F401
 
 __all__ = [
     "AuthenticationError",

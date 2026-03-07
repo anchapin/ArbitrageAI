@@ -319,7 +319,7 @@ preview = true
 "src/agent_execution/bid_lock_manager.py" = ["PERF203"]
 "src/agent_execution/bid_deduplication.py" = ["RUF029", "PERF203"]
 # Lazy imports to avoid circular dependencies
-"src/agent_execution/arena.py" = ["E501", "F821", "PLC0415"]
+"src/agent_execution/arena.py" = ["E501", "PLC0415"]
 "src/agent_execution/auto_threshold.py" = ["PLC0415", "E501"]
 "src/agent_execution/bid_lock_manager_factory.py" = ["PLC0415"]
 "src/agent_execution/classifiers/task_classifier.py" = ["PLC0415"]
