@@ -231,13 +231,12 @@ async def create_checkout_session(task_data: dict = Body(...), db: Session = Dep
             success_url=f"{BASE_URL}/success?session_id={{CHECKOUT_SESSION_ID}}",
             cancel_url=f"{BASE_URL}/cancel",
             metadata={
-                "task_id": new_task.id,
+                "task_id": str(new_task.id),
                 "domain": task_data.domain,
                 "title": task_data.title,
             },
             billing_address_collection="required",
-            shipping_address_collection=None,
-            customer_email=task_data.client_email,
+            customer_email=task_data.client_email if task_data.client_email else "unknown@example.com",
         )
 
         # Update task with Stripe session ID
@@ -253,7 +252,7 @@ async def create_checkout_session(task_data: dict = Body(...), db: Session = Dep
 
         return CheckoutResponse(
             session_id=checkout_session.id,
-            url=checkout_session.url,
+            url=checkout_session.url if checkout_session.url else "",
             amount=amount,
             domain=task_data.domain,
             title=task_data.title,
@@ -351,7 +350,7 @@ async def stripe_webhook(
 
             # Try to add background task to process the visualization asynchronously
             try:
-                from src.api.main import process_task_async
+                from src.api.main import process_task_async  # type: ignore[attr-defined]
                 background_tasks.add_task(process_task_async, db, task.id)
                 return {
                     "status": "success",
