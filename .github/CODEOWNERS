@@ -4,65 +4,38 @@
 # Default owner for everything not matched below
 * @anchapin
 
-# Agent execution module
+# Core modules
 src/agent_execution/ @anchapin
-
-# API endpoints
 src/api/ @anchapin
-
-# Client portal
 src/client_portal/ @anchapin
-
-# Configuration management
 src/config/ @anchapin
 
-# Analytics module
+# Services
 src/analytics/ @anchapin
-
-# LLM services
 src/llm_service.py @anchapin
 src/llm_health_check.py @anchapin
-
-# Fine-tuning and distillation
-src/fine_tuning/ @anchapin
-src/distillation/ @anchapin
-
-# Disaster recovery
-src/disaster_recovery/ @anchapin
-
-# Market scanner
+src/websocket/ @anchapin
+src/websocket_manager.py @anchapin
+src/background_job_queue.py @anchapin
 src/market_scanner/ @anchapin
-
-# Planning and orchestration
 src/planning/ @anchapin
 src/planning.py @anchapin
 
-# WebSocket and real-time
-src/websocket/ @anchapin
-src/websocket_manager.py @anchapin
+# Specialized components
+src/fine_tuning/ @anchapin
+src/distillation/ @anchapin
+src/disaster_recovery/ @anchapin
 
-# Background jobs
-src/background_job_queue.py @anchapin
-
-# Database migrations
+# Infrastructure
 alembic/ @anchapin
-
-# Tests
 tests/ @anchapin
-
-# GitHub configuration
-.github/ @anchapin
-.github/workflows/ @anchapin
-
-# Documentation
-docs/ @anchapin
-
-# Docker configuration
 docker/ @anchapin
 Dockerfile @anchapin
 Dockerfile.sandbox @anchapin
 docker-compose*.yml @anchapin
-
-# CI/CD and pre-commit
+scripts/ @anchapin
+.github/ @anchapin
+.github/workflows/ @anchapin
 .github/dependabot.yml @anchapin
 .pre-commit-config.yaml @anchapin
+docs/ @anchapin

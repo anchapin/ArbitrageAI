@@ -87,6 +87,7 @@ build-backend = "setuptools.build_meta"
 exclude = [
     ".agents/",
     ".git/",
+    ".github/",  # CODEOWNERS and other GitHub config files
     ".venv/",
     "venv/",
     "__pycache__/",
