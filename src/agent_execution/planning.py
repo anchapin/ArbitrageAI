@@ -519,6 +519,10 @@ class ContextExtractor:
                 context["raw_data"] = csv_data
                 context["extraction_success"] = True
 
+                # Generate basic statistics for numeric columns
+                if not df.select_dtypes(include=["number"]).empty:
+                    context["key_insights"] = self._extract_basic_insights(df)
+
             except Exception as e:
                 context["error"] = str(e)
 
