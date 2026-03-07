@@ -156,8 +156,7 @@ def _extract_preferences_from_feedback(feedback: str) -> dict[str, Any]:
     Returns:
         Dictionary of extracted preferences
     """
-    # Use dict[str, Any] type annotation for mypy
-    extracted: dict[str, Any] = {
+    extracted = {
         "preferred_colors": [],
         "preferred_fonts": [],
         "preferred_chart_types": [],
@@ -522,7 +521,7 @@ class ContextExtractor:
 
                 # Generate basic statistics for numeric columns
                 if not df.select_dtypes(include=["number"]).empty:
-                    context["key_insights"] = ContextExtractor._extract_basic_insights(df)
+                    context["key_insights"] = self._extract_basic_insights(df)
 
             except Exception as e:
                 context["error"] = str(e)
@@ -650,7 +649,7 @@ class WorkPlanGenerator:
             Dictionary containing the work plan
         """
         # Build context summary for the prompt
-        context_summary = ContextExtractor._build_context_summary(extracted_context)
+        context_summary = self._build_context_summary(extracted_context)
 
         # Build client preferences section (Pillar 2.5 Gap)
         preferences_instruction = ""
@@ -715,7 +714,7 @@ Generate the work plan as JSON."""
 
             # Parse JSON response
             content = result.get("content", "")
-            plan = WorkPlanGenerator._parse_plan_json(content)
+            plan = self._parse_plan_json(content)
 
             if plan:
                 plan["generated_at"] = datetime.now(timezone.utc).isoformat()
@@ -823,7 +822,7 @@ class PlanExecutor:
         from src.agent_execution.executor import TaskRouter, execute_data_visualization
 
         user_request = work_plan.get("user_request", "")
-        task_type = PlanExecutor._infer_task_type(work_plan)
+        task_type = self._infer_task_type(work_plan)
         output_format = work_plan.get("output_format") or self._infer_output_format(
             work_plan,
         )
