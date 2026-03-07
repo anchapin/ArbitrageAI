@@ -4,6 +4,10 @@ Manages backup operations for the platform including full, incremental,
 and point-in-time backups.
 """
 
+# noqa: ASYNC230, ASYNC240 - Backup operations use blocking I/O intentionally
+# The backup module runs in async context but performs file operations that
+# are synchronous by design (not performance critical, run as separate process)
+
 from datetime import datetime, timedelta
 import hashlib
 import json

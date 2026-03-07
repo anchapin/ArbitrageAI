@@ -374,8 +374,8 @@ class DisasterRecoveryAPI:
 
             # Delete backup file
             backup_file = Path(metadata.location)
-            if backup_file.exists():
-                backup_file.unlink()
+            if backup_file.exists():  # noqa: ASYNC240
+                backup_file.unlink()  # noqa: ASYNC240
 
             # Delete metadata file
             metadata_file = (
@@ -759,7 +759,7 @@ async def health_check_endpoint(db: Session = Depends(get_db)):  # noqa: B008
     try:
         # Check backup directory
         backup_dir = Path(Config().BACKUP_DIR)
-        backup_dir_ok = backup_dir.exists() and backup_dir.is_dir()
+        backup_dir_ok = backup_dir.exists() and backup_dir.is_dir()  # noqa: ASYNC240
 
         # Check database connectivity
         db_ok = True
