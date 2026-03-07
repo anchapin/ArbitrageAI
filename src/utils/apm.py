@@ -23,7 +23,6 @@ from functools import wraps
 import os
 import time
 from typing import Any, Optional
-from typing_extensions import Self
 
 from opentelemetry import metrics, trace
 from opentelemetry.sdk.metrics import MeterProvider
@@ -625,3 +624,5 @@ def trace_arena_competition(competition_id: str):
         "arena.competition",
         {"arena.competition_id": competition_id},
     )
+
+# Trigger CI re-run
