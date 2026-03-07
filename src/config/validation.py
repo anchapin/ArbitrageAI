@@ -7,7 +7,6 @@ variables at startup.
 import os
 
 from src.config.config_manager import ConfigManager
-from src.config.helpers import get_max_bid_amount, get_min_bid_amount
 
 
 def get_ollama_url() -> str:
