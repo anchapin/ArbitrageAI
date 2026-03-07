@@ -4,6 +4,10 @@ Manages recovery operations for the platform including database,
 configuration, and file restoration.
 """
 
+# noqa: ASYNC230, ASYNC240 - Recovery operations use blocking I/O intentionally
+# The recovery module runs in async context but performs file operations that
+# are synchronous by design (not performance critical, run as separate process)
+
 from datetime import datetime
 from pathlib import Path
 import shutil

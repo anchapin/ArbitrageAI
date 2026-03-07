@@ -358,7 +358,7 @@ class GracefulShutdownManager:
 
         # Wait up to shutdown_timeout for tasks to complete
         start = time.time()
-        while self.active_tasks and (time.time() - start) < self.shutdown_timeout:
+        while self.active_tasks and (time.time() - start) < self.shutdown_timeout:  # noqa: ASYNC110
             await asyncio.sleep(0.5)
 
         if self.active_tasks:
