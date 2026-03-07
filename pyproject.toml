@@ -310,8 +310,8 @@ preview = true
 "src/planning/preferences.py" = ["E501", "PLC0415"]
 "src/planning/executor.py" = ["E501", "F821", "PLC0415"]
 "src/planning/context_extractor.py" = ["E501", "PLC0415"]
-# agent_execution/planning.py has lazy imports and PlanBuilder references
-"src/agent_execution/planning.py" = ["E501", "F821", "PLC0415"]
+# Lazy imports to avoid circular dependencies
+"src/agent_execution/planning.py" = ["E501", "PLC0415"]
 "src/api/user_models.py" = ["E501"]
 "src/api/disaster_recovery.py" = ["E501", "PLC0415", "ARG001"]
 # Documentation code examples
