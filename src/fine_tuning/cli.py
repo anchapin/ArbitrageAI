@@ -247,7 +247,7 @@ class FineTuningCLI:
             "test_id": test_id,
             "model_a": model_a,
             "model_b": model_b,
-            "status": "active"
+            "status": "active",
         }
 
     def get_ab_test_results(self, test_id: str) -> dict:
@@ -272,8 +272,7 @@ class FineTuningCLI:
                 "sample_size_b": result.sample_size_b,
                 "conclusion": result.conclusion,
             }
-        else:
-            return {"error": f"Test {test_id} not found"}
+        return {"error": f"Test {test_id} not found"}
 
     def register_model(
         self,
@@ -428,9 +427,8 @@ class FineTuningCLI:
         if success:
             print(f"✓ Rolled back {model_name} to v{target_version}")
             return {"success": True, "rolled_back_to_version": target_version}
-        else:
-            print(f"✗ Failed to rollback {model_name}")
-            return {"success": False, "error": "Rollback failed"}
+        print(f"✗ Failed to rollback {model_name}")
+        return {"success": False, "error": "Rollback failed"}
 
     def auto_pipeline(
         self,
