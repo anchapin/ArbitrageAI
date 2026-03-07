@@ -74,10 +74,12 @@ class TestBackupManager:
     async def test_create_full_backup(self, backup_manager):
         """Test full backup creation."""
         # Mock internal methods to avoid file system operations
+        # Note: _backup_configuration, _backup_logs, _backup_uploads are static methods
+        # We need to patch them where they are used (in the module), not just on the class
         with patch.object(backup_manager, "_backup_database"):
-            with patch.object(backup_manager, "_backup_configuration"):
-                with patch.object(backup_manager, "_backup_logs"):
-                    with patch.object(backup_manager, "_backup_uploads"):
+            with patch("src.disaster_recovery.backup_manager.BackupManager._backup_configuration"):
+                with patch("src.disaster_recovery.backup_manager.BackupManager._backup_logs"):
+                    with patch("src.disaster_recovery.backup_manager.BackupManager._backup_uploads"):
                         with patch.object(backup_manager, "_create_archive"):
                             # Mock backup_path.stat() to return file size
                             mock_stat_result = Mock()
@@ -85,9 +87,8 @@ class TestBackupManager:
                             with patch(
                                 "pathlib.Path.stat", return_value=mock_stat_result
                             ):
-                                with patch.object(
-                                    backup_manager,
-                                    "_calculate_checksum",
+                                with patch(
+                                    "src.disaster_recovery.backup_manager.BackupManager._calculate_checksum",
                                     return_value="test_checksum",
                                 ):
                                     with patch.object(
@@ -224,9 +225,8 @@ class TestBackupManager:
                 with patch.object(
                     backup_manager, "_get_backup_metadata", return_value=metadata
                 ):
-                    with patch.object(
-                        backup_manager,
-                        "_calculate_checksum",
+                    with patch(
+                        "src.disaster_recovery.backup_manager.BackupManager._calculate_checksum",
                         return_value="a94a8fe5ccb19ba61c4c0873d391e987982fbbd3",
                     ):
                         validation_results = await backup_manager.validate_backup(
@@ -576,7 +576,16 @@ class TestDisasterRecoveryOrchestrator:
             schema_version="1.0.0",
         )
 
-        mock_backup_manager.list_backups.return_value = [pit_backup, full_backup]
+        # Mock list_backups to return different backups based on type parameter
+        async def mock_list_backups(backup_type=None):
+            if backup_type == BackupType.POINT_IN_TIME:
+                return [pit_backup]
+            elif backup_type == BackupType.FULL:
+                return [full_backup]
+            else:
+                return [pit_backup, full_backup]
+
+        mock_backup_manager.list_backups.side_effect = mock_list_backups
 
         # Test point-in-time recovery strategy
         recovery_strategy = {"requires_point_in_time": True}
