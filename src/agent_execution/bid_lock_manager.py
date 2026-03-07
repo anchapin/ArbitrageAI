@@ -111,7 +111,7 @@ class BidLockManager:
         # Create a single db session per lock acquisition attempt to reduce overhead
         db = None
         try:
-            db = BidLockManager._get_db()
+            db = self._get_db()
 
             while True:
                 try:
@@ -183,8 +183,8 @@ class BidLockManager:
             if db:
                 db.close()
 
-    @staticmethod
     async def release_lock(
+        self,
         marketplace_id: str, posting_id: str, holder_id: str = "default",
     ) -> bool:
         """Release a previously acquired lock.
@@ -198,7 +198,7 @@ class BidLockManager:
             True if lock released, False if lock doesn't exist or holder mismatch
         """
         lock_key = BidLockManager._make_lock_key(marketplace_id, posting_id)
-        db = BidLockManager._get_db()
+        db = self._get_db()
 
         try:
             existing = (
@@ -266,15 +266,11 @@ class BidLockManager:
         try:
             yield
         finally:
-            await BidLockManager.release_lock(
-                marketplace_id=marketplace_id,
-                posting_id=posting_id,
-                holder_id=holder_id,
-            )
+            await self.release_lock(marketplace_id, posting_id, holder_id)
 
     def get_metrics(self) -> dict[str, int]:
         """Get lock manager metrics."""
-        db = BidLockManager._get_db()
+        db = self._get_db()
         try:
             active_locks = (
                 db.query(DistributedLock)

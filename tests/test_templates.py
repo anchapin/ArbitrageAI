@@ -50,9 +50,9 @@ def sample_legal_content():
         ],
         "effective_date": "2024-01-01",
         "terms": [
-            "Service Provider agrees to deliver services as described",
-            "Client agrees to pay fees as specified",
-            "Both parties agree to confidentiality terms"
+            {"number": 1, "title": "Services", "content": "Service Provider agrees to deliver services as described"},
+            {"number": 2, "title": "Payment", "content": "Client agrees to pay fees as specified"},
+            {"number": 3, "title": "Confidentiality", "content": "Both parties agree to confidentiality terms"}
         ],
         "duration": "12 months",
         "termination_clause": "Either party may terminate with 30 days notice"
@@ -72,11 +72,11 @@ def sample_financial_content():
             "net_profit": 40000,
             "profit_margin": 53.33
         },
-        "key_metrics": [
-            {"metric": "Revenue Growth", "value": "15%", "trend": "up"},
-            {"metric": "Expense Ratio", "value": "46.7%", "trend": "down"},
-            {"metric": "Profit Margin", "value": "53.3%", "trend": "up"}
-        ],
+        "key_metrics": {
+            "Revenue Growth": "15%",
+            "Expense Ratio": "46.7%",
+            "Profit Margin": "53.3%"
+        },
         "recommendations": [
             "Continue cost optimization initiatives",
             "Invest in revenue-generating activities",
@@ -171,14 +171,15 @@ class TestBaseDocumentTemplate:
         result = template.generate(content, sample_csv_data)
 
         assert result["success"] is True
-        assert "file_path" in result or "output_filename" in result
+        assert "file_name" in result
         assert result["output_format"] == "docx"
 
     def test_generate_with_invalid_csv(self):
         """Test document generation with invalid CSV data."""
         template = BaseDocumentTemplate()
         content = {"title": "Test"}
-        invalid_csv = "This is not valid CSV data,,,"
+        # Use truly invalid CSV with unclosed quote that will fail to parse
+        invalid_csv = 'Name,Value\n"unclosed quote'
 
         result = template.generate(content, invalid_csv)
 
@@ -236,7 +237,7 @@ class TestLegalContractTemplate:
         result = template.generate(sample_legal_content, sample_csv_data)
 
         assert result["success"] is True
-        assert "file_path" in result or "output_filename" in result
+        assert "file_name" in result
         assert result["document_type"] == "legal_contract"
 
     def test_legal_contract_with_parties(self, sample_legal_content, sample_csv_data):
@@ -291,7 +292,7 @@ class TestFinancialSummaryTemplate:
         result = template.generate(sample_financial_content, sample_csv_data)
 
         assert result["success"] is True
-        assert "file_path" in result or "output_filename" in result
+        assert "file_name" in result
         assert result["document_type"] == "financial_summary"
 
     def test_financial_summary_with_metrics(self, sample_financial_content, sample_csv_data):
@@ -387,8 +388,8 @@ class TestTemplateIntegration:
             assert result["success"] is True
 
             # Verify file was created
-            if "file_path" in result:
-                assert os.path.exists(result["file_path"])
+            if "file_name" in result:
+                assert os.path.exists(result["file_name"])
 
         finally:
             os.chdir(original_dir)
@@ -400,12 +401,12 @@ class TestTemplateIntegration:
             ("legal_contract", {
                 "title": "Test Contract",
                 "parties": [{"name": "A", "role": "B"}],
-                "terms": ["Term 1"]
+                "terms": [{"number": 1, "title": "Term 1", "content": "Test content"}]
             }),
             ("financial_summary", {
                 "title": "Test Financial",
                 "summary": {"total_revenue": 100, "total_expenses": 50, "net_profit": 50, "profit_margin": 50},
-                "key_metrics": [],
+                "key_metrics": {"Revenue": "100"},
                 "recommendations": []
             })
         ]
