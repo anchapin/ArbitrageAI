@@ -40,16 +40,16 @@ from api.models import (
 @pytest.fixture
 def test_db():
     """Create in-memory SQLite database for testing."""
-    from src.api.models import Base
-    from src.api.user_models import Base as UserBase
     from src.api.marketplace_models import Base as MarketplaceBase
+=======
+>>>>>>> 0b75a45 (fix: Add missing database tables to test fixtures)
     
     engine = create_engine("sqlite:///:memory:", echo=False)
     
     # Create all tables from all model bases
     Base.metadata.create_all(engine)
     UserBase.metadata.create_all(engine)
-    MarketplaceBase.metadata.create_all(engine)
+>>>>>>> 0b75a45 (fix: Add missing database tables to test fixtures)
     
     SessionLocal = sessionmaker(bind=engine)
     db = SessionLocal()
