@@ -268,6 +268,9 @@ async def create_checkout_session(task_data: dict = Body(...), db: Session = Dep
     except stripe.error.StripeError as e:
         logger.error(f"Stripe general error: {e}")
         raise HTTPException(status_code=500, detail=f"Stripe error: {e!s}") from e
+    except HTTPException:
+        # Re-raise HTTPException without catching it in generic Exception handler
+        raise
     except OperationalError as e:
         logger.error(f"Database operational error: {e}")
         raise HTTPException(

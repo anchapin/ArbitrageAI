@@ -22,7 +22,8 @@ from contextlib import contextmanager
 from functools import wraps
 import os
 import time
-from typing import Any, Optional, Self
+from typing import Any, Optional
+from typing_extensions import Self
 
 from opentelemetry import metrics, trace
 from opentelemetry.sdk.metrics import MeterProvider
