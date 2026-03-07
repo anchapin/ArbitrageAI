@@ -18,7 +18,7 @@ from sqlalchemy import (
     Text,
     UniqueConstraint,
 )
-from sqlalchemy.orm import DeclarativeBase, declarative_base
+from sqlalchemy.orm import declarative_base
 
 from .enums import ArenaCompetitionStatus, BidStatus
 

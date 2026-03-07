@@ -435,7 +435,7 @@ class PredictiveAnalytics(AnalyticsEngine):
                         sql_cast(
                             case([(Task.status == TaskStatus.COMPLETED, 1)], else_=0),  # type: ignore[arg-type]
                             Integer,
-                        )
+                        ),
                     ).label("completed_tasks"),
                 )
                 .filter(Task.created_at >= start_time, Task.created_at <= end_time)

@@ -327,7 +327,7 @@ class PredictiveAnalytics(AnalyticsEngine):
         std_dev = np.std(data.values)
         margin_of_error = 1.96 * std_dev
 
-        return cast(tuple[float, float], (prediction - margin_of_error, prediction + margin_of_error))
+        return cast("tuple[float, float]", (prediction - margin_of_error, prediction + margin_of_error))
 
 
 class AnomalyDetection(AnalyticsEngine):
@@ -366,7 +366,6 @@ class AnomalyDetection(AnalyticsEngine):
 
     def _get_recent_data(self, metric: str, time_filter: datetime) -> list[float]:
         """Get recent data points for anomaly detection."""
-        from typing import Any
 
         query: Any
         if metric == "revenue":

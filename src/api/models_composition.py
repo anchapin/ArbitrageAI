@@ -28,7 +28,7 @@ from sqlalchemy import (
     String,
     Text,
 )
-from sqlalchemy.orm import DeclarativeBase, declarative_base, relationship
+from sqlalchemy.orm import declarative_base, relationship
 
 if TYPE_CHECKING:
     from sqlalchemy.orm import DeclarativeBase as Base

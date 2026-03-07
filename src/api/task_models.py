@@ -20,7 +20,7 @@ from sqlalchemy import (
     UniqueConstraint,
 )
 from sqlalchemy.ext.hybrid import hybrid_property
-from sqlalchemy.orm import DeclarativeBase, declarative_base, relationship
+from sqlalchemy.orm import declarative_base, relationship
 
 from .enums import ExecutionStatus, OutputType, PlanningStatus, ReviewStatus, TaskStatus
 
