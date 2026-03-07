@@ -5,6 +5,7 @@ Coordinates disaster recovery operations across backup and recovery managers.
 
 import threading
 import time
+from dataclasses import asdict
 from datetime import datetime
 from typing import Any
 
@@ -16,7 +17,7 @@ from src.config import Config
 from src.utils.logger import get_logger
 
 from .backup_manager import BackupManager
-from .models import BackupType
+from .models import BackupType, RecoveryStatus
 from .recovery_manager import RecoveryManager
 
 logger = get_logger(__name__)
@@ -296,8 +297,6 @@ class DisasterRecoveryOrchestrator:
             else:
                 return {"success": False, "error": f"Unknown backup type: {backup_type}"}
 
-            from dataclasses import asdict
-
             return {
                 "success": True,
                 "backup_id": metadata.backup_id,
@@ -308,8 +307,6 @@ class DisasterRecoveryOrchestrator:
 
     async def list_backups(self) -> list[dict[str, Any]]:
         """List all available backups."""
-        from dataclasses import asdict
-
         backups = await self.backup_manager.list_backups()
         return [asdict(backup) for backup in backups]
 
@@ -321,9 +318,6 @@ class DisasterRecoveryOrchestrator:
         self, backup_id: str, plan_id: str = "default",
     ) -> dict[str, Any]:
         """Execute a recovery operation."""
-        from dataclasses import asdict
-        from .models import RecoveryStatus
-
         result = await self.recovery_manager.execute_recovery(backup_id, plan_id)
         return {
             "success": result.status == RecoveryStatus.COMPLETED,
