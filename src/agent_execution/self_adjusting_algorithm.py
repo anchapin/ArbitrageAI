@@ -480,6 +480,10 @@ class SelfAdjustingConfidenceAlgorithm:
         # Get performance at start and now
         start_time = first_adjustment.created_at
 
+        # Make start_time timezone-aware if it's naive
+        if start_time and start_time.tzinfo is None:
+            start_time = start_time.replace(tzinfo=timezone.utc)
+
         # This would ideally query performance at those time periods
         # For now, use baseline if available
         if self.performance_baseline:
@@ -567,6 +571,16 @@ def get_self_adjusting_algorithm() -> SelfAdjustingConfidenceAlgorithm:
 
 
 def reset_self_adjusting_algorithm():
-    """Reset algorithm singleton (useful for testing)."""
+    """Reset algorithm singleton and clear database state (useful for testing)."""
     global _algorithm_instance  # noqa: PLW0603
     _algorithm_instance = None
+    # Also clear algorithm state in database for fresh test runs
+    db = SessionLocal()
+    try:
+        db.query(ConfidenceAdjustment).delete()
+        db.query(ConfidenceEntry).delete()
+        db.commit()
+    except Exception:
+        db.rollback()
+    finally:
+        db.close()

@@ -324,7 +324,6 @@ class VirtualWallet(Base):
         Note: Actual alert sending is handled by VirtualWalletManager.
         This method exists for API compatibility.
         """
-        pass
 
 
 class WebhookSecret(Base):
