@@ -276,7 +276,7 @@ class Task(Base):
         """Return the last error from execution or review entity."""
         if self.execution and self.execution.error_message:
             return self.execution.error_message
-        return None
+        return self.review.error_message if self.review else None
 
     @last_error.setter
     def last_error(self, value):
