@@ -273,16 +273,16 @@ class Task(Base):
 
     @hybrid_property
     def last_error(self):
-        """Return the last error from review entity."""
-        return (
-            self.review.last_error if self.review else None
-        )  # Actually could be in execution or review
+        """Return the last error from execution or review entity."""
+        if self.execution and self.execution.error_message:
+            return self.execution.error_message
+        return None
 
     @last_error.setter
     def last_error(self, value):
-        if not self.review:
-            self.review = TaskReview()
-        self.review.last_error = value
+        if not self.execution:
+            self.execution = TaskExecution()
+        self.execution.error_message = value
 
     @hybrid_property
     def review_status(self):

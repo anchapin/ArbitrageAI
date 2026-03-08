@@ -19,6 +19,13 @@ def reset_config():
     """Reset config before each test."""
     reset_instance()
     reset_simulation_engine()
+    # Clean up database to ensure test isolation
+    session = SessionLocal()
+    try:
+        session.query(SimulationBid).delete()
+        session.commit()
+    finally:
+        session.close()
     yield
 
 

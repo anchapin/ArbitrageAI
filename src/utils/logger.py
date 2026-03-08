@@ -19,6 +19,7 @@ import logging
 from contextlib import suppress
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
+from typing import Any
 
 # Import error tracking for automatic error capture in logs (Issue #230)
 try:
@@ -31,9 +32,15 @@ try:
 except ImportError:
     SENTRY_AVAILABLE = False
     # Mock functions when error_tracking is not available
-    def add_breadcrumb(*args, **kwargs): pass
-    def capture_exception(*args, **kwargs): return None
-    def capture_message(*args, **kwargs): return None
+    def add_breadcrumb(
+        message: str,
+        category: str = "default",
+        level: str = "info",
+        **data: Any,
+    ) -> None:
+        pass
+    def capture_exception(*args: Any, **kwargs: Any) -> None: pass
+    def capture_message(*args: Any, **kwargs: Any) -> None: pass
 
 
 def setup_logging(

@@ -9,7 +9,7 @@ Tests OAuth authentication flow for marketplace integrations:
 """
 
 import pytest
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from unittest.mock import AsyncMock, patch, Mock
 import httpx
 
@@ -84,7 +84,7 @@ class TestOAuthToken:
             expires_in=1,
         )
         # Manually set expiration to past
-        token.expires_at = datetime.utcnow() - timedelta(seconds=10)
+        token.expires_at = datetime.now(timezone.utc) - timedelta(seconds=10)
 
         assert token.is_expired() is True
 
@@ -117,7 +117,7 @@ class TestOAuthToken:
 
     def test_token_from_dict_with_timestamps(self):
         """Test creating token from dictionary with timestamps."""
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         token_data = {
             "access_token": "test",
             "refresh_token": "refresh",
@@ -267,7 +267,7 @@ class TestOAuthManager:
             refresh_token="refresh",
             expires_in=1,
         )
-        expired_token.expires_at = datetime.utcnow() - timedelta(seconds=10)
+        expired_token.expires_at = datetime.now(timezone.utc) - timedelta(seconds=10)
         oauth_manager.set_token(expired_token)
 
         # Mock refresh response
@@ -430,7 +430,7 @@ class TestOAuthManagerFunctions:
             refresh_token="refresh",
             expires_in=1,
         )
-        expired_token.expires_at = datetime.utcnow() - timedelta(seconds=10)
+        expired_token.expires_at = datetime.now(timezone.utc) - timedelta(seconds=10)
         manager.set_token(expired_token)
 
         # Mock refresh response
