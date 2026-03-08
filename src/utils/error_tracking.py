@@ -29,8 +29,6 @@ import os
 import sys
 from typing import TYPE_CHECKING, Any, ClassVar
 
-from src.utils.logger import get_logger
-
 # Optional Sentry dependency - only import for type hints when available
 if TYPE_CHECKING:
     import sentry_sdk
@@ -53,6 +51,8 @@ else:
     ignore_logger = None
 
 SENTRY_AVAILABLE = sentry_sdk is not None
+
+from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
 
