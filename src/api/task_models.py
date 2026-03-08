@@ -624,6 +624,7 @@ class TaskReview(Base):
     approved = Column(Boolean, default=False)
     review_feedback = Column(Text, nullable=True)
     review_attempts = Column(Integer, default=0)
+    error_message = Column(Text, nullable=True)  # For last_error property
 
     # Escalation
     needs_escalation = Column(Boolean, default=False)
@@ -651,6 +652,7 @@ class TaskReview(Base):
             "approved": self.approved,
             "review_feedback": self.review_feedback,
             "review_attempts": self.review_attempts,
+            "error_message": self.error_message,
             "needs_escalation": self.needs_escalation,
             "reviewed_at": self.reviewed_at.isoformat() if self.reviewed_at else None,
         }
