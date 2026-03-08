@@ -275,14 +275,14 @@ class Task(Base):
     def last_error(self):
         """Return the last error from review entity."""
         return (
-            self.review.last_error if self.review else None
+            self.review.error_message if self.review else None
         )  # Actually could be in execution or review
 
     @last_error.setter
     def last_error(self, value):
         if not self.review:
             self.review = TaskReview()
-        self.review.last_error = value
+        self.review.error_message = value
 
     @hybrid_property
     def review_status(self):
