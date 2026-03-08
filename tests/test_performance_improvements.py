@@ -40,8 +40,15 @@ from api.models import (
 @pytest.fixture
 def test_db():
     """Create in-memory SQLite database for testing."""
+    from src.api.models import Base
+    from src.api.user_models import Base as UserBase
+    
     engine = create_engine("sqlite:///:memory:", echo=False)
+    
+    # Create all tables from all model bases
     Base.metadata.create_all(engine)
+    UserBase.metadata.create_all(engine)
+    
     SessionLocal = sessionmaker(bind=engine)
     db = SessionLocal()
     try:
