@@ -428,10 +428,9 @@ class TestProductionValidation:
         monkeypatch.setenv("ENVIRONMENT", "production")
         monkeypatch.setenv("JWT_SECRET_KEY", generate_secure_secret())
         monkeypatch.setenv("CLIENT_AUTH_SECRET", generate_secure_secret())
-        # Use secure placeholder values (not real Stripe keys)
-        monkeypatch.setenv("STRIPE_SECRET_KEY", "[STRIPE_SECRET_KEY_PLACEHOLDER_32chars]")
-        # Webhook secret should be a secure random value
-        monkeypatch.setenv("STRIPE_WEBHOOK_SECRET", "[STRIPE_WEBHOOK_SECRET_PLACEHOLDER_40chars]")
+        # Use secure random values (not real Stripe keys, just secure random strings)
+        monkeypatch.setenv("STRIPE_SECRET_KEY", generate_secure_secret())
+        monkeypatch.setenv("STRIPE_WEBHOOK_SECRET", generate_secure_secret())
 
         # Should not raise
         ConfigManager.validate_production_configuration()

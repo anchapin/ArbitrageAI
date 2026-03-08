@@ -42,12 +42,14 @@ def test_db():
     """Create in-memory SQLite database for testing."""
     from src.api.models import Base
     from src.api.user_models import Base as UserBase
+    from src.api.marketplace_models import Base as MarketplaceBase
     
     engine = create_engine("sqlite:///:memory:", echo=False)
     
     # Create all tables from all model bases
     Base.metadata.create_all(engine)
     UserBase.metadata.create_all(engine)
+    MarketplaceBase.metadata.create_all(engine)
     
     SessionLocal = sessionmaker(bind=engine)
     db = SessionLocal()
@@ -241,12 +243,12 @@ class TestEagerLoading:
         )
         planning = TaskPlanning(
             task_id=test_task.id,
-            status=PlanningStatus.COMPLETED,
+            status=PlanningStatus.APPROVED,
             plan_content="Test plan",
         )
         review = TaskReview(
             task_id=test_task.id,
-            status=ReviewStatus.APPROVED,
+            status=ReviewStatus.RESOLVED,
             approved=True,
         )
         output = TaskOutput(
@@ -326,11 +328,11 @@ class TestDatabaseIndexes:
 
         # Check for expected indexes
         expected_indexes = [
-            "idx_tasks_client_email",
-            "idx_tasks_status",
-            "idx_tasks_created_at",
-            "idx_tasks_client_status",
-            "idx_tasks_status_created",
+            "idx_task_client_email",
+            "idx_task_status",
+            "idx_task_created_at",
+            "idx_task_client_status",
+            "idx_task_status_created",
         ]
 
         for idx in expected_indexes:
@@ -346,10 +348,10 @@ class TestDatabaseIndexes:
         indexes = [row[0] for row in result.fetchall()]
 
         expected_indexes = [
-            "idx_bids_job_id",
-            "idx_bids_status",
-            "idx_bids_created_at",
-            "idx_bids_marketplace",
+            "idx_bid_posting_id",
+            "idx_bid_status",
+            "idx_bid_created_at",
+            "idx_bid_marketplace_status",
         ]
 
         for idx in expected_indexes:
@@ -446,7 +448,7 @@ class TestIntegration:
             amount_paid=10000,
         )
         execution = TaskExecution(task_id=task.id, status=ExecutionStatus.RUNNING)
-        planning = TaskPlanning(task_id=task.id, status=PlanningStatus.IN_PROGRESS)
+        planning = TaskPlanning(task_id=task.id, status=PlanningStatus.GENERATING)
         review = TaskReview(task_id=task.id, status=ReviewStatus.PENDING)
 
         test_db.add_all([task, execution, planning, review])
@@ -471,7 +473,7 @@ class TestIntegration:
         # Verify all data is accessible without additional queries
         assert loaded_task.title == "Integration Test"
         assert loaded_task.execution.status == ExecutionStatus.RUNNING
-        assert loaded_task.planning.status == PlanningStatus.IN_PROGRESS
+        assert loaded_task.planning.status == PlanningStatus.GENERATING
         assert loaded_task.review.status == ReviewStatus.PENDING
 
         # Verify to_dict works correctly
