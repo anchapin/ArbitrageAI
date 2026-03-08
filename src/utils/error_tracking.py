@@ -22,13 +22,15 @@ Usage:
         capture_exception(e)
 """
 
+from __future__ import annotations
+
 import logging
 import os
 import sys
-from typing import Any, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar
 
-# Optional Sentry dependency
-try:
+# Optional Sentry dependency - only import for type hints when available
+if TYPE_CHECKING:
     import sentry_sdk
     from sentry_sdk import capture_exception, capture_message
     from sentry_sdk.integrations import (
@@ -38,30 +40,17 @@ try:
     )
     from sentry_sdk.integrations.logging import ignore_logger
     from sentry_sdk.tracing import Transaction
-    SENTRY_AVAILABLE = True
-except ImportError:
-    SENTRY_AVAILABLE = False
-    # Mock classes and functions for when Sentry is not available
-    sentry_sdk = None  # type: ignore
-    def capture_exception(*args, **kwargs): return None
-    def capture_message(*args, **kwargs): return None
+else:
+    sentry_sdk = None
+    capture_exception = None
+    capture_message = None
+    Transaction = None
+    FastApiIntegration = None
+    LoggingIntegration = None
+    SqlalchemyIntegration = None
+    ignore_logger = None
 
-    class Transaction:
-        def __init__(self, *args, **kwargs): pass
-        def __enter__(self): return self
-        def __exit__(self, *args): pass
-
-    # Mock integration classes for type hints
-    class FastApiIntegration:  # type: ignore
-        def __init__(self, *args, **kwargs): pass
-
-    class LoggingIntegration:  # type: ignore
-        def __init__(self, *args, **kwargs): pass
-
-    class SqlalchemyIntegration:  # type: ignore
-        def __init__(self, *args, **kwargs): pass
-
-    def ignore_logger(*args, **kwargs): pass
+SENTRY_AVAILABLE = sentry_sdk is not None
 
 from src.utils.logger import get_logger
 
@@ -279,10 +268,10 @@ def add_breadcrumb(
         )
 
 
-def capture_exception(
+def capture_exception(  # type: ignore[no-redef]
     exc: BaseException | None = None,
     extra: dict[str, Any] | None = None,
-    **tags,
+    **tags: Any,
 ) -> str | None:
     """Capture an exception with optional context.
 
@@ -318,11 +307,11 @@ def capture_exception(
     return event_id
 
 
-def capture_message(
+def capture_message(  # type: ignore[no-redef]
     message: str,
     level: str = "info",
     extra: dict[str, Any] | None = None,
-    **tags,
+    **tags: Any,
 ) -> str | None:
     """Capture a message with optional context.
 

@@ -26,14 +26,15 @@ logger = logging.getLogger(__name__)
 
 # Docker SDK
 try:
-    from docker.errors import DockerException, NotFound
+    from docker.errors import DockerException, NotFound  # type: ignore[attr-defined]
 
-    import docker
+    import docker  # type: ignore[attr-defined]
 
     DOCKER_AVAILABLE = True
 except ImportError:
     DOCKER_AVAILABLE = False
     DockerException = Exception
+    docker = None  # type: ignore[assignment]
 
 
 # =============================================================================
@@ -142,7 +143,7 @@ class LocalDockerSandbox:
 
         self._client = None
 
-    def _get_docker_client(self) -> "docker.DockerClient":
+    def _get_docker_client(self) -> "docker.DockerClient":  # type: ignore[misc]
         """Get or create Docker client."""
         if not DOCKER_AVAILABLE:
             raise ImportError(
@@ -152,9 +153,9 @@ class LocalDockerSandbox:
         if self._client is None:
             try:
                 # Try to connect to Docker daemon
-                self._client = docker.from_env()
+                self._client = docker.from_env()  # type: ignore[union-attr]
                 # Verify connection
-                self._client.ping()
+                self._client.ping()  # type: ignore[union-attr]
             except DockerException as e:
                 raise RuntimeError(
                     f"Failed to connect to Docker daemon: {e}. "
