@@ -37,7 +37,7 @@ except ImportError:
         category: str = "default",
         level: str = "info",
         **data: Any,
-    ) -> None: 
+    ) -> None:
         pass
     def capture_exception(*args: Any, **kwargs: Any) -> None: pass
     def capture_message(*args: Any, **kwargs: Any) -> None: pass

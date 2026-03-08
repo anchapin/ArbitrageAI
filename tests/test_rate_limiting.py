@@ -42,11 +42,14 @@ def db_with_quotas():
     """Create test database with quota records."""
     from sqlalchemy import create_engine
     from sqlalchemy.orm import sessionmaker
-    from src.api.models import Base, UserQuota, PricingTier
+    from src.api.models import Base, PricingTier
+    from src.api.user_models import Base as UserBase
+    from src.api.user_models import UserQuota
     from datetime import datetime, timezone
     
     engine = create_engine("sqlite:///:memory:")
     Base.metadata.create_all(bind=engine)
+    UserBase.metadata.create_all(bind=engine)
     SessionLocal = sessionmaker(bind=engine)
     session = SessionLocal()
     
