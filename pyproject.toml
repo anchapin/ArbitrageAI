@@ -30,7 +30,7 @@ dependencies = [
     # Error Tracking (Issue #230)
     "sentry-sdk>=1.40.0",
     "opentelemetry-exporter-otlp-proto-grpc>=0.45b0",
-    "opentelemetry-instrumentation-fastapi>=0.45b0",
+    "opentelemetry-instrumentation-fastapi>=0.62b0",
     "opentelemetry-instrumentation-sqlalchemy>=0.45b0",
     "opentelemetry-instrumentation-httpx>=0.45b0",
     "opentelemetry-instrumentation-requests>=0.45b0",
